@@ -123,6 +123,7 @@ class MainWindow:
             ("Monitor USB", self.open_usb_window),
             ("Lanzadores", self.open_launchers),
             ("🎨 Cambiar Tema", self.open_theme_selector),
+            ("❌ Salir", self.exit_application),  # NUEVO
         ]
         
         columns = 2
@@ -201,6 +202,81 @@ class MainWindow:
         from ui.windows.theme_selector import ThemeSelector
         theme_window = ThemeSelector(self.root)
         theme_window.lift()
+    
+    def exit_application(self):
+        """Cierra la aplicación completamente"""
+        # Confirmar antes de salir
+        from ui.widgets import custom_msgbox
+        
+        # Crear ventana de confirmación personalizada
+        confirm_window = ctk.CTkToplevel(self.root)
+        confirm_window.title("Confirmar Salida")
+        confirm_window.configure(fg_color=COLORS['bg_medium'])
+        confirm_window.geometry("400x200")
+        confirm_window.overrideredirect(True)
+        
+        # Centrar en pantalla
+        confirm_window.update_idletasks()
+        x = (confirm_window.winfo_screenwidth() // 2) - (400 // 2)
+        y = (confirm_window.winfo_screenheight() // 2) - (200 // 2)
+        confirm_window.geometry(f"400x200+{x}+{y}")
+        
+        # Frame principal
+        frame = ctk.CTkFrame(
+            confirm_window, 
+            fg_color=COLORS['bg_dark'],
+            border_width=3,
+            border_color=COLORS['danger']
+        )
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Icono y mensaje
+        message = ctk.CTkLabel(
+            frame,
+            text="⚠️\n\n¿Seguro que quieres salir?",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['large'])
+        )
+        message.pack(pady=30)
+        
+        # Frame de botones
+        button_frame = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
+        button_frame.pack(pady=10)
+        
+        def do_exit():
+            """Cierra todo"""
+            confirm_window.destroy()
+            self.root.quit()
+            self.root.destroy()
+        
+        def cancel():
+            """Cancela y cierra el diálogo"""
+            confirm_window.destroy()
+        
+        # Botón Sí
+        yes_btn = make_futuristic_button(
+            button_frame,
+            text="✓ Sí, Salir",
+            command=do_exit,
+            width=12,
+            height=5
+        )
+        yes_btn.pack(side="left", padx=10)
+        
+        # Botón No
+        no_btn = make_futuristic_button(
+            button_frame,
+            text="✗ Cancelar",
+            command=cancel,
+            width=12,
+            height=5
+        )
+        no_btn.pack(side="left", padx=10)
+        
+        # Hacer modal
+        confirm_window.transient(self.root)
+        confirm_window.grab_set()
+        confirm_window.focus_set()
     
     def _start_update_loop(self):
         """Inicia el bucle de actualización"""
