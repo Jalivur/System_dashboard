@@ -20,8 +20,8 @@ CURVE_FILE = DATA_DIR / "fan_curve.json"
 # Configuración de pantalla DSI
 DSI_WIDTH = 800
 DSI_HEIGHT = 480
-DSI_X = 1920 - DSI_WIDTH
-DSI_Y = 1080 - DSI_HEIGHT
+DSI_X = 1124
+DSI_Y = 1080
 
 # Configuración de actualización
 UPDATE_MS = 2000

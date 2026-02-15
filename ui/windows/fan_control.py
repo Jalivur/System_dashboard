@@ -39,7 +39,9 @@ class FanControlWindow(ctk.CTkToplevel):
         self.overrideredirect(True)
         self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
         self.resizable(False, False)
-        
+        self.focus_force()
+        self.lift()  # Asegura que está en primer plano
+        self.after(100, lambda: self.grab_set())  # Después de 100ms
         # Crear interfaz
         self._create_ui()
     
@@ -215,49 +217,97 @@ class FanControlWindow(ctk.CTkToplevel):
         )
         add_label.pack(side="left", padx=5)
         
-        # Entry para temperatura
+        # Sección para añadir punto con SLIDERS
+        add_section = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
+        add_section.pack(fill="x", pady=10, padx=5)
+
+        # Label sección
+        add_title = ctk.CTkLabel(
+            add_section,
+            text="AÑADIR NUEVO PUNTO",
+            text_color=COLORS['success'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
+        )
+        add_title.pack(anchor="w", padx=10, pady=(10, 5))
+
+        # Variable para temperatura del nuevo punto
+        self.new_temp_var = tk.IntVar(value=50)
+        self.new_pwm_var = tk.IntVar(value=128)
+
+        # SLIDER 1: Temperatura
+        temp_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
+        temp_slider_frame.pack(fill="x", padx=10, pady=5)
+
         temp_label = ctk.CTkLabel(
-            add_frame,
-            text="Temp (°C):",
+            temp_slider_frame,
+            text="Temperatura:",
             text_color=COLORS['text'],
             font=(FONT_FAMILY, FONT_SIZES['small'])
         )
-        temp_label.pack(side="left", padx=5)
-        
-        self.temp_entry = ctk.CTkEntry(
-            add_frame,
-            width=60,
-            font=(FONT_FAMILY, FONT_SIZES['small'])
+        temp_label.pack(anchor="w")
+
+        self.temp_value_label = ctk.CTkLabel(
+            temp_slider_frame,
+            text=f"{self.new_temp_var.get()}°C",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
         )
-        self.temp_entry.pack(side="left", padx=5)
-        
-        # Entry para PWM
+        self.temp_value_label.pack(anchor="w", pady=(0, 5))
+
+        temp_slider = ctk.CTkSlider(
+            temp_slider_frame,
+            from_=0,
+            to=100,
+            variable=self.new_temp_var,
+            command=self._on_new_temp_change,
+            width=DSI_WIDTH - 120
+        )
+        temp_slider.pack(fill="x", pady=5)
+        StyleManager.style_slider_ctk(temp_slider)
+
+        # SLIDER 2: PWM
+        pwm_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
+        pwm_slider_frame.pack(fill="x", padx=10, pady=5)
+
         pwm_label = ctk.CTkLabel(
-            add_frame,
+            pwm_slider_frame,
             text="PWM:",
             text_color=COLORS['text'],
             font=(FONT_FAMILY, FONT_SIZES['small'])
         )
-        pwm_label.pack(side="left", padx=5)
-        
-        self.pwm_entry = ctk.CTkEntry(
-            add_frame,
-            width=60,
-            font=(FONT_FAMILY, FONT_SIZES['small'])
+        pwm_label.pack(anchor="w")
+
+        self.new_pwm_value_label = ctk.CTkLabel(
+            pwm_slider_frame,
+            text=f"{self.new_pwm_var.get()} ({int(self.new_pwm_var.get()/255*100)}%)",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
         )
-        self.pwm_entry.pack(side="left", padx=5)
-        
-        # Botón añadir
+        self.new_pwm_value_label.pack(anchor="w", pady=(0, 5))
+
+        pwm_slider = ctk.CTkSlider(
+            pwm_slider_frame,
+            from_=0,
+            to=255,
+            variable=self.new_pwm_var,
+            command=self._on_new_pwm_change,
+            width=DSI_WIDTH - 120
+        )
+        pwm_slider.pack(fill="x", pady=5)
+        StyleManager.style_slider_ctk(pwm_slider)
+
+        # Botón para añadir punto
         add_btn = make_futuristic_button(
-            add_frame,
-            text="Añadir",
-            command=self._add_curve_point,
-            width=10,
-            height=4,
-            font_size=14
+            add_section,
+            text="✓ Añadir Punto a la Curva",
+            command=self._add_curve_point_from_sliders,
+            width=25,
+            height=6,
+            font_size=16
         )
-        add_btn.pack(side="left", padx=5)
-    
+        add_btn.pack(pady=10)
+        
+        
     def _refresh_curve_points(self):
         """Refresca la lista de puntos de la curva"""
         # Limpiar widgets existentes
@@ -304,33 +354,36 @@ class FanControlWindow(ctk.CTkToplevel):
                 font_size=12
             )
             del_btn.pack(side="right", padx=5)
-    
-    def _add_curve_point(self):
-        """Añade un punto a la curva"""
-        try:
-            temp = int(self.temp_entry.get())
-            pwm = int(self.pwm_entry.get())
-            
-            if temp < 0 or temp > 100:
-                custom_msgbox(self, "La temperatura debe estar entre 0 y 100°C", "Error")
-                return
-            
-            if pwm < 0 or pwm > 255:
-                custom_msgbox(self, "El PWM debe estar entre 0 y 255", "Error")
-                return
-            
-            # Añadir punto
-            self.fan_controller.add_curve_point(temp, pwm)
-            
-            # Limpiar entradas
-            self.temp_entry.delete(0, 'end')
-            self.pwm_entry.delete(0, 'end')
-            
-            # Refrescar lista
-            self._refresh_curve_points()
-            
-        except ValueError:
-            custom_msgbox(self, "Por favor ingresa valores numéricos válidos", "Error")
+    def _on_new_temp_change(self, value):
+        """Callback cuando cambia el slider de temperatura del nuevo punto"""
+        temp = int(float(value))
+        self.temp_value_label.configure(text=f"{temp}°C")
+
+    def _on_new_pwm_change(self, value):
+        """Callback cuando cambia el slider de PWM del nuevo punto"""
+        pwm = int(float(value))
+        percent = int(pwm / 255 * 100)
+        self.new_pwm_value_label.configure(text=f"{pwm} ({percent}%)")
+
+    def _add_curve_point_from_sliders(self):
+        """Añade un punto a la curva desde los sliders"""
+        temp = self.new_temp_var.get()
+        pwm = self.new_pwm_var.get()
+        
+        # Añadir punto
+        self.fan_controller.add_curve_point(temp, pwm)
+        
+        # Resetear sliders a valores medios
+        self.new_temp_var.set(50)
+        self.new_pwm_var.set(128)
+        self._on_new_temp_change(50)
+        self._on_new_pwm_change(128)
+        
+        # Refrescar lista
+        self._refresh_curve_points()
+        
+        # Mensaje de confirmación
+        custom_msgbox(self, f"✓ Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
     
     def _remove_curve_point(self, temp: int):
         """Elimina un punto de la curva"""
@@ -364,9 +417,24 @@ class FanControlWindow(ctk.CTkToplevel):
     
     def _on_mode_change(self, mode: str):
         """Callback cuando cambia el modo"""
+        # Obtener temperatura actual
+        temp = self.system_monitor.get_current_stats()['temp']
+        
+        # Calcular PWM usando el controlador
+        target_pwm = self.fan_controller.get_pwm_for_mode(
+            mode=mode,
+            temp=temp,
+            manual_pwm=self.manual_pwm_var.get()
+        )
+        
+        # Actualizar el slider y label VISUALMENTE (pero no editable si no es manual)
+        self.manual_pwm_var.set(target_pwm)
+        self.pwm_value_label.configure(text=f"Valor: {target_pwm}")
+        
+        # Guardar estado con PWM calculado
         self.file_manager.write_state({
             "mode": mode,
-            "target_pwm": self.manual_pwm_var.get() if mode == "manual" else None
+            "target_pwm": target_pwm
         })
     
     def _on_pwm_change(self, value):
@@ -379,3 +447,4 @@ class FanControlWindow(ctk.CTkToplevel):
                 "mode": "manual",
                 "target_pwm": pwm
             })
+

@@ -3,7 +3,7 @@ Ventana principal del sistema de monitoreo
 """
 import customtkinter as ctk
 from typing import Optional
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
 from ui.styles import make_futuristic_button
 from utils.system_utils import SystemUtils
 
@@ -56,7 +56,7 @@ class MainWindow:
             text_color=COLORS['secondary'],
             font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
         )
-        title.pack(pady=20)
+        title.pack(pady=10)
         
         # Información del sistema
         hostname = self.system_utils.get_hostname()
@@ -100,7 +100,7 @@ class MainWindow:
             (0, 0), 
             window=self.menu_inner, 
             anchor="nw",
-            width=DSI_WIDTH - 50
+            width=DSI_WIDTH - 60
         )
         
         # Configurar scroll
@@ -217,8 +217,8 @@ class MainWindow:
         
         # Centrar en pantalla
         confirm_window.update_idletasks()
-        x = (confirm_window.winfo_screenwidth() // 2) - (400 // 2)
-        y = (confirm_window.winfo_screenheight() // 2) - (200 // 2)
+        x = DSI_X + (400 // 2)
+        y = DSI_Y + (200 // 2)
         confirm_window.geometry(f"400x200+{x}+{y}")
         
         # Frame principal
@@ -258,8 +258,8 @@ class MainWindow:
             button_frame,
             text="✓ Sí, Salir",
             command=do_exit,
-            width=12,
-            height=5
+            width=20,
+            height=20
         )
         yes_btn.pack(side="left", padx=10)
         
@@ -268,8 +268,8 @@ class MainWindow:
             button_frame,
             text="✗ Cancelar",
             command=cancel,
-            width=12,
-            height=5
+            width=20,
+            height=20
         )
         no_btn.pack(side="left", padx=10)
         
