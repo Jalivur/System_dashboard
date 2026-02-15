@@ -1,0 +1,49 @@
+# ============================================
+# System Dashboard - Python Dependencies
+# ============================================
+#
+# Instalación rápida:
+#   pip3 install --break-system-packages -r requirements.txt
+#
+# O con entorno virtual:
+#   python3 -m venv venv
+#   source venv/bin/activate
+#   pip install -r requirements.txt
+#
+# Versión mínima de Python: 3.8+
+# ============================================
+
+# === Dependencias Obligatorias ===
+
+# Interfaz gráfica moderna con tema oscuro
+customtkinter>=5.2.0
+
+# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
+psutil>=5.9.0
+
+
+# === Dependencias Opcionales ===
+
+# Test de velocidad de internet (descomentar si lo usas)
+# speedtest-cli>=2.1.3
+
+
+# ============================================
+# NOTA: Dependencias del Sistema (NO Python)
+# ============================================
+#
+# Estas se instalan con apt-get/dnf/pacman:
+#
+# En Ubuntu/Debian/Raspberry Pi OS:
+#   sudo apt-get install lm-sensors usbutils udisks2
+#
+# Descripción:
+#   - lm-sensors:  Lectura de temperatura CPU
+#   - usbutils:    Comando lsusb (listar USB)
+#   - udisks2:     Expulsar dispositivos USB
+#   - util-linux:  Comando lsblk (suele venir instalado)
+#
+# Opcional para speedtest:
+#   sudo apt-get install speedtest-cli
+#
+# ============================================

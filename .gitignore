@@ -1,0 +1,412 @@
+# ============================================
+# System Dashboard - .gitignore
+# ============================================
+# 
+# Excluye archivos temporales, compilados, 
+# datos personales y configuraciones locales
+#
+# ============================================
+
+# ============================================
+# Python
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+
+# ============================================
+# IDEs y Editores
+# ============================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw[op]
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Nano
+*.save
+*.swp
+
+
+# ============================================
+# Sistema Operativo
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+
+# ============================================
+# Archivos del Proyecto
+# ============================================
+
+# Datos persistentes y estado
+data/
+!data/.gitkeep
+*.json
+!requirements.json
+!package.json
+fan_state.json
+fan_curve.json
+theme_config.json
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+.~*
+
+# Scripts personales del usuario
+scripts/
+!scripts/.gitkeep
+!scripts/README.md
+
+# Configuración local
+.env
+.env.local
+.env.*.local
+config.local.py
+settings.local.py
+
+
+# ============================================
+# Documentación y Builds
+# ============================================
+
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+
+# ============================================
+# Específico del Dashboard
+# ============================================
+
+# Capturas de pantalla de desarrollo
+screenshots/
+*.png
+*.jpg
+*.jpeg
+!docs/images/
+!assets/images/
+
+# Archivos de calibración de hardware
+calibration/
+*.calibration
+
+# Datos de sensores históricos
+sensor_data/
+historical_data/
+
+# Backups automáticos
+backups/
+*.backup
+
+# Testing local
+test_output/
+test_results/
+
+
+# ============================================
+# Dependencias y Builds
+# ============================================
+
+# Node modules (si usas Node para algo)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+
+
+# ============================================
+# Git
+# ============================================
+
+# Parches
+*.patch
+*.diff
+
+# Merge files
+*.orig
+
+
+# ============================================
+# Archivos Sensibles
+# ============================================
+
+# API Keys y Secretos
+secrets.py
+secrets.json
+.secrets
+api_keys.txt
+credentials.json
+
+# SSH Keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Certificados
+*.crt
+*.cer
+*.p12
+
+
+# ============================================
+# Base de Datos
+# ============================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+
+# ============================================
+# Compresión y Empaquetado
+# ============================================
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bz2
+*.gz
+*.xz
+
+# Pero MANTENER releases
+!releases/*.zip
+!dist/*.tar.gz
+
+
+# ============================================
+# Excepciones (Archivos a INCLUIR)
+# ============================================
+
+# Mantener estructura de directorios vacíos
+!**/.gitkeep
+
+# Mantener ejemplos y templates
+!examples/
+!templates/
+
+# Mantener archivos de configuración base
+!config/settings.py
+!config/themes.py
+
+# Mantener documentación
+!*.md
+!docs/
+
+# Mantener requirements
+!requirements.txt
+!requirements-dev.txt
+
+
+# ============================================
+# Testing y CI/CD
+# ============================================
+
+# pytest
+.pytest_cache/
+.coverage
+
+# tox
+.tox/
+
+# Coverage reports
+htmlcov/
+
+# GitHub Actions
+.github/workflows/*.log
+
+
+# ============================================
+# Varios
+# ============================================
+
+# Thumbnails
+*.thumb
+
+# Profile data
+*.prof
+
+# Session data
+.session
+
+# PID files
+*.pid
+
+
+# ============================================
+# NOTAS IMPORTANTES
+# ============================================
+#
+# - Este .gitignore está diseñado para:
+#   * Excluir archivos temporales y compilados
+#   * Proteger datos sensibles (API keys, passwords)
+#   * Mantener limpio el repositorio
+#   * Permitir configuración local sin conflictos
+#
+# - Los datos en data/ NO se suben (configuraciones locales)
+# - Los scripts en scripts/ NO se suben (personalizados)
+# - Los logs NO se suben
+#
+# - Para INCLUIR algo que está ignorado:
+#   git add -f archivo.txt
+#
+# ============================================
