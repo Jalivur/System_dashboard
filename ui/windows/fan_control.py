@@ -44,6 +44,9 @@ class FanControlWindow(ctk.CTkToplevel):
         self.after(100, lambda: self.grab_set())  # Después de 100ms
         # Crear interfaz
         self._create_ui()
+        
+        # Iniciar bucle de actualización del slider/valor
+        self._update_pwm_display()
     
     def _load_initial_state(self):
         """Carga el estado inicial desde archivo"""
@@ -447,4 +450,31 @@ class FanControlWindow(ctk.CTkToplevel):
                 "mode": "manual",
                 "target_pwm": pwm
             })
+    
+    def _update_pwm_display(self):
+        """Actualiza el slider y valor para reflejar el PWM activo"""
+        if not self.winfo_exists():
+            return
+        
+        # Obtener modo actual
+        mode = self.mode_var.get()
+        
+        # Solo actualizar si NO es modo manual (en manual, el usuario controla el slider)
+        if mode != "manual":
+            # Obtener temperatura actual
+            temp = self.system_monitor.get_current_stats()['temp']
+            
+            # Calcular PWM activo
+            target_pwm = self.fan_controller.get_pwm_for_mode(
+                mode=mode,
+                temp=temp,
+                manual_pwm=self.manual_pwm_var.get()
+            )
+            
+            # Actualizar slider y label visualmente
+            self.manual_pwm_var.set(target_pwm)
+            self.pwm_value_label.configure(text=f"Valor: {target_pwm}")
+        
+        # Programar siguiente actualización (cada 2 segundos)
+        self.after(2000, self._update_pwm_display)
 

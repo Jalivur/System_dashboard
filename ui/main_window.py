@@ -3,7 +3,7 @@ Ventana principal del sistema de monitoreo
 """
 import customtkinter as ctk
 from typing import Optional
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH
 from ui.styles import make_futuristic_button
 from utils.system_utils import SystemUtils
 
@@ -56,7 +56,7 @@ class MainWindow:
             text_color=COLORS['secondary'],
             font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
         )
-        title.pack(pady=10)
+        title.pack(pady=20)
         
         # Información del sistema
         hostname = self.system_utils.get_hostname()
@@ -70,7 +70,7 @@ class MainWindow:
         
         # Contenedor de menú con scroll
         menu_container = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_medium'])
-        menu_container.pack(fill="both", expand=True, padx=10, pady=10)
+        menu_container.pack(fill="both", expand=True, padx=5, pady=10)
         
         # Canvas para scroll
         self.menu_canvas = ctk.CTkCanvas(
@@ -205,78 +205,22 @@ class MainWindow:
     
     def exit_application(self):
         """Cierra la aplicación completamente"""
-        # Confirmar antes de salir
-        from ui.widgets import custom_msgbox
-        
-        # Crear ventana de confirmación personalizada
-        confirm_window = ctk.CTkToplevel(self.root)
-        confirm_window.title("Confirmar Salida")
-        confirm_window.configure(fg_color=COLORS['bg_medium'])
-        confirm_window.geometry("400x200")
-        confirm_window.overrideredirect(True)
-        
-        # Centrar en pantalla
-        confirm_window.update_idletasks()
-        x = DSI_X + (400 // 2)
-        y = DSI_Y + (200 // 2)
-        confirm_window.geometry(f"400x200+{x}+{y}")
-        
-        # Frame principal
-        frame = ctk.CTkFrame(
-            confirm_window, 
-            fg_color=COLORS['bg_dark'],
-            border_width=3,
-            border_color=COLORS['danger']
-        )
-        frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Icono y mensaje
-        message = ctk.CTkLabel(
-            frame,
-            text="⚠️\n\n¿Seguro que quieres salir?",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        message.pack(pady=30)
-        
-        # Frame de botones
-        button_frame = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
-        button_frame.pack(pady=10)
+        from ui.widgets import confirm_dialog
         
         def do_exit():
             """Cierra todo"""
-            confirm_window.destroy()
             self.root.quit()
             self.root.destroy()
         
-        def cancel():
-            """Cancela y cierra el diálogo"""
-            confirm_window.destroy()
-        
-        # Botón Sí
-        yes_btn = make_futuristic_button(
-            button_frame,
-            text="✓ Sí, Salir",
-            command=do_exit,
-            width=20,
-            height=20
+        # Usar confirm_dialog existente
+        confirm_dialog(
+            parent=self.root,
+            text="¿Seguro que quieres salir?",
+            title="⚠️ Confirmar Salida",
+            on_confirm=do_exit,
+            on_cancel=None
+            
         )
-        yes_btn.pack(side="left", padx=10)
-        
-        # Botón No
-        no_btn = make_futuristic_button(
-            button_frame,
-            text="✗ Cancelar",
-            command=cancel,
-            width=20,
-            height=20
-        )
-        no_btn.pack(side="left", padx=10)
-        
-        # Hacer modal
-        confirm_window.transient(self.root)
-        confirm_window.grab_set()
-        confirm_window.focus_set()
     
     def _start_update_loop(self):
         """Inicia el bucle de actualización"""

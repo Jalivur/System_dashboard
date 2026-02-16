@@ -4,7 +4,7 @@ Ventana de lanzadores de scripts
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
 from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox
+from ui.widgets import custom_msgbox, confirm_dialog
 from utils.system_utils import SystemUtils
 
 
@@ -133,18 +133,29 @@ class LaunchersWindow(ctk.CTkToplevel):
     
     def _run_script(self, script_path: str, label: str):
         """
-        Ejecuta un script
+        Ejecuta un script (con confirmación previa)
         
         Args:
             script_path: Ruta al script
             label: Nombre del lanzador para mostrar en mensajes
         """
-        # Mostrar mensaje de ejecución
-        executing_msg = f"Ejecutando '{label}'...\n\nEsto puede tardar unos segundos."
-        custom_msgbox(self, executing_msg, "Ejecutando")
+        def do_execute():
+            """Ejecuta el script después de confirmar"""
+            # Mostrar mensaje de ejecución
+            executing_msg = f"Ejecutando '{label}'...\n\nEsto puede tardar unos segundos."
+            custom_msgbox(self, executing_msg, "Ejecutando")
+            
+            # Ejecutar script en background
+            self.after(100, lambda: self._execute_and_show_result(script_path, label))
         
-        # Ejecutar script en background
-        self.after(100, lambda: self._execute_and_show_result(script_path, label))
+        # Mostrar diálogo de confirmación usando el sistema existente
+        confirm_dialog(
+            parent=self,
+            text=f"¿Ejecutar '{label}'?\n\n{script_path}",
+            title="⚠️ Confirmar Ejecución",
+            on_confirm=do_execute,
+            on_cancel=None
+        )
     
     def _execute_and_show_result(self, script_path: str, label: str):
         """Ejecuta el script y muestra el resultado"""

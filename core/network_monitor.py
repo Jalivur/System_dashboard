@@ -143,9 +143,9 @@ class NetworkMonitor:
                         if line.startswith("Ping:"):
                             ping = float(line.split()[1])
                         elif line.startswith("Download:"):
-                            download = float(line.split()[1])
+                            download = float(line.split()[1])/8
                         elif line.startswith("Upload:"):
-                            upload = float(line.split()[1])
+                            upload = float(line.split()[1])/8
                     
                     self.speedtest_result.update({
                         "status": "done",

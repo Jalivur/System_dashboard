@@ -62,6 +62,14 @@ LAUNCHERS = [
         "script": str(SCRIPTS_DIR / "update.sh")
     },
     {
+        "label": "Conectar VPN",
+        "script": str(SCRIPTS_DIR / "conectar_vpn.sh")
+    },
+    {
+        "label": "Desconectar VPN",
+        "script": str(SCRIPTS_DIR / "desconectar_vpn.sh")
+    },
+    {
         "label": "Shutdown",
         "script": str(SCRIPTS_DIR / "apagado.sh")
     }

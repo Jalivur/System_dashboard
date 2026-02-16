@@ -11,6 +11,9 @@ from typing import Tuple, Dict, Optional, Any
 class SystemUtils:
     """Utilidades para interactuar con el sistema"""
     
+    # Variable de clase para mantener estado de red entre llamadas
+    _last_net_io = {}
+    
     @staticmethod
     def get_cpu_temp() -> float:
         """
@@ -74,10 +77,12 @@ class SystemUtils:
         except Exception:
             return "unknown"
     
+    # Variable de clase para mantener el estado entre llamadas
     @staticmethod
     def get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]:
         """
-        Obtiene estadísticas de red
+        Obtiene estadísticas de red con auto-detección de interfaz activa
+        (Implementación idéntica al código original fase2dashboard.py)
         
         Args:
             interface: Nombre de la interfaz o None para auto-detección
@@ -85,23 +90,63 @@ class SystemUtils:
         Returns:
             Tupla (nombre_interfaz, estadísticas)
         """
-        net = psutil.net_io_counters(pernic=True)
+        # Inicializar estado si no existe (primera vez)
+        if not SystemUtils._last_net_io:
+            SystemUtils._last_net_io = psutil.net_io_counters(pernic=True)
         
-        if interface and interface in net:
-            return interface, net[interface]
+        stats = psutil.net_io_counters(pernic=True)
         
-        # Auto-detectar interfaz activa
-        for iface, stats in net.items():
-            if iface.startswith(('eth', 'enp', 'wlan', 'wlp')):
-                if stats.bytes_sent > 0 or stats.bytes_recv > 0:
-                    return iface, stats
+        # Si se especifica interfaz y existe, usarla
+        if interface and interface in stats:
+            SystemUtils._last_net_io = stats
+            return interface, stats[interface]
         
-        # Fallback a la primera disponible
-        if net:
-            first = list(net.items())[0]
+        # Auto-detectar: buscar interfaz con más tráfico ACTUAL
+        best_name = None
+        best_speed = -1
+        
+        for name in stats:
+            # Saltar si no está en el estado anterior (interfaz nueva)
+            if name not in SystemUtils._last_net_io:
+                continue
+            
+            curr = stats[name]
+            prev = SystemUtils._last_net_io[name]
+            
+            # Calcular velocidad total desde última medición
+            speed = (
+                (curr.bytes_recv - prev.bytes_recv) +
+                (curr.bytes_sent - prev.bytes_sent)
+            )
+            
+            # Evitar picos absurdos (reinicio de contador)
+            if speed < 0 or speed > 500 * 1024 * 1024:  # 500 MB
+                continue
+            
+            # Elegir la interfaz con MÁS tráfico
+            if speed > best_speed:
+                best_speed = speed
+                best_name = name
+        
+        # CRÍTICO: Actualizar estado SIEMPRE (para próxima medición)
+        SystemUtils._last_net_io = stats
+        
+        # Si encontramos interfaz con tráfico, retornarla
+        if best_name:
+            return best_name, stats[best_name]
+        
+        # Fallback: Primera interfaz con tráfico acumulado
+        for iface, s in stats.items():
+            if iface.startswith(('eth', 'enp', 'wlan', 'wlp', 'tun')):
+                if s.bytes_sent > 0 or s.bytes_recv > 0:
+                    return iface, s
+        
+        # Última opción: cualquier interfaz disponible
+        if stats:
+            first = list(stats.items())[0]
             return first[0], first[1]
         
-        # Crear stats vacío si no hay interfaces
+        # Sin interfaces: retornar vacío
         from collections import namedtuple
         EmptyStats = namedtuple('EmptyStats', 
             ['bytes_sent', 'bytes_recv', 'packets_sent', 'packets_recv',
@@ -314,3 +359,27 @@ class SystemUtils:
             return False, f"Script no encontrado: {script_path}"
         except Exception as e:
             return False, f"Error: {str(e)}"
+    
+    @staticmethod
+    def get_interfaces_ips() -> Dict[str, str]:
+        """
+        Obtiene las IPs de todas las interfaces de red
+        
+        Returns:
+            Diccionario {interfaz: IP}
+            Ejemplo: {"eth0": "192.168.1.5", "tun0": "10.8.0.2"}
+        """
+        result = {}
+        try:
+            addrs = psutil.net_if_addrs()
+            for iface, addr_list in addrs.items():
+                for addr in addr_list:
+                    # AF_INET = IPv4
+                    if addr.family == socket.AF_INET:
+                        result[iface] = addr.address
+                        break  # Solo la primera IPv4
+        except Exception:
+            pass
+        
+        return result
+

@@ -91,6 +91,7 @@ class NetworkWindow(ctk.CTkToplevel):
                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         
         # Secciones
+        self._create_interfaces_section(inner)  # NUEVO
         self._create_download_section(inner)
         self._create_upload_section(inner)
         self._create_speedtest_section(inner)
@@ -107,6 +108,75 @@ class NetworkWindow(ctk.CTkToplevel):
             height=6
         )
         close_btn.pack(side="right", padx=5)
+    
+    def _create_interfaces_section(self, parent):
+        """Crea la sección de interfaces e IPs"""
+        from utils.system_utils import SystemUtils
+        
+        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        frame.pack(fill="x", pady=10, padx=10)
+        
+        # Título
+        title = ctk.CTkLabel(
+            frame,
+            text="INTERFACES Y IPs",
+            text_color=COLORS['success'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        title.pack(anchor="w", pady=(10, 10), padx=10)
+        
+        # Contenedor para las interfaces
+        self.interfaces_container = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
+        self.interfaces_container.pack(fill="x", padx=10, pady=(0, 10))
+        
+        # Obtener y mostrar interfaces
+        self._update_interfaces()
+    
+    def _update_interfaces(self):
+        """Actualiza la lista de interfaces e IPs"""
+        from utils.system_utils import SystemUtils
+        
+        # Limpiar widgets anteriores
+        for widget in self.interfaces_container.winfo_children():
+            widget.destroy()
+        
+        # Obtener IPs
+        interfaces = SystemUtils.get_interfaces_ips()
+        
+        if not interfaces:
+            no_iface = ctk.CTkLabel(
+                self.interfaces_container,
+                text="No se detectaron interfaces",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            )
+            no_iface.pack(pady=5)
+            return
+        
+        # Mostrar cada interfaz
+        for iface, ip in sorted(interfaces.items()):
+            # Color especial para tun0 (VPN)
+            if iface.startswith('tun'):
+                text_color = COLORS['success']  # Verde para VPN
+                icon = "🔒"  # Candado para VPN
+            elif iface.startswith(('eth', 'enp')):
+                text_color = COLORS['primary']  # Cyan para ethernet
+                icon = "🌐"
+            elif iface.startswith(('wlan', 'wlp')):
+                text_color = COLORS['warning']  # Amarillo para wifi
+                icon = "📡"
+            else:
+                text_color = COLORS['text']  # Blanco para otras
+                icon = "•"
+            
+            iface_label = ctk.CTkLabel(
+                self.interfaces_container,
+                text=f"{icon} {iface}: {ip}",
+                text_color=text_color,
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+                anchor="w"
+            )
+            iface_label.pack(anchor="w", pady=2, padx=10)
     
     def _create_download_section(self, parent):
         """Crea la sección de descarga"""
@@ -272,6 +342,15 @@ class NetworkWindow(ctk.CTkToplevel):
         
         # Actualizar speedtest
         self._update_speedtest()
+        
+        # Actualizar interfaces (cada 5 segundos para no sobrecargar)
+        if not hasattr(self, '_interface_update_counter'):
+            self._interface_update_counter = 0
+        
+        self._interface_update_counter += 1
+        if self._interface_update_counter >= 5:  # Cada 5 ciclos (10 segundos)
+            self._update_interfaces()
+            self._interface_update_counter = 0
         
         # Programar siguiente actualización
         self.after(UPDATE_MS, self._update)

@@ -132,7 +132,7 @@ def confirm_dialog(parent, text: str, title: str = "Confirmar",
         text="Confirmar",
         command=_on_confirm,
         width=15,
-        height=6,
+        height=8,
         font_size=16
     )
     btn_confirm.pack(side="left", padx=5)
@@ -141,8 +141,8 @@ def confirm_dialog(parent, text: str, title: str = "Confirmar",
         btn_frame,
         text="Cancelar",
         command=_on_cancel,
-        width=15,
-        height=6,
+        width=20,
+        height=10,
         font_size=16
     )
     btn_cancel.pack(side="left", padx=5)
