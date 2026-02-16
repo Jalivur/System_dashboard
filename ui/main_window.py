@@ -11,8 +11,8 @@ from utils.system_utils import SystemUtils
 class MainWindow:
     """Ventana principal del dashboard"""
     
-    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, 
-                 update_interval=2000):
+    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, process_monitor,
+                 update_interval=2000,  ):
         """
         Inicializa la ventana principal
         
@@ -28,6 +28,8 @@ class MainWindow:
         self.fan_controller = fan_controller
         self.network_monitor = network_monitor
         self.disk_monitor = disk_monitor
+        self.process_monitor= process_monitor
+        
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
         
@@ -38,6 +40,7 @@ class MainWindow:
         self.usb_window = None
         self.launchers_window = None
         self.disk_window = None
+        self.process_window = None
         # Crear interfaz
         self._create_ui()
         
@@ -124,6 +127,7 @@ class MainWindow:
             ("Monitor USB", self.open_usb_window),
             ("💾 Monitor Disco", self.open_disk_window),  
             ("Lanzadores", self.open_launchers),
+            ("⚙️ Monitor Procesos", self.open_process_window),
             ("🎨 Cambiar Tema", self.open_theme_selector),
             ("❌ Salir", self.exit_application),  # NUEVO
         ]
@@ -190,7 +194,14 @@ class MainWindow:
             self.usb_window = USBWindow(self.root)
         else:
             self.usb_window.lift()
-    
+    # Método:
+    def open_process_window(self):
+        if self.process_window is None or not self.process_window.winfo_exists():
+            from ui.windows.process_window import ProcessWindow
+            self.process_window = ProcessWindow(self.root, self.process_monitor)
+        else:
+            self.process_window.lift()
+
     def open_launchers(self):
         """Abre la ventana de lanzadores"""
         if self.launchers_window is None or not self.launchers_window.winfo_exists():

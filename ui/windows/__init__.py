@@ -7,6 +7,7 @@ from .network import NetworkWindow
 from .usb import USBWindow
 from .launchers import LaunchersWindow
 from .disk import DiskWindow
+from .process_window import ProcessWindow
 
 __all__ = [
     'FanControlWindow',
@@ -14,5 +15,6 @@ __all__ = [
     'NetworkWindow',
     'USBWindow',
     'LaunchersWindow',
-    'DiskWindow'
+    'DiskWindow',
+    'ProcessWindow',
 ]
