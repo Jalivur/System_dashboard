@@ -70,7 +70,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['secondary'],
             font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
         )
-        title.pack(pady=(10, 20))
+        title.pack(pady=10)
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -116,7 +116,7 @@ class FanControlWindow(ctk.CTkToplevel):
     def _create_mode_section(self, parent):
         """Crea la sección de selección de modo"""
         mode_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        mode_frame.pack(fill="x", pady=10, padx=10)
+        mode_frame.pack(fill="x", pady=5, padx=10)
         
         # Label
         mode_label = ctk.CTkLabel(
@@ -125,7 +125,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['primary'],
             font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
         )
-        mode_label.pack(anchor="w", pady=(0, 10))
+        mode_label.pack(anchor="w", pady=(0, 5))
         
         # Radiobuttons
         modes_container = ctk.CTkFrame(mode_frame, fg_color=COLORS['bg_medium'])
@@ -155,7 +155,7 @@ class FanControlWindow(ctk.CTkToplevel):
     def _create_manual_pwm_section(self, parent):
         """Crea la sección de PWM manual"""
         manual_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        manual_frame.pack(fill="x", pady=10, padx=10)
+        manual_frame.pack(fill="x", pady=5, padx=10)
         
         # Label
         manual_label = ctk.CTkLabel(
@@ -169,7 +169,7 @@ class FanControlWindow(ctk.CTkToplevel):
         # Valor actual
         self.pwm_value_label = ctk.CTkLabel(
             manual_frame,
-            text=f"Valor: {self.manual_pwm_var.get()}",
+            text=f"Valor: {self.manual_pwm_var.get()} ({int(self.manual_pwm_var.get()/255*100)}%)",
             text_color=COLORS['text'],
             font=(FONT_FAMILY, FONT_SIZES['medium'])
         )
@@ -190,8 +190,7 @@ class FanControlWindow(ctk.CTkToplevel):
     def _create_curve_section(self, parent):
         """Crea la sección de curva temperatura-PWM"""
         curve_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        curve_frame.pack(fill="x", pady=10, padx=10)
-        
+        curve_frame.pack(fill="x", pady=5, padx=10)
         # Label
         curve_label = ctk.CTkLabel(
             curve_frame,
@@ -199,7 +198,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['primary'],
             font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
         )
-        curve_label.pack(anchor="w", pady=(0, 10))
+        curve_label.pack(anchor="w", pady=(0, 5))
         
         # Frame para la lista de puntos
         self.points_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
@@ -210,7 +209,7 @@ class FanControlWindow(ctk.CTkToplevel):
         
         # Botones para añadir punto
         add_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_medium'])
-        add_frame.pack(fill="x", pady=10)
+        add_frame.pack(fill="x", pady=5)
         
         add_label = ctk.CTkLabel(
             add_frame,
@@ -222,7 +221,7 @@ class FanControlWindow(ctk.CTkToplevel):
         
         # Sección para añadir punto con SLIDERS
         add_section = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
-        add_section.pack(fill="x", pady=10, padx=5)
+        add_section.pack(fill="x", pady=5, padx=5)
 
         # Label sección
         add_title = ctk.CTkLabel(
@@ -231,7 +230,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['success'],
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
         )
-        add_title.pack(anchor="w", padx=10, pady=(10, 5))
+        add_title.pack(anchor="w", padx=5, pady=5)
 
         # Variable para temperatura del nuevo punto
         self.new_temp_var = tk.IntVar(value=50)
@@ -239,7 +238,7 @@ class FanControlWindow(ctk.CTkToplevel):
 
         # SLIDER 1: Temperatura
         temp_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
-        temp_slider_frame.pack(fill="x", padx=10, pady=5)
+        temp_slider_frame.pack(fill="x", padx=5, pady=5)
 
         temp_label = ctk.CTkLabel(
             temp_slider_frame,
@@ -255,7 +254,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['primary'],
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
         )
-        self.temp_value_label.pack(anchor="w", pady=(0, 5))
+        self.temp_value_label.pack(anchor="w", pady=5)
 
         temp_slider = ctk.CTkSlider(
             temp_slider_frame,
@@ -270,7 +269,7 @@ class FanControlWindow(ctk.CTkToplevel):
 
         # SLIDER 2: PWM
         pwm_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
-        pwm_slider_frame.pack(fill="x", padx=10, pady=5)
+        pwm_slider_frame.pack(fill="x", padx=5, pady=5)
 
         pwm_label = ctk.CTkLabel(
             pwm_slider_frame,
@@ -286,7 +285,7 @@ class FanControlWindow(ctk.CTkToplevel):
             text_color=COLORS['primary'],
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
         )
-        self.new_pwm_value_label.pack(anchor="w", pady=(0, 5))
+        self.new_pwm_value_label.pack(anchor="w", pady=5)
 
         pwm_slider = ctk.CTkSlider(
             pwm_slider_frame,
@@ -416,7 +415,7 @@ class FanControlWindow(ctk.CTkToplevel):
             width=15,
             height=6
         )
-        refresh_btn.pack(side="right", padx=5)
+        refresh_btn.pack(side="left", padx=5)
     
     def _on_mode_change(self, mode: str):
         """Callback cuando cambia el modo"""
@@ -429,10 +428,10 @@ class FanControlWindow(ctk.CTkToplevel):
             temp=temp,
             manual_pwm=self.manual_pwm_var.get()
         )
-        
+        percent = int(target_pwm/255*100) 
         # Actualizar el slider y label VISUALMENTE (pero no editable si no es manual)
         self.manual_pwm_var.set(target_pwm)
-        self.pwm_value_label.configure(text=f"Valor: {target_pwm}")
+        self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
         
         # Guardar estado con PWM calculado
         self.file_manager.write_state({
@@ -443,7 +442,8 @@ class FanControlWindow(ctk.CTkToplevel):
     def _on_pwm_change(self, value):
         """Callback cuando cambia el PWM manual"""
         pwm = int(float(value))
-        self.pwm_value_label.configure(text=f"Valor: {pwm}")
+        percent = int(pwm/255*100)
+        self.pwm_value_label.configure(text=f"Valor: {pwm} ({percent}%)")
         
         if self.mode_var.get() == "manual":
             self.file_manager.write_state({
@@ -470,10 +470,10 @@ class FanControlWindow(ctk.CTkToplevel):
                 temp=temp,
                 manual_pwm=self.manual_pwm_var.get()
             )
-            
+            percent= int(target_pwm/255*100)
             # Actualizar slider y label visualmente
             self.manual_pwm_var.set(target_pwm)
-            self.pwm_value_label.configure(text=f"Valor: {target_pwm}")
+            self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
         
         # Programar siguiente actualización (cada 2 segundos)
         self.after(2000, self._update_pwm_display)

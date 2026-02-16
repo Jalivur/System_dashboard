@@ -11,7 +11,7 @@ THEMES = {
         "name": "Cyberpunk (Original)",
         "colors": {
             "primary": "#00ffff",      # Cyan brillante
-            "secondary": "#14611E",    # Verde oscuro
+            "secondary": "#14611E",    # Verde oscuro ✓ OK
             "success": "#1ae313",      # Verde neón
             "warning": "#ffaa00",      # Naranja
             "danger": "#ff3333",       # Rojo
@@ -19,6 +19,7 @@ THEMES = {
             "bg_medium": "#212121",    # Gris muy oscuro
             "bg_light": "#222222",     # Gris oscuro
             "text": "#ffffff",         # Blanco
+            "text_dim": "#aaaaaa",     # Gris claro
             "border": "#00ffff"        # Cyan
         }
     },
@@ -26,16 +27,17 @@ THEMES = {
     "matrix": {
         "name": "Matrix",
         "colors": {
-            "primary": "#00ff00",      # Verde Matrix
-            "secondary": "#003300",    # Verde muy oscuro
-            "success": "#00ff00",      # Verde brillante
-            "warning": "#88ff00",      # Verde-amarillo
+            "primary": "#00ff00",      # Verde Matrix brillante
+            "secondary": "#00ff88",    # Verde-cyan (bien diferente)
+            "success": "#33ff33",      # Verde claro
+            "warning": "#ffff00",      # Amarillo puro (muy diferente)
             "danger": "#ff0000",       # Rojo
             "bg_dark": "#000000",      # Negro puro
-            "bg_medium": "#001100",    # Negro verdoso
-            "bg_light": "#002200",     # Verde muy oscuro
-            "text": "#00ff00",         # Verde
-            "border": "#00ff00"        # Verde
+            "bg_medium": "#001a00",    # Negro verdoso sutil
+            "bg_light": "#003300",     # Verde muy oscuro
+            "text": "#00ff00",         # Verde brillante
+            "text_dim": "#009900",     # Verde medio oscuro
+            "border": "#00ff00"        # Verde brillante
         }
     },
     
@@ -43,14 +45,15 @@ THEMES = {
         "name": "Sunset (Atardecer)",
         "colors": {
             "primary": "#ff6b35",      # Naranja cálido
-            "secondary": "#4a1c40",    # Púrpura oscuro
-            "success": "#f7931e",      # Naranja dorado
+            "secondary": "#f7931e",    # Naranja dorado ✓ CORREGIDO
+            "success": "#ffd23f",      # Amarillo dorado
             "warning": "#ffd23f",      # Amarillo dorado
             "danger": "#d62828",       # Rojo oscuro
             "bg_dark": "#1a1423",      # Púrpura muy oscuro
             "bg_medium": "#2d1b3d",    # Púrpura oscuro
             "bg_light": "#3e2a47",     # Púrpura medio
             "text": "#f8f0e3",         # Beige claro
+            "text_dim": "#c4b5a0",     # Beige oscuro
             "border": "#ff6b35"        # Naranja
         }
     },
@@ -59,7 +62,7 @@ THEMES = {
         "name": "Ocean (Océano)",
         "colors": {
             "primary": "#00d4ff",      # Azul cielo
-            "secondary": "#0a3d62",    # Azul marino
+            "secondary": "#48dbfb",    # Azul claro ✓ CORREGIDO
             "success": "#1dd1a1",      # Verde agua
             "warning": "#feca57",      # Amarillo suave
             "danger": "#ee5a6f",       # Rosa coral
@@ -67,6 +70,7 @@ THEMES = {
             "bg_medium": "#163447",    # Azul oscuro
             "bg_light": "#1e4a5f",     # Azul medio
             "text": "#e0f7ff",         # Azul muy claro
+            "text_dim": "#8899aa",     # Azul grisáceo
             "border": "#00d4ff"        # Azul cielo
         }
     },
@@ -75,7 +79,7 @@ THEMES = {
         "name": "Dracula",
         "colors": {
             "primary": "#bd93f9",      # Púrpura pastel
-            "secondary": "#44475a",    # Gris oscuro
+            "secondary": "#ff79c6",    # Rosa ✓ CORREGIDO
             "success": "#50fa7b",      # Verde pastel
             "warning": "#f1fa8c",      # Amarillo pastel
             "danger": "#ff5555",       # Rojo pastel
@@ -83,6 +87,7 @@ THEMES = {
             "bg_medium": "#282a36",    # Gris azulado
             "bg_light": "#44475a",     # Gris medio
             "text": "#f8f8f2",         # Blanco suave
+            "text_dim": "#6272a4",     # Azul grisáceo
             "border": "#bd93f9"        # Púrpura
         }
     },
@@ -91,7 +96,7 @@ THEMES = {
         "name": "Nord (Nórdico)",
         "colors": {
             "primary": "#88c0d0",      # Azul hielo
-            "secondary": "#2e3440",    # Gris oscuro
+            "secondary": "#5e81ac",    # Azul oscuro ✓ CORREGIDO
             "success": "#a3be8c",      # Verde suave
             "warning": "#ebcb8b",      # Amarillo suave
             "danger": "#bf616a",       # Rojo suave
@@ -99,6 +104,7 @@ THEMES = {
             "bg_medium": "#2e3440",    # Gris polar
             "bg_light": "#3b4252",     # Gris claro
             "text": "#eceff4",         # Blanco nieve
+            "text_dim": "#8899aa",     # Gris azulado
             "border": "#88c0d0"        # Azul hielo
         }
     },
@@ -107,7 +113,7 @@ THEMES = {
         "name": "Tokyo Night",
         "colors": {
             "primary": "#7aa2f7",      # Azul brillante
-            "secondary": "#1a1b26",    # Azul muy oscuro
+            "secondary": "#bb9af7",    # Púrpura ✓ CORREGIDO
             "success": "#9ece6a",      # Verde
             "warning": "#e0af68",      # Naranja suave
             "danger": "#f7768e",       # Rosa
@@ -115,6 +121,7 @@ THEMES = {
             "bg_medium": "#1a1b26",    # Azul noche
             "bg_light": "#24283b",     # Azul oscuro
             "text": "#c0caf5",         # Azul claro
+            "text_dim": "#565f89",     # Azul oscuro
             "border": "#7aa2f7"        # Azul
         }
     },
@@ -123,7 +130,7 @@ THEMES = {
         "name": "Monokai",
         "colors": {
             "primary": "#66d9ef",      # Azul claro
-            "secondary": "#49483e",    # Gris verdoso
+            "secondary": "#fd971f",    # Naranja ✓ CORREGIDO
             "success": "#a6e22e",      # Verde lima
             "warning": "#e6db74",      # Amarillo
             "danger": "#f92672",       # Rosa fucsia
@@ -131,6 +138,7 @@ THEMES = {
             "bg_medium": "#272822",    # Verde muy oscuro
             "bg_light": "#3e3d32",     # Verde grisáceo
             "text": "#f8f8f2",         # Blanco suave
+            "text_dim": "#75715e",     # Gris verdoso
             "border": "#66d9ef"        # Azul claro
         }
     },
@@ -139,7 +147,7 @@ THEMES = {
         "name": "Gruvbox",
         "colors": {
             "primary": "#fe8019",      # Naranja
-            "secondary": "#3c3836",    # Marrón oscuro
+            "secondary": "#d65d0e",    # Naranja oscuro ✓ CORREGIDO
             "success": "#b8bb26",      # Verde lima
             "warning": "#fabd2f",      # Amarillo
             "danger": "#fb4934",       # Rojo
@@ -147,6 +155,7 @@ THEMES = {
             "bg_medium": "#282828",    # Gris oscuro
             "bg_light": "#3c3836",     # Gris medio
             "text": "#ebdbb2",         # Beige claro
+            "text_dim": "#a89984",     # Beige oscuro
             "border": "#fe8019"        # Naranja
         }
     },
@@ -155,7 +164,7 @@ THEMES = {
         "name": "Solarized Dark",
         "colors": {
             "primary": "#268bd2",      # Azul
-            "secondary": "#073642",    # Azul muy oscuro
+            "secondary": "#2aa198",    # Cyan ✓ CORREGIDO
             "success": "#859900",      # Verde oliva
             "warning": "#b58900",      # Amarillo oscuro
             "danger": "#dc322f",       # Rojo
@@ -163,6 +172,7 @@ THEMES = {
             "bg_medium": "#073642",    # Azul oscuro
             "bg_light": "#586e75",     # Gris azulado
             "text": "#fdf6e3",         # Beige muy claro
+            "text_dim": "#839496",     # Gris azulado
             "border": "#268bd2"        # Azul
         }
     },
@@ -171,7 +181,7 @@ THEMES = {
         "name": "One Dark",
         "colors": {
             "primary": "#61afef",      # Azul claro
-            "secondary": "#2c323c",    # Gris oscuro
+            "secondary": "#56b6c2",    # Cyan ✓ CORREGIDO
             "success": "#98c379",      # Verde
             "warning": "#e5c07b",      # Amarillo
             "danger": "#e06c75",       # Rojo suave
@@ -179,6 +189,7 @@ THEMES = {
             "bg_medium": "#282c34",    # Gris oscuro
             "bg_light": "#3e4451",     # Gris medio
             "text": "#abb2bf",         # Gris claro
+            "text_dim": "#5c6370",     # Gris oscuro
             "border": "#61afef"        # Azul
         }
     },
@@ -187,7 +198,7 @@ THEMES = {
         "name": "Synthwave 84",
         "colors": {
             "primary": "#f92aad",      # Rosa neón
-            "secondary": "#241734",    # Púrpura muy oscuro
+            "secondary": "#fe4450",    # Rojo neón ✓ CORREGIDO
             "success": "#72f1b8",      # Verde neón
             "warning": "#fede5d",      # Amarillo neón
             "danger": "#fe4450",       # Rojo neón
@@ -195,6 +206,7 @@ THEMES = {
             "bg_medium": "#241734",    # Púrpura oscuro
             "bg_light": "#2d1b3d",     # Púrpura medio
             "text": "#ffffff",         # Blanco
+            "text_dim": "#ff7edb",     # Rosa claro
             "border": "#f92aad"        # Rosa neón
         }
     },
@@ -203,7 +215,7 @@ THEMES = {
         "name": "GitHub Dark",
         "colors": {
             "primary": "#58a6ff",      # Azul GitHub
-            "secondary": "#161b22",    # Negro azulado
+            "secondary": "#1f6feb",    # Azul oscuro ✓ CORREGIDO
             "success": "#3fb950",      # Verde
             "warning": "#d29922",      # Amarillo
             "danger": "#f85149",       # Rojo
@@ -211,6 +223,7 @@ THEMES = {
             "bg_medium": "#161b22",    # Gris muy oscuro
             "bg_light": "#21262d",     # Gris oscuro
             "text": "#c9d1d9",         # Gris claro
+            "text_dim": "#8b949e",     # Gris medio
             "border": "#58a6ff"        # Azul
         }
     },
@@ -219,7 +232,7 @@ THEMES = {
         "name": "Material Dark",
         "colors": {
             "primary": "#82aaff",      # Azul material
-            "secondary": "#1e2029",    # Gris muy oscuro
+            "secondary": "#c792ea",    # Púrpura ✓ CORREGIDO
             "success": "#c3e88d",      # Verde claro
             "warning": "#ffcb6b",      # Amarillo
             "danger": "#f07178",       # Rojo suave
@@ -227,6 +240,7 @@ THEMES = {
             "bg_medium": "#1e2029",    # Gris oscuro
             "bg_light": "#292d3e",     # Gris azulado
             "text": "#eeffff",         # Blanco azulado
+            "text_dim": "#546e7a",     # Gris azulado
             "border": "#82aaff"        # Azul
         }
     },
@@ -235,7 +249,7 @@ THEMES = {
         "name": "Ayu Dark",
         "colors": {
             "primary": "#59c2ff",      # Azul cielo
-            "secondary": "#0d1017",    # Negro
+            "secondary": "#39bae6",    # Azul claro ✓ CORREGIDO
             "success": "#aad94c",      # Verde lima
             "warning": "#ffb454",      # Naranja
             "danger": "#f07178",       # Rosa
@@ -243,6 +257,7 @@ THEMES = {
             "bg_medium": "#0d1017",    # Negro
             "bg_light": "#1c2128",     # Gris muy oscuro
             "text": "#b3b1ad",         # Gris claro
+            "text_dim": "#626a73",     # Gris oscuro
             "border": "#59c2ff"        # Azul
         }
     }

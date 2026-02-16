@@ -138,9 +138,15 @@ class ThemeSelector(ctk.CTkToplevel):
             # Mostrar colores principales
             color_samples = [
                 ("Principal", colors['primary']),
+                ("Secundario", colors['secondary']),
                 ("Éxito", colors['success']),
                 ("Advertencia", colors['warning']),
                 ("Peligro", colors['danger']),
+                ("Fondo oscuro", colors['bg_dark']),
+                ("Fondo medio", colors['bg_medium']),
+                ("Fondo claro", colors['bg_light']),
+                ("Texto", colors['text']),
+                ("Bordes", colors['border'])
             ]
             
             for i, (label, color) in enumerate(color_samples):
@@ -199,7 +205,7 @@ class ThemeSelector(ctk.CTkToplevel):
         pass
     
     def _apply_theme(self):
-        """Aplica el tema seleccionado"""
+        """Aplica el tema seleccionado y reinicia la aplicación"""
         selected = self.selected_theme_var.get()
         
         if selected == self.current_theme:
@@ -213,15 +219,35 @@ class ThemeSelector(ctk.CTkToplevel):
         # Guardar tema seleccionado
         save_selected_theme(selected)
         
-        # Mensaje de confirmación
+        # Mostrar confirmación y reiniciar
         theme_name = get_theme(selected)["name"]
-        custom_msgbox(
-            self,
-            f"Tema '{theme_name}' guardado correctamente.\n\n"
-            f"Por favor, REINICIA el dashboard para ver los cambios.\n\n"
-            f"Cierra todas las ventanas y ejecuta:\n"
-            f"python3 main.py",
-            "Tema Guardado"
-        )
         
-        self.destroy()
+        from ui.widgets import confirm_dialog
+        
+        def do_restart():
+            """Reinicia la aplicación"""
+            import sys
+            import os
+            
+            # Cerrar ventana de temas
+            self.destroy()
+            
+            # Obtener el script principal
+            python = sys.executable
+            script = os.path.abspath(sys.argv[0])
+            
+            # Cerrar aplicación actual
+            self.master.quit()
+            self.master.destroy()
+            
+            # Reiniciar con os.execv (reemplaza el proceso actual)
+            os.execv(python, [python, script] + sys.argv[1:])
+        
+        # Confirmar antes de reiniciar
+        confirm_dialog(
+            parent=self,
+            text=f"Tema '{theme_name}' guardado.\n\n¿Reiniciar ahora para aplicar los cambios?",
+            title="🔄 Aplicar Tema",
+            on_confirm=do_restart,
+            on_cancel=self.destroy
+        )

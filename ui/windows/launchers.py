@@ -71,7 +71,7 @@ class LaunchersWindow(ctk.CTkToplevel):
         inner.bind("<Configure>",
                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         
-        # Crear botones de lanzadores
+        # Crear botones de lanzadores en grid
         self._create_launcher_buttons(inner)
         
         # Botón cerrar
@@ -88,7 +88,7 @@ class LaunchersWindow(ctk.CTkToplevel):
         close_btn.pack(side="right", padx=5)
     
     def _create_launcher_buttons(self, parent):
-        """Crea los botones de lanzadores"""
+        """Crea los botones de lanzadores en layout grid"""
         if not LAUNCHERS:
             # Mensaje si no hay lanzadores configurados
             no_launchers = ctk.CTkLabel(
@@ -101,35 +101,46 @@ class LaunchersWindow(ctk.CTkToplevel):
             no_launchers.pack(pady=50)
             return
         
-        # Crear botón para cada lanzador
-        for launcher in LAUNCHERS:
+        # Configurar número de columnas (como el menú principal)
+        columns = 2  # Puedes cambiar esto: 1, 2, 3, etc.
+        
+        # Crear cada lanzador en grid
+        for i, launcher in enumerate(LAUNCHERS):
             label = launcher.get("label", "Script")
             script_path = launcher.get("script", "")
             
-            # Frame del launcher
-            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-            launcher_frame.pack(fill="x", pady=10, padx=20)
+            # Calcular posición en grid
+            row = i // columns
+            col = i % columns
             
-            # Botón
+            # Frame contenedor para botón + label
+            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+            launcher_frame.grid(row=row, column=col, sticky="nsew")
+            
+            # Botón principal
             btn = make_futuristic_button(
                 launcher_frame,
                 text=label,
                 command=lambda s=script_path, l=label: self._run_script(s, l),
-                width=80,
-                height=10,
+                width=40,
+                height=15,
                 font_size=FONT_SIZES['large']
             )
-            btn.pack(fill="x")
+            btn.pack(pady=(10, 5), padx=10)
             
-            # Path del script (información adicional)
+            # Label con path del script (debajo del botón)
             path_label = ctk.CTkLabel(
                 launcher_frame,
-                text=f"Script: {script_path}",
+                text=script_path,
                 text_color=COLORS['text'],
-                font=(FONT_FAMILY, 10),
-                anchor="w"
+                font=(FONT_FAMILY, FONT_SIZES['small']),
+                wraplength=300  # Wrap texto largo
             )
-            path_label.pack(anchor="w", padx=10, pady=(5, 0))
+            path_label.pack(pady=(0, 10), padx=10)
+        
+        # Configurar columnas con peso igual (para que se expandan uniformemente)
+        for c in range(columns):
+            parent.grid_columnconfigure(c, weight=1)
     
     def _run_script(self, script_path: str, label: str):
         """

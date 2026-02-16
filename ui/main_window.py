@@ -57,7 +57,7 @@ class MainWindow:
             text_color=COLORS['secondary'],
             font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
         )
-        title.pack(pady=20)
+        title.pack(pady=(20, 10))
         
         # Información del sistema
         hostname = self.system_utils.get_hostname()
@@ -65,13 +65,13 @@ class MainWindow:
             main_frame,
             text=f"Host: {hostname}",
             text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
+            font=(FONT_FAMILY, FONT_SIZES['large'])
         )
         info_label.pack(pady=5)
         
         # Contenedor de menú con scroll
         menu_container = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_medium'])
-        menu_container.pack(fill="both", expand=True, padx=5, pady=10)
+        menu_container.pack(fill="both", expand=True, padx=5, pady=5)
         
         # Canvas para scroll
         self.menu_canvas = ctk.CTkCanvas(
@@ -101,7 +101,7 @@ class MainWindow:
             (0, 0), 
             window=self.menu_inner, 
             anchor="nw",
-            width=DSI_WIDTH - 60
+            width=DSI_WIDTH - 50
         )
         
         # Configurar scroll

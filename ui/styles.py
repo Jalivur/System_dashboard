@@ -90,12 +90,12 @@ class StyleManager:
             slider: Widget slider
             color: Color personalizado
         """
-        color = color or "#10c5c5"
+        color = color or COLORS['primary']  # ✓ Usar tema
         slider.configure(
-            fg_color=COLORS['secondary'],
+            fg_color=COLORS['bg_light'],
             progress_color=color,
             button_color=color,
-            button_hover_color=color,
+            button_hover_color=COLORS['secondary'],
             height=30
         )
     
@@ -126,11 +126,11 @@ class StyleManager:
             sb: Widget scrollbar
             color: Color personalizado
         """
-        color = color or COLORS['bg_dark']
+        color = color or COLORS['primary']  # ✓ Usar tema
         sb.configure(
-            bg_color="#10c5c5",
+            bg_color=COLORS['bg_medium'],
             button_color=color,
-            button_hover_color="#595959"
+            button_hover_color=COLORS['secondary']
         )
     
     @staticmethod
@@ -143,11 +143,11 @@ class StyleManager:
             scrollable_frame: Widget scrollable frame
             color: Color personalizado
         """
-        color = color or COLORS['secondary']
+        color = color or COLORS['primary']  # ✓ Usar tema
         scrollable_frame.configure(
-            scrollbar_fg_color=color,
-            scrollbar_button_color=COLORS['bg_dark'],
-            scrollbar_button_hover_color="#595757"
+            scrollbar_fg_color=COLORS['bg_medium'],
+            scrollbar_button_color=color,
+            scrollbar_button_hover_color=COLORS['secondary']
         )
 
 
