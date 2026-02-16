@@ -5,8 +5,11 @@ import re
 import socket
 import psutil
 import subprocess
+import glob
 from typing import Tuple, Dict, Optional, Any
-
+from collections import namedtuple
+from config.settings import UPDATE_MS
+import json
 
 class SystemUtils:
     """Utilidades para interactuar con el sistema"""
@@ -147,7 +150,6 @@ class SystemUtils:
             return first[0], first[1]
         
         # Sin interfaces: retornar vacío
-        from collections import namedtuple
         EmptyStats = namedtuple('EmptyStats', 
             ['bytes_sent', 'bytes_recv', 'packets_sent', 'packets_recv',
              'errin', 'errout', 'dropin', 'dropout'])
@@ -173,7 +175,7 @@ class SystemUtils:
             ul_bytes = max(0, current.bytes_sent - previous.bytes_sent)
             
             # Convertir a MB/s (asumiendo UPDATE_MS = 2000ms)
-            from config.settings import UPDATE_MS
+            
             seconds = UPDATE_MS / 1000.0
             
             dl_mb = (dl_bytes / (1024 * 1024)) / seconds
@@ -220,7 +222,7 @@ class SystemUtils:
             )
             
             if result.returncode == 0:
-                import json
+                
                 data = json.loads(result.stdout)
                 
                 for block in data.get('blockdevices', []):
@@ -382,4 +384,54 @@ class SystemUtils:
             pass
         
         return result
+    
+    @staticmethod
+    def get_nvme_temp() -> float:
+        """
+        Obtiene la temperatura del disco NVMe
+        
+        Returns:
+            Temperatura en °C o 0.0 si no se puede leer
+        """
+        try:
+            # Método 1: Usar smartctl (requiere smartmontools)
+            # sudo apt-get install smartmontools
+            result = subprocess.run(
+                ["sudo", "smartctl", "-a", "/dev/nvme0"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            
+            if result.returncode == 0:
+                # Buscar línea con "Temperature:"
+                for line in result.stdout.split('\n'):
+                    if 'Temperature:' in line or 'Temperature Sensor' in line:
+                        # Extraer número
+                        # Ejemplo: "Temperature:                        45 Celsius"
+                        match = re.search(r'(\d+)\s*Celsius', line)
+                        if match:
+                            return float(match.group(1))
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            pass
+        
+        try:
+            # Método 2: Leer desde sysfs (si existe)
+            # Algunas Raspberry Pi exponen la temp del NVMe aquí
+            temp_files = [
+                "/sys/class/hwmon/hwmon*/temp1_input",
+                "/sys/block/nvme0n1/device/hwmon/hwmon*/temp1_input"
+            ]
+            
+
+            for pattern in temp_files:
+                for temp_file in glob.glob(pattern):
+                    with open(temp_file, 'r') as f:
+                        temp_millis = int(f.read().strip())
+                        return temp_millis / 1000.0
+        except (FileNotFoundError, ValueError, PermissionError):
+            pass
+        
+        # Si no se pudo leer, retornar 0
+        return 0.0
 

@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import customtkinter as ctk
 from config.settings import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService
+from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor
 from ui.main_window import MainWindow
 
 
@@ -57,6 +57,7 @@ def main():
     system_monitor = SystemMonitor()
     fan_controller = FanController()
     network_monitor = NetworkMonitor()
+    disk_monitor = DiskMonitor() 
     
     # Iniciar servicio de ventiladores AUTO (background)
     fan_service = FanAutoService(fan_controller, system_monitor)
@@ -75,6 +76,7 @@ def main():
         system_monitor=system_monitor,
         fan_controller=fan_controller,
         network_monitor=network_monitor,
+        disk_monitor=disk_monitor,
         update_interval=UPDATE_MS
     )
     

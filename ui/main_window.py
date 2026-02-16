@@ -11,7 +11,7 @@ from utils.system_utils import SystemUtils
 class MainWindow:
     """Ventana principal del dashboard"""
     
-    def __init__(self, root, system_monitor, fan_controller, network_monitor, 
+    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, 
                  update_interval=2000):
         """
         Inicializa la ventana principal
@@ -27,6 +27,7 @@ class MainWindow:
         self.system_monitor = system_monitor
         self.fan_controller = fan_controller
         self.network_monitor = network_monitor
+        self.disk_monitor = disk_monitor
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
         
@@ -36,7 +37,7 @@ class MainWindow:
         self.network_window = None
         self.usb_window = None
         self.launchers_window = None
-        
+        self.disk_window = None
         # Crear interfaz
         self._create_ui()
         
@@ -121,6 +122,7 @@ class MainWindow:
             ("Monitor Placa", self.open_monitor_window),
             ("Monitor Red", self.open_network_window),
             ("Monitor USB", self.open_usb_window),
+            ("💾 Monitor Disco", self.open_disk_window),  
             ("Lanzadores", self.open_launchers),
             ("🎨 Cambiar Tema", self.open_theme_selector),
             ("❌ Salir", self.exit_application),  # NUEVO
@@ -202,7 +204,18 @@ class MainWindow:
         from ui.windows.theme_selector import ThemeSelector
         theme_window = ThemeSelector(self.root)
         theme_window.lift()
-    
+        
+    def open_disk_window(self):
+        """Abre la ventana de monitor de disco"""
+        if self.disk_window is None or not self.disk_window.winfo_exists():
+            from ui.windows.disk import DiskWindow
+            self.disk_window = DiskWindow(
+                self.root,
+                self.disk_monitor
+            )
+        else:
+            self.disk_window.lift()
+            
     def exit_application(self):
         """Cierra la aplicación completamente"""
         from ui.widgets import confirm_dialog
