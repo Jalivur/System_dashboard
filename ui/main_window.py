@@ -121,15 +121,16 @@ class MainWindow:
     def _create_menu_buttons(self):
         """Crea los botones del menú principal"""
         buttons_config = [
-            ("Control Ventiladores", self.open_fan_control),
-            ("Monitor Placa", self.open_monitor_window),
-            ("Monitor Red", self.open_network_window),
-            ("Monitor USB", self.open_usb_window),
-            ("💾 Monitor Disco", self.open_disk_window),  
-            ("Lanzadores", self.open_launchers),
+            ("󰈐  Control Ventiladores", self.open_fan_control),
+            ("󰚗  Monitor Placa", self.open_monitor_window),
+            ("  Monitor Red", self.open_network_window),
+            ("󱇰 Monitor USB", self.open_usb_window),
+            ("  Monitor Disco", self.open_disk_window),  
+            ("󱓞  Lanzadores", self.open_launchers),
             ("⚙️ Monitor Procesos", self.open_process_window),
-            ("🎨 Cambiar Tema", self.open_theme_selector),
-            ("❌ Salir", self.exit_application),  # NUEVO
+            ("󰔎  Cambiar Tema", self.open_theme_selector),
+            ("  Reiniciar", self.restart_application),  # NUEVO
+            ("󰿅  Salir", self.exit_application),  # NUEVO
         ]
         
         columns = 2
@@ -246,6 +247,36 @@ class MainWindow:
             
         )
     
+    
+    def restart_application(self):
+        """Reinicia la aplicación"""
+        from ui.widgets import confirm_dialog
+        
+        def do_restart():
+            """Reinicia el dashboard"""
+            import sys
+            import os
+            
+            # Obtener el script principal
+            python = sys.executable
+            script = os.path.abspath(sys.argv[0])
+            
+            # Cerrar aplicación actual
+            self.root.quit()
+            self.root.destroy()
+            
+            # Reiniciar con os.execv (reemplaza el proceso actual)
+            os.execv(python, [python, script] + sys.argv[1:])
+        
+        # Confirmar antes de reiniciar
+        confirm_dialog(
+            parent=self.root,
+            text="¿Reiniciar el dashboard?\n\nSe aplicarán los cambios realizados.",
+            title="🔄 Reiniciar Dashboard",
+            on_confirm=do_restart,
+            on_cancel=None
+        )
+
     def _start_update_loop(self):
         """Inicia el bucle de actualización"""
         self._update()

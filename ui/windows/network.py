@@ -164,7 +164,7 @@ class NetworkWindow(ctk.CTkToplevel):
                 icon = "🌐"
             elif iface.startswith(('wlan', 'wlp')):
                 text_color = COLORS['warning']  # Amarillo para wifi
-                icon = "📡"
+                icon = "󰖩"
             else:
                 text_color = COLORS['text']  # Blanco para otras
                 icon = "•"

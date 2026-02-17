@@ -50,27 +50,31 @@ NET_IDLE_RESET_TIME = 15  # segundos
 # Lanzadores de scripts
 LAUNCHERS = [
     {
-        "label": "Montar NAS",
+        "label": "󰣳 󰌘 Montar NAS",
         "script": str(SCRIPTS_DIR / "montarnas.sh")
     },
     {
-        "label": "Desmontar NAS",
+        "label": "󰣳 󰌙 Desmontar NAS",
         "script": str(SCRIPTS_DIR / "desmontarnas.sh")
     },
     {
-        "label": "Update System",
+        "label": "󰚰  Update System",
         "script": str(SCRIPTS_DIR / "update.sh")
     },
     {
-        "label": "Conectar VPN",
+        "label": "󰌘  Conectar VPN",
         "script": str(SCRIPTS_DIR / "conectar_vpn.sh")
     },
     {
-        "label": "Desconectar VPN",
+        "label": "󰌙  Desconectar VPN",
         "script": str(SCRIPTS_DIR / "desconectar_vpn.sh")
     },
     {
-        "label": "Shutdown",
+        "label": "󱓞  Iniciar fase1",
+        "script": str(SCRIPTS_DIR / "fase1.sh")
+    },
+    {
+        "label": "󰅙  Shutdown",
         "script": str(SCRIPTS_DIR / "apagado.sh")
     }
 ]
