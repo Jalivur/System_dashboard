@@ -1,10 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard Profesional
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables y gestión avanzada del sistema.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos y gestión avanzada del sistema.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![Version](https://img.shields.io/badge/Version-2.5-orange.svg)]()
 
 ---
 
@@ -27,15 +28,29 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
 - **Lista de IPs**: Todas las interfaces con iconos por tipo
 - **Speedtest integrado**: Test de velocidad con resultados instantáneos
-- **Escalado adaptativo**: Gráficas se ajustan automáticamente
 
-### ⚙️ **Monitor de Procesos** ⭐ NUEVO
+### ⚙️ **Monitor de Procesos**
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
 - **Búsqueda inteligente**: Por nombre o comando completo
 - **Filtros**: Todos / Usuario / Sistema
 - **Ordenación**: Por PID, Nombre, CPU%, RAM%
 - **Terminar procesos**: Con confirmación y feedback
-- **Pausa inteligente**: No se atasca durante interacciones
+
+### 🔧 **Monitor de Servicios systemd** ⭐ NUEVO
+- **Gestión completa**: Start/Stop/Restart servicios
+- **Estado visual**: active, inactive, failed con iconos
+- **Autostart**: Enable/Disable con confirmación
+- **Logs en tiempo real**: Ver últimas 50 líneas
+- **Búsqueda y filtros**: Por nombre o estado
+
+### 📊 **Histórico de Datos** ⭐ NUEVO
+- **Recolección automática**: Cada 5 minutos en background
+- **Base de datos SQLite**: Ligera y eficiente
+- **Visualización gráfica**: CPU, RAM, Temperatura en 3 gráficas
+- **Periodos**: 24 horas, 7 días, 30 días
+- **Estadísticas**: Promedios, mínimos, máximos
+- **Detección de anomalías**: Alertas automáticas
+- **Exportación CSV**: Para análisis externo
 
 ### 🔌 **Monitor USB**
 - **Detección automática**: Dispositivos conectados
@@ -60,6 +75,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Preview en vivo**: Ve los colores antes de aplicar
 - **Persistente**: Guarda tu elección
 
+### 🔄 **Reinicio Rápido** ⭐ NUEVO
+- **Botón de reinicio**: Reinicia el dashboard con un clic
+- **Aplica cambios**: Código, configuración, todo
+- **Con confirmación**: Evita reinicios accidentales
+- **Perfecto para desarrollo**: Cambios rápidos
+
 ---
 
 ## 📦 Instalación
@@ -71,7 +92,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Python**: 3.8 o superior
 - **Extras**: Ventiladores PWM (opcional), NVMe (opcional)
 
-### ⚡ **Instalación Rápida (Recomendada)**
+### ⚡ **Instalación Rápida**
 
 ```bash
 # 1. Clonar repositorio
@@ -100,115 +121,79 @@ source venv/bin/activate
 # 3. Instalar dependencias Python
 pip install -r requirements.txt
 
-# 4. Detectar sensores (primera vez)
+# 4. Detectar sensores
 sudo sensors-detect --auto
 
 # 5. Ejecutar
 python3 main.py
 ```
 
-### 📋 **Dependencias Python**
-```
-customtkinter==5.2.0
-psutil==5.9.5
-Pillow==10.0.0
-```
-
 ---
 
 ## 🎯 Uso
 
-### **Ejecutar el Dashboard**
-```bash
-cd system-dashboard
-python3 main.py
+### **Menú Principal (12 botones):**
+```
+┌─────────────────────────────────────┐
+│  Control         │  Monitor          │
+│  Ventiladores    │  Placa            │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Red             │  USB              │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Lanzadores       │
+│  Disco           │                   │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Procesos        │  Servicios        │
+├──────────────────┼───────────────────┤
+│  Histórico       │  Cambiar          │
+│  Datos           │  Tema             │
+├──────────────────┼───────────────────┤
+│  Reiniciar       │  Salir            │
+└──────────────────┴───────────────────┘
 ```
 
-### **Menú Principal**
-El dashboard muestra 9 botones principales:
-- **Control Ventiladores**: Configura modos y curvas PWM
-- **Monitor Placa**: CPU, RAM, temperatura
-- **Monitor Red**: Tráfico, speedtest, interfaces
-- **Monitor USB**: Dispositivos y expulsión segura
-- **Monitor Disco**: Espacio, temperatura NVMe, I/O
-- **Lanzadores**: Ejecuta scripts personalizados
-- **Monitor Procesos**: Gestión avanzada de procesos ⭐ NUEVO
-- **Cambiar Tema**: Selecciona entre 15 temas
-- **Salir**: Cierra el dashboard con confirmación
+### **Ventanas Disponibles:**
 
-### **Atajos de Teclado**
-- `Esc`: Cerrar ventana activa
-- `F11`: Toggle fullscreen (si aplica)
+1. **Control Ventiladores** - Configura modos y curvas PWM
+2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
+3. **Monitor Red** - Tráfico, speedtest, interfaces
+4. **Monitor USB** - Dispositivos y expulsión segura
+5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
+6. **Lanzadores** - Ejecuta scripts personalizados
+7. **Monitor Procesos** - Gestión avanzada de procesos ⭐
+8. **Monitor Servicios** - Control de servicios systemd ⭐
+9. **Histórico Datos** - Visualización de métricas históricas ⭐
+10. **Cambiar Tema** - Selecciona entre 15 temas
+11. **Reiniciar** - Reinicia el dashboard ⭐
+12. **Salir** - Cierra con confirmación
 
 ---
 
 ## 🎨 Temas Disponibles
 
-El dashboard incluye **15 temas profesionales** pre-configurados:
+El dashboard incluye **15 temas profesionales**:
 
-| Tema | Descripción | Colores |
-|------|-------------|---------|
-| **Cyberpunk** | Original cyan neón | Cyan + Verde |
-| **Matrix** | Verde Matrix | Verde brillante |
-| **Sunset** | Atardecer cálido | Naranja + Púrpura |
-| **Ocean** | Azul océano | Azul + Aqua |
-| **Dracula** | Colores pastel | Púrpura + Rosa |
-| **Nord** | Minimalista nórdico | Azul hielo |
-| **Tokyo Night** | Noche de Tokio | Azul + Púrpura |
-| **Monokai** | IDE clásico | Cyan + Verde |
-| **Gruvbox** | Retro cálido | Naranja + Beige |
-| **Solarized Dark** | Elegante oscuro | Azul + Cyan |
-| **One Dark** | Atom editor | Azul claro |
-| **Synthwave 84** | Neón retro | Rosa + Verde |
-| **GitHub Dark** | Estilo GitHub | Azul GitHub |
-| **Material Dark** | Material Design | Azul material |
-| **Ayu Dark** | Moderno minimalista | Azul cielo |
+| Tema | Colores | Estilo |
+|------|---------|--------|
+| **Cyberpunk** | Cyan + Verde | Original neón |
+| **Matrix** | Verde brillante | Película Matrix |
+| **Sunset** | Naranja + Púrpura | Atardecer cálido |
+| **Ocean** | Azul + Aqua | Océano refrescante |
+| **Dracula** | Púrpura + Rosa | Elegante oscuro |
+| **Nord** | Azul hielo | Minimalista nórdico |
+| **Tokyo Night** | Azul + Púrpura | Noche de Tokio |
+| **Monokai** | Cyan + Verde | IDE clásico |
+| **Gruvbox** | Naranja + Beige | Retro cálido |
+| **Solarized** | Azul + Cyan | Científico |
+| **One Dark** | Azul claro | Atom editor |
+| **Synthwave** | Rosa + Verde | Neón 80s |
+| **GitHub Dark** | Azul GitHub | Profesional |
+| **Material** | Azul material | Google Design |
+| **Ayu Dark** | Azul cielo | Minimalista |
 
-**Cambiar tema:**
-1. Clic en "Cambiar Tema"
-2. Selecciona tu favorito
-3. Clic en "Aplicar y Reiniciar"
-4. ✨ Reinicio automático con nuevo tema
-
----
-
-## ⚙️ Configuración
-
-### **Archivo Principal: `config/settings.py`**
-
-#### **Pantalla DSI**
-```python
-DSI_WIDTH = 800
-DSI_HEIGHT = 480
-DSI_X = 0      # Posición X
-DSI_Y = 0      # Posición Y
-```
-
-#### **Control de Ventiladores**
-```python
-PWM_PIN = 18           # Pin GPIO para PWM
-PWM_FREQ = 25000       # Frecuencia 25kHz
-```
-
-#### **Actualización**
-```python
-UPDATE_MS = 2000       # Actualiza cada 2 segundos
-```
-
-#### **Lanzadores Personalizados**
-```python
-LAUNCHERS = [
-    {
-        "label": "Apagar Sistema",
-        "script": "/usr/bin/poweroff"
-    },
-    {
-        "label": "Reiniciar",
-        "script": "/usr/bin/reboot"
-    },
-    # Añade los tuyos aquí
-]
-```
+**Cambiar tema**: Menú → "Cambiar Tema" → Seleccionar → "Aplicar y Reiniciar"
 
 ---
 
@@ -219,165 +204,170 @@ system_dashboard/
 ├── config/                      # Configuración
 │   ├── settings.py             # Constantes globales
 │   └── themes.py               # 15 temas pre-configurados
-├── core/                        # Lógica de negocio
+├── core/                        # Lógica de negocio (11 archivos)
 │   ├── fan_controller.py       # Control PWM y curvas
-│   ├── fan_auto_service.py     # Servicio background singleton
+│   ├── fan_auto_service.py     # Servicio background
 │   ├── system_monitor.py       # CPU, RAM, temperatura
 │   ├── network_monitor.py      # Red, speedtest, interfaces
 │   ├── disk_monitor.py         # Disco, NVMe, I/O
-│   └── process_monitor.py      # Gestión de procesos ⭐
+│   ├── process_monitor.py      # Gestión de procesos
+│   ├── service_monitor.py      # Servicios systemd ⭐
+│   ├── data_logger.py          # SQLite logging ⭐
+│   ├── data_analyzer.py        # Análisis histórico ⭐
+│   ├── data_collection_service.py  # Recolección auto ⭐
+│   └── __init__.py
 ├── ui/                          # Interfaz gráfica
 │   ├── main_window.py          # Ventana principal
 │   ├── styles.py               # Estilos y botones
 │   ├── widgets/                # Componentes reutilizables
 │   │   ├── graphs.py           # Gráficas personalizadas
 │   │   └── dialogs.py          # Diálogos confirm/alert
-│   └── windows/                # Ventanas secundarias
+│   └── windows/                # Ventanas secundarias (11)
 │       ├── monitor.py          # Monitor de placa
 │       ├── network.py          # Monitor de red
 │       ├── usb.py              # Monitor USB
 │       ├── disk.py             # Monitor de disco
-│       ├── process.py          # Monitor de procesos ⭐
-│       ├── fan_control.py      # Control de ventiladores
+│       ├── process_window.py   # Monitor de procesos
+│       ├── service.py          # Monitor de servicios ⭐
+│       ├── history.py          # Histórico de datos ⭐
+│       ├── fan_control.py      # Control ventiladores
 │       ├── launchers.py        # Lanzadores
 │       └── theme_selector.py   # Selector de temas
 ├── utils/                       # Utilidades
 │   ├── file_manager.py         # Gestión de JSON
 │   └── system_utils.py         # Utilidades del sistema
 ├── data/                        # Estados persistentes
-│   ├── fan_state.json          # Estado de ventiladores
-│   └── theme_config.json       # Tema seleccionado
+│   ├── fan_state.json          # Estado ventiladores
+│   ├── theme_config.json       # Tema seleccionado
+│   └── history.db              # Base de datos histórico ⭐
 ├── scripts/                     # Scripts personalizados
 ├── main.py                      # Punto de entrada
 └── requirements.txt             # Dependencias Python
 ```
 
-**Total: ~3500 líneas de código Python en 30 archivos**
+**Total: ~5,500 líneas de código Python en 35+ archivos**
 
 ---
 
-## 🔧 Características Técnicas
+## 🔧 Configuración
 
-### **Patrón de Diseño**
-- **MVC**: Model (core) - View (ui) - Controller (main)
-- **Singleton**: FanAutoService (thread-safe)
-- **Observer**: Actualización reactiva de UI
+### **Archivo Principal: `config/settings.py`**
 
-### **Gestión de Estado**
-- **Persistencia**: JSON para configuración
-- **Thread-safe**: Locks para acceso concurrente
-- **Atomic writes**: Previene corrupción de archivos
-
-### **Interfaz Gráfica**
-- **Framework**: CustomTkinter (themed Tkinter)
-- **Responsive**: Grid layout adaptable
-- **Sin bordes**: `overrideredirect=True` para DSI
-- **Posicionamiento preciso**: Withdraw/deiconify pattern
-
-### **Servicios Background**
-- **FanAutoService**: Daemon thread para modo auto
-- **Actualización inteligente**: Pausa durante interacciones
-- **Graceful shutdown**: Cleanup con `atexit`
-
----
-
-## 🐛 Troubleshooting
-
-### **Problema: No se ve la interfaz**
-**Causa**: Posición de ventana incorrecta  
-**Solución**:
+#### **Pantalla DSI:**
 ```python
-# config/settings.py
-DSI_X = 0  # Ajustar según tu pantalla
-DSI_Y = 0
+DSI_WIDTH = 800
+DSI_HEIGHT = 480
+DSI_X = 0      # Posición X
+DSI_Y = 0      # Posición Y
 ```
 
-### **Problema: Ventiladores no funcionan**
-**Causa**: Pin PWM incorrecto o sin permisos  
-**Solución**:
-```bash
-# Verificar GPIO
-gpio readall
-
-# Ejecutar con sudo (temporal)
-sudo python3 main.py
+#### **Control de Ventiladores:**
+```python
+PWM_PIN = 18           # Pin GPIO para PWM
+PWM_FREQ = 25000       # Frecuencia 25kHz
 ```
 
-### **Problema: Temperatura no se muestra**
-**Causa**: Sensores no detectados  
-**Solución**:
-```bash
-sudo sensors-detect --auto
-sudo systemctl restart lm-sensors
-sensors  # Verificar
+#### **Histórico de Datos:**
+```python
+DATA_COLLECTION_INTERVAL = 5  # Minutos entre recolecciones
+DATA_RETENTION_DAYS = 90      # Días de retención
 ```
-
-### **Problema: Speedtest falla**
-**Causa**: speedtest-cli no instalado  
-**Solución**:
-```bash
-sudo apt install speedtest-cli
-```
-
-### **Problema: Tema no se aplica**
-**Causa**: Reinicio manual necesario  
-**Solución**: Usa "Aplicar y Reiniciar" (reinicia automáticamente)
-
-### **Problema: Monitor de procesos laggy**
-**Causa**: Actualización muy frecuente  
-**Solución**: Ya implementado - pausa automática durante interacciones
 
 ---
 
-## 🚀 Características Avanzadas
+## 🆕 Novedades en v2.5
 
-### **Auto-detección de Red**
-Cambia automáticamente entre interfaces activas:
-```
-WiFi activo → muestra wlan0
-Conectas Ethernet → cambia a eth0
-Conectas VPN → cambia a tun0
-```
+### **✨ Nuevas Características:**
+- ✅ **Monitor de Servicios** - Control completo de systemd
+- ✅ **Histórico de Datos** - Base de datos SQLite con gráficas
+- ✅ **Botón Reiniciar** - Reinicio rápido del dashboard
+- ✅ **Recolección automática** - Background service cada 5 min
+- ✅ **Exportación CSV** - Descarga datos históricos
+- ✅ **Detección de anomalías** - Alertas automáticas
+- ✅ **Logs de servicios** - Ver últimas 50 líneas
 
-### **Curvas PWM Personalizadas**
-Define hasta 8 puntos temperatura-PWM:
-```
-Ejemplo curva agresiva:
-30°C → 30% PWM
-40°C → 50% PWM
-50°C → 70% PWM
-60°C → 100% PWM
-```
-
-### **Búsqueda de Procesos**
-Busca en nombre Y comando completo:
-```
-"chrome" → Encuentra todos los Chrome con URLs
-"python" → Encuentra scripts Python con argumentos
-```
-
-### **Expulsión Segura USB**
-Secuencia completa:
-1. Unmount del filesystem
-2. Eject del dispositivo
-3. Confirmación visual
-4. Feedback de éxito/error
+### **🔧 Mejoras:**
+- ✅ Sliders y scrollbars usan colores de tema
+- ✅ Monitor de procesos con pausa inteligente
+- ✅ Speedtest corregido (Mbit/s → MB/s)
+- ✅ 11 temas con `secondary` corregido
+- ✅ FanAutoService singleton thread-safe
+- ✅ Layout grid configurable en lanzadores
 
 ---
 
 ## 📈 Rendimiento
 
 - **Uso CPU**: ~5-10% en idle
-- **Uso RAM**: ~80-120 MB
+- **Uso RAM**: ~100-150 MB
+- **Base de datos**: ~5 MB por 10,000 registros
 - **Actualización**: 2 segundos (configurable)
-- **Threads**: 2 (main + FanAutoService)
-- **Tiempo inicio**: ~2 segundos
+- **Threads**: 3 (main + FanAuto + DataCollection)
+- **Tiempo inicio**: ~2-3 segundos
+
+---
+
+## 🐛 Troubleshooting
+
+### **No arranca**
+```bash
+python3 --version  # Debe ser 3.8+
+pip install -r requirements.txt
+```
+
+### **No detecta temperatura**
+```bash
+sudo sensors-detect --auto
+sudo systemctl restart lm-sensors
+sensors  # Verificar
+```
+
+### **Ventiladores no responden**
+```bash
+gpio readall
+sudo python3 main.py  # Temporal
+```
+
+### **Speedtest no funciona**
+```bash
+sudo apt install speedtest-cli
+```
+
+### **Base de datos crece mucho**
+```bash
+# Limpiar datos >90 días desde Histórico Datos
+# O manualmente:
+sqlite3 data/history.db "DELETE FROM metrics WHERE timestamp < datetime('now', '-90 days');"
+```
+
+---
+
+## 📚 Documentación Completa
+
+### **Guías Disponibles:**
+- [README.md](README.md) - Este archivo
+- [QUICKSTART.md](QUICKSTART.md) - Inicio rápido 5 minutos
+- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) - Instalación detallada
+- [THEMES_GUIDE.md](THEMES_GUIDE.md) - Guía de temas
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Integración OLED
+- [INDEX.md](INDEX.md) - Índice completo
+
+---
+
+## 📊 Estadísticas del Proyecto
+
+- **Versión**: 2.5
+- **Archivos Python**: 35+
+- **Líneas de código**: ~5,500
+- **Ventanas**: 11 ventanas funcionales
+- **Temas**: 15 temas pre-configurados
+- **Documentos**: 10+ guías
 
 ---
 
 ## 🤝 Contribuir
 
-¿Quieres mejorar el dashboard? ¡Genial!
+¿Quieres mejorar el dashboard?
 
 1. Fork del repositorio
 2. Crea una rama: `git checkout -b mi-mejora`
@@ -389,23 +379,23 @@ Secuencia completa:
 
 ## 📝 Changelog
 
-### **v2.0.0** - 2026-02-16 ⭐ ACTUAL
+### **v2.5** - 2026-02-17 ⭐ ACTUAL
+- ✅ **NUEVO**: Monitor de Servicios systemd completo
+- ✅ **NUEVO**: Histórico de Datos con SQLite
+- ✅ **NUEVO**: Botón Reiniciar en menú
+- ✅ **NUEVO**: Recolección automática background
+- ✅ **NUEVO**: Exportación CSV
+- ✅ **NUEVO**: Detección de anomalías
+- ✅ **MEJORA**: 12 botones en menú (vs 9)
+
+### **v2.0** - 2026-02-16
 - ✅ **NUEVO**: Monitor de Procesos completo
 - ✅ **NUEVO**: 15 temas profesionales
 - ✅ **MEJORA**: Reinicio automático al cambiar tema
-- ✅ **MEJORA**: Sliders y scrollbars usan colores de tema
-- ✅ **MEJORA**: Tema Matrix colores corregidos
-- ✅ **MEJORA**: 11 temas con `secondary` corregido
-- ✅ **MEJORA**: Monitor red con IPs de interfaces
-- ✅ **MEJORA**: Auto-detección interfaz activa
-- ✅ **MEJORA**: Speedtest conversión Mbit/s → MB/s corregida
-- ✅ **MEJORA**: FanAutoService funciona con ventana cerrada
-- ✅ **MEJORA**: Lanzadores con layout grid
-- ✅ **FIX**: Slider PWM se actualiza en modo auto
-- ✅ **FIX**: Botones con confirmación consistente
-- ✅ **FIX**: Posicionamiento estable de ventanas
+- ✅ **MEJORA**: Sliders y scrollbars temáticos
+- ✅ **FIX**: Speedtest conversión correcta
 
-### **v1.0.0** - 2025-01
+### **v1.0** - 2025-01
 - ✅ Release inicial modular
 - ✅ 8 ventanas funcionales
 - ✅ Control de ventiladores
@@ -421,9 +411,10 @@ Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detall
 
 ## 🙏 Agradecimientos
 
-- **CustomTkinter**: Por el framework de UI moderno
-- **psutil**: Por las utilidades del sistema
-- **Raspberry Pi Foundation**: Por el hardware increíble
+- **CustomTkinter**: Framework de UI moderno
+- **psutil**: Utilidades del sistema
+- **matplotlib**: Visualización de gráficas
+- **Raspberry Pi Foundation**: Hardware increíble
 
 ---
 
@@ -434,4 +425,4 @@ Abre un **Issue** en GitHub
 
 ---
 
-**¡Disfruta de tu dashboard profesional!** 🚀✨
+**¡Dashboard profesional v2.5 con todas las funciones!** 🚀✨
