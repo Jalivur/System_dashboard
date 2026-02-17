@@ -45,6 +45,7 @@ class MainWindow:
         self.disk_window = None
         self.process_window = None
         self.service_window = None
+        self.history_window = None
         # Crear interfaz
         self._create_ui()
         
@@ -133,6 +134,7 @@ class MainWindow:
             ("󱓞  Lanzadores", self.open_launchers),
             ("⚙️ Monitor Procesos", self.open_process_window),
             ("⚙️ Monitor Servicios", self.open_service_window),
+            ("󱘿  Histórico Datos", self.open_history_window),
             ("󰔎  Cambiar Tema", self.open_theme_selector),
             ("  Reiniciar", self.restart_application),  # NUEVO
             ("󰿅  Salir", self.exit_application),  # NUEVO
@@ -218,7 +220,15 @@ class MainWindow:
             )
         else:
             self.service_window.lift()
-
+            
+    def open_history_window(self):
+        """Abre la ventana de histórico"""
+        if self.history_window is None or not self.history_window.winfo_exists():
+            from ui.windows.history import HistoryWindow
+            self.history_window = HistoryWindow(self.root)
+        else:
+            self.history_window.lift()
+            
     def open_launchers(self):
         """Abre la ventana de lanzadores"""
         if self.launchers_window is None or not self.launchers_window.winfo_exists():

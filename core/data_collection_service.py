@@ -1,0 +1,135 @@
+"""
+Servicio de recolección automática de datos
+"""
+import threading
+import time
+import atexit
+from datetime import datetime
+from core.data_logger import DataLogger
+from utils.file_manager import FileManager
+
+
+class DataCollectionService:
+    """Servicio que recolecta métricas cada X minutos"""
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        """Implementa singleton thread-safe"""
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, system_monitor, fan_controller, network_monitor, 
+                 disk_monitor, interval_minutes: int = 5):
+        """
+        Inicializa el servicio
+
+        Args:
+            system_monitor: Instancia de SystemMonitor
+            fan_controller: Instancia de FanController
+            network_monitor: Instancia de NetworkMonitor
+            disk_monitor: Instancia de DiskMonitor
+            interval_minutes: Intervalo de recolección en minutos
+        """
+        # Evitar re-inicialización del singleton
+        if hasattr(self, '_initialized'):
+            return
+
+        self.system_monitor = system_monitor
+        self.fan_controller = FileManager()
+        self.network_monitor = network_monitor
+        self.disk_monitor = disk_monitor
+        self.interval_minutes = interval_minutes
+
+        self.logger = DataLogger()
+        self.running = False
+        self.thread = None
+
+        self._initialized = True
+
+        # Registrar cleanup al salir
+        atexit.register(self.stop)
+
+    def start(self):
+        """Inicia el servicio de recolección"""
+        if self.running:
+            return
+
+        self.running = True
+        self.thread = threading.Thread(target=self._collection_loop, daemon=True)
+        self.thread.start()
+        #print(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
+
+    def stop(self):
+        """Detiene el servicio"""
+        if not self.running:
+            return
+
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=5)
+        #print("[DataCollection] Servicio detenido")
+
+    def _collection_loop(self):
+        """Bucle principal de recolección"""
+        while self.running:
+            try:
+                self._collect_and_save()
+            except Exception as e:
+                #print(f"[DataCollection] Error: {e}")
+                pass
+            # Dormir por el intervalo especificado
+            time.sleep(self.interval_minutes * 60)
+
+    def _collect_and_save(self):
+        """Recolecta métricas y las guarda"""
+        # Obtener métricas de cada monitor
+        system_stats = self.system_monitor.get_current_stats()
+        network_stats = self.network_monitor.get_current_stats()
+        disk_stats = self.disk_monitor.get_current_stats()
+
+        # Obtener estado del ventilador
+        fan_state = self.fan_controller.load_state()
+        # Construir diccionario de métricas
+        metrics = {
+            'cpu_percent': system_stats.get('cpu', 0),
+            'ram_percent': system_stats.get('ram_percent', 0),
+            'ram_used_gb': system_stats.get('ram_used', 0) / 1024,  # MB a GB
+            'temperature': system_stats.get('temp', 0),
+            'disk_used_percent': disk_stats.get('percent', 0),
+            'disk_read_mb': disk_stats.get('read_speed', 0),
+            'disk_write_mb': disk_stats.get('write_speed', 0),
+            'net_download_mb': network_stats.get('download', 0),
+            'net_upload_mb': network_stats.get('upload', 0),
+            'fan_pwm': fan_state.get('target_pwm', 0),
+            'fan_mode': fan_state.get('mode', 'unknown')
+        }
+        # Guardar en base de datos
+        self.logger.log_metrics(metrics)
+
+        # Detectar y registrar eventos críticos
+        if metrics['temperature'] > 80:
+            self.logger.log_event(
+                'temp_high',
+                'critical',
+                f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
+                {'temperature': metrics['temperature']}
+            )
+
+        if metrics['cpu_percent'] > 90:
+            self.logger.log_event(
+                'cpu_high',
+                'warning',
+                f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
+                {'cpu': metrics['cpu_percent']}
+            )
+
+        #print(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    def force_collection(self):
+        """Fuerza una recolección inmediata (útil para testing)"""
+        self._collect_and_save()

@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import customtkinter as ctk
 from config.settings import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
 from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor
+from core.data_collection_service import DataCollectionService
 from ui.main_window import MainWindow
 
 
@@ -60,6 +61,16 @@ def main():
     disk_monitor = DiskMonitor()
     process_monitor = ProcessMonitor()
     service_monitor = ServiceMonitor()
+    
+    # Iniciar servicio de recolección de datos (cada 5 minutos)
+    data_service = DataCollectionService(
+        system_monitor=system_monitor,
+        fan_controller=fan_controller,
+        network_monitor=network_monitor,
+        disk_monitor=disk_monitor,
+        interval_minutes=5  # Recolectar cada 5 minutos
+    )
+    data_service.start()
     
     # Iniciar servicio de ventiladores AUTO (background)
     fan_service = FanAutoService(fan_controller, system_monitor)
