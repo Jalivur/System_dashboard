@@ -1,289 +1,183 @@
-# 🚀 Inicio Rápido - Sistema de Monitoreo
+# 🚀 Inicio Rápido - Dashboard en 5 Minutos
 
-## ⚡ Instalación y Ejecución en 3 Pasos
+Guía ultra-rápida para tener el dashboard funcionando.
 
-### 1️⃣ Instalar Dependencias del Sistema
+---
 
-```bash
-# Actualizar sistema
-sudo apt-get update
-
-# Instalar herramientas necesarias
-sudo apt-get install -y python3 python3-pip python3-venv lm-sensors
-
-# Opcional: para speedtest
-sudo apt-get install -y speedtest-cli
-
-# Configurar sensors (primera vez)
-sudo sensors-detect
-# Responde 'YES' a todas las preguntas
-```
-
-### 2️⃣ Instalar Dependencias de Python
+## ⚡ Instalación Express (3 Comandos)
 
 ```bash
-cd system_dashboard
+# 1. Clonar
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
 
-# Opción A: Usar script de instalación automática
+# 2. Instalar
 chmod +x install.sh
 ./install.sh
 
-# Opción B: Manual
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# 3. Ejecutar
+python3 main.py
 ```
 
-### 3️⃣ Ejecutar
-
-```bash
-# Si usaste el script de instalación
-source venv/bin/activate
-python main.py
-
-# O directamente
-./venv/bin/python main.py
-```
+**¡Listo!** El dashboard debería abrirse en tu pantalla DSI.
 
 ---
 
-## 🎛️ Configuración Rápida (Opcional)
+## 📋 Requisitos Mínimos
 
-### Personalizar Scripts de Lanzadores
+- ✅ Raspberry Pi 3/4/5
+- ✅ Raspberry Pi OS (cualquier versión)
+- ✅ Python 3.8+
+- ✅ Conexión a internet (para instalación)
 
+---
+
+## 🎯 Primeros Pasos
+
+### **1. Menú Principal**
+Al abrir verás 9 botones:
+
+```
+┌───────────────────────────────┐
+│  Control     │  Monitor       │
+│  Ventiladores│  Placa         │
+├──────────────┼────────────────┤
+│  Monitor     │  Monitor       │
+│  Red         │  USB           │
+├──────────────┼────────────────┤
+│  Monitor     │  Lanzadores    │
+│  Disco       │                │
+├──────────────┼────────────────┤
+│  Monitor     │  Cambiar       │
+│  Procesos    │  Tema          │
+├──────────────┴────────────────┤
+│         Salir                 │
+└───────────────────────────────┘
+```
+
+### **2. Explorar Monitores**
+- **Monitor Placa**: Ver CPU, RAM, temperatura
+- **Monitor Red**: Ver tráfico de red en vivo
+- **Monitor USB**: Ver dispositivos conectados
+- **Monitor Disco**: Ver espacio y temperatura NVMe
+- **Monitor Procesos**: Gestionar procesos del sistema ⭐
+
+### **3. Configurar Ventiladores**
+1. Clic en "Control Ventiladores"
+2. Selecciona modo:
+   - **Auto**: Basado en temperatura (recomendado)
+   - **Manual**: Control directo con slider
+   - **Silent/Normal/Performance**: Presets rápidos
+3. Si eliges Auto, personaliza la curva (opcional)
+
+### **4. Cambiar Tema** 🎨
+1. Clic en "Cambiar Tema"
+2. Elige entre 15 temas
+3. Clic en "Aplicar y Reiniciar"
+4. ✨ El dashboard se reinicia con el nuevo tema
+
+---
+
+## 🔧 Configuración Básica
+
+### **Ajustar Posición en Pantalla DSI**
 Edita `config/settings.py`:
+```python
+DSI_X = 0     # Mover horizontalmente
+DSI_Y = 0     # Mover verticalmente
+```
 
+### **Cambiar Pin PWM de Ventiladores**
+```python
+PWM_PIN = 18  # Cambiar al pin que uses
+```
+
+### **Añadir Lanzadores Personalizados**
 ```python
 LAUNCHERS = [
     {
-        "label": "Montar NAS",
-        "script": "/ruta/a/tu/script.sh"
+        "label": "Apagar",
+        "script": "/usr/bin/poweroff"
     },
     {
-        "label": "Backup",
-        "script": "/ruta/a/backup.sh"
-    },
-    # Añade más scripts aquí
+        "label": "Tu Script",
+        "script": "/ruta/a/tu/script.sh"
+    }
 ]
 ```
 
-### Cambiar Colores y Fuentes
-
-En `config/settings.py`:
-
-```python
-# Cambiar color principal
-COLORS = {
-    "primary": "#00ffff",  # Cyan por defecto
-    "secondary": "#14611E",
-    # ...
-}
-
-# Cambiar fuente
-FONT_FAMILY = "FiraMono Nerd Font"  # Tu fuente favorita
-```
-
-### Ajustar Umbrales de Advertencia
-
-```python
-# En config/settings.py
-CPU_WARN = 60   # Advertencia a 60%
-CPU_CRIT = 85   # Crítico a 85%
-
-TEMP_WARN = 60  # Advertencia a 60°C
-TEMP_CRIT = 75  # Crítico a 75°C
-
-# Similar para RAM, RED, etc.
-```
-
 ---
 
-## 📊 Características Principales
+## ❓ Problemas Comunes
 
-### Control de Ventiladores
-- ✅ 5 modos: Auto, Manual, Silent, Normal, Performance
-- ✅ Curva personalizable temperatura-PWM
-- ✅ Añadir/eliminar puntos en la curva
-- ✅ Interpolación automática
-
-### Monitor del Sistema
-- ✅ CPU, RAM, Temperatura en tiempo real
-- ✅ Uso de disco y velocidad I/O
-- ✅ Gráficas históricas (últimos 60 valores)
-- ✅ Colores dinámicos por umbral
-
-### Monitor de Red
-- ✅ Download/Upload en MB/s
-- ✅ Escalado adaptativo de gráficas
-- ✅ Detección automática de interfaz activa
-- ✅ Speedtest integrado
-
-### Monitor USB
-- ✅ Lista de dispositivos conectados
-- ✅ Actualización en tiempo real
-- ✅ Información detallada de cada dispositivo
-
-### Lanzadores
-- ✅ Ejecuta scripts del sistema
-- ✅ Feedback visual de estado
-- ✅ Timeout de seguridad
-- ✅ Completamente configurable
-
----
-
-## 🐛 Solución de Problemas Comunes
-
-### Error: "sensors: command not found"
+### **No arranca**
 ```bash
-sudo apt-get install lm-sensors
-sudo sensors-detect
+# Verificar Python
+python3 --version  # Debe ser 3.8+
+
+# Reinstalar dependencias
+pip install -r requirements.txt
 ```
 
-### Error: Temperatura siempre en 0°C
+### **No detecta temperatura**
 ```bash
-# Configurar sensors
-sudo sensors-detect
-
-# Verificar que funciona
-sensors
-
-# Si aún no funciona, el código usa fallback de /sys/class/thermal
+sudo sensors-detect --auto
+sudo systemctl restart lm-sensors
+sensors  # Verificar que funciona
 ```
 
-### Error: "speedtest-cli: command not found"
+### **Ventiladores no responden**
 ```bash
-sudo apt-get install speedtest-cli
+# Verificar GPIO
+gpio readall
 
-# O alternativamente con pip
-pip install speedtest-cli
+# Ejecutar con sudo (temporal)
+sudo python3 main.py
 ```
 
-### La ventana no aparece en la pantalla secundaria
-El código detecta automáticamente la posición del DSI. Si no funciona:
-1. Verifica que la pantalla esté conectada
-2. Ajusta `DSI_X` y `DSI_Y` en `config/settings.py`
-
-### Scripts de lanzadores no ejecutan
+### **Speedtest no funciona**
 ```bash
-# Asegúrate de que sean ejecutables
-chmod +x /ruta/a/tu/script.sh
-
-# Verifica la ruta en config/settings.py
+sudo apt install speedtest-cli
 ```
 
 ---
 
-## 📚 Documentación Completa
+## 📚 Siguiente Paso
 
-- **README.md**: Documentación detallada del proyecto
-- **CHANGELOG.md**: Estado completo de implementación y características
-- **MIGRATION_MAP.md**: Mapeo del código original
-- **IMPLEMENTATION_GUIDE.md**: Guía para extender el proyecto
+¿Quieres profundizar?  
+Lee el **[README.md](README.md)** completo para características avanzadas.
 
----
+### **Temas Recomendados:**
+- **Cyberpunk**: Original cyan neón ⚡
+- **Matrix**: Verde Matrix 💚
+- **Dracula**: Colores pastel 🦇
+- **Tokyo Night**: Noche de Tokio 🌃
+- **Nord**: Minimalista nórdico ❄️
 
-## 🎯 Uso Básico
-
-1. **Ejecuta el dashboard**: `python main.py`
-2. **Selecciona una opción** del menú principal:
-   - Control Ventiladores
-   - Monitor Placa
-   - Monitor Red
-   - Monitor USB
-   - Lanzadores
-3. **Interactúa** con la ventana seleccionada
-4. **Cierra** con el botón "Cerrar" o "Salir"
+### **Ventanas Más Útiles:**
+- **Monitor Procesos**: Encuentra qué consume CPU/RAM ⭐
+- **Monitor Red**: Speedtest y tráfico en vivo
+- **Control Ventiladores**: Mantén tu Pi fresco
 
 ---
 
-## ⚙️ Configuración Avanzada
+## 🎯 Tips Rápidos
 
-### Cambiar Intervalo de Actualización
-
-```python
-# En config/settings.py
-UPDATE_MS = 2000  # Milisegundos (2000 = 2 segundos)
-```
-
-### Cambiar Tamaño del Historial
-
-```python
-# En config/settings.py
-HISTORY = 60  # Número de puntos en gráficas
-```
-
-### Interfaz de Red Específica
-
-```python
-# En config/settings.py
-NET_INTERFACE = "eth0"  # O "wlan0", None para auto
-```
+1. **Esc** cierra cualquier ventana
+2. El **modo Auto** de ventiladores funciona incluso cerrando la ventana
+3. Puedes **buscar procesos** por nombre o comando
+4. Los **temas se guardan** automáticamente
+5. El **speedtest tarda ~30 segundos**, ten paciencia
 
 ---
 
-## 🚀 Ejecutar al Inicio del Sistema
+## 🚀 ¡Ya Estás Listo!
 
-### Opción 1: systemd (Recomendado)
+Explora las ventanas, personaliza los colores, ajusta los ventiladores.
 
-Crea `/etc/systemd/system/dashboard.service`:
-
-```ini
-[Unit]
-Description=System Dashboard
-After=graphical.target
-
-[Service]
-Type=simple
-User=tu_usuario
-WorkingDirectory=/ruta/a/system_dashboard
-Environment="DISPLAY=:0"
-ExecStart=/ruta/a/system_dashboard/venv/bin/python main.py
-Restart=always
-
-[Install]
-WantedBy=graphical.target
-```
-
-Luego:
-```bash
-sudo systemctl enable dashboard.service
-sudo systemctl start dashboard.service
-```
-
-### Opción 2: Autostart Desktop Entry
-
-Crea `~/.config/autostart/dashboard.desktop`:
-
-```ini
-[Desktop Entry]
-Type=Application
-Name=System Dashboard
-Exec=/ruta/a/system_dashboard/venv/bin/python /ruta/a/system_dashboard/main.py
-Hidden=false
-X-GNOME-Autostart-enabled=true
-```
+**¿Necesitas ayuda?** → [README.md](README.md)  
+**¿Quieres más funciones?** → Abre un Issue en GitHub
 
 ---
 
-## 💡 Tips y Trucos
-
-### Tema Completo
-Todos los colores están en un solo lugar (`config/settings.py`). Cambia `COLORS` para personalizar todo el dashboard.
-
-### Añadir Nueva Funcionalidad
-El proyecto sigue patrones claros. Mira ventanas existentes como referencia.
-
-### Debugging
-Ejecuta con:
-```bash
-python main.py 2>&1 | tee dashboard.log
-```
-
-### Performance
-Si el dashboard va lento, aumenta `UPDATE_MS` a 3000 o 5000.
-
----
-
-## ✨ ¡Disfruta tu Dashboard!
-
-El proyecto está completo y listo para usar. ¡Personalízalo a tu gusto! 🎉
+**¡Disfruta tu dashboard!** 🎉

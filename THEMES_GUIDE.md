@@ -1,346 +1,434 @@
-# 🎨 Guía de Temas Personalizados
+# 🎨 Guía de Temas - System Dashboard
 
-El Sistema de Monitoreo incluye **15 temas pre-configurados** que puedes cambiar fácilmente.
-
----
-
-## 🚀 Cambiar Tema (Método Gráfico)
-
-1. **Abre el dashboard**
-```bash
-python3 main.py
-```
-
-2. **Haz clic en "🎨 Cambiar Tema"** en el menú principal
-
-3. **Selecciona tu tema favorito** de la lista
-
-4. **Haz clic en "Aplicar y Reiniciar"**
-
-5. **Reinicia el dashboard**
-```bash
-# Cierra todas las ventanas y ejecuta de nuevo
-python3 main.py
-```
-
-**¡Listo!** Tu nuevo tema estará activo.
+El dashboard incluye **15 temas profesionales** pre-configurados y la capacidad de crear temas personalizados.
 
 ---
 
-## 🎨 Temas Disponibles (15 Temas)
+## 🌈 Temas Disponibles
 
 ### 1. **Cyberpunk** (Original) ⚡
-- **Estilo**: Futurista, neón cyan
-- **Colores**: Cyan brillante + Negro
-- **Perfecto para**: Look futurista original
-
-### 2. **Matrix** 🟢
-- **Estilo**: Inspirado en Matrix
-- **Colores**: Verde neón + Negro puro
-- **Perfecto para**: Fans de Matrix, hackers
-
-### 3. **Sunset** 🌅
-- **Estilo**: Colores cálidos de atardecer
-- **Colores**: Naranja + Púrpura
-- **Perfecto para**: Ambiente relajado, cálido
-
-### 4. **Ocean** 🌊
-- **Estilo**: Colores del océano
-- **Colores**: Azul cielo + Azul marino
-- **Perfecto para**: Look fresco y limpio
-
-### 5. **Dracula** 🧛
-- **Estilo**: Tema popular Dracula
-- **Colores**: Púrpura pastel + Gris oscuro
-- **Perfecto para**: Fans de Dracula theme
-
-### 6. **Nord** ❄️
-- **Estilo**: Tema nórdico, frío
-- **Colores**: Azul hielo + Gris polar
-- **Perfecto para**: Look minimalista, nórdico
-
-### 7. **Tokyo Night** 🌃
-- **Estilo**: Noche en Tokio
-- **Colores**: Azul brillante + Negro azulado
-- **Perfecto para**: Fans de anime, noche
-
-### 8. **Monokai** 🎨
-- **Estilo**: Tema clásico de editores
-- **Colores**: Azul claro + Verde oscuro
-- **Perfecto para**: Programadores
-
-### 9. **Gruvbox** ☕
-- **Estilo**: Retro, cálido
-- **Colores**: Naranja + Marrón
-- **Perfecto para**: Look vintage
-
-### 10. **Solarized Dark** ☀️
-- **Estilo**: Tema científico popular
-- **Colores**: Azul + Tonos tierra
-- **Perfecto para**: Fácil a la vista
-
-### 11. **One Dark** 🌑
-- **Estilo**: Tema de Atom/VSCode
-- **Colores**: Azul claro + Gris oscuro
-- **Perfecto para**: Desarrollo
-
-### 12. **Synthwave** 🌆
-- **Estilo**: Retro 80s, neón
-- **Colores**: Rosa neón + Púrpura
-- **Perfecto para**: Estética retro-futurista
-
-### 13. **GitHub Dark** 🐙
-- **Estilo**: Tema de GitHub
-- **Colores**: Azul GitHub + Negro
-- **Perfecto para**: Familiar y profesional
-
-### 14. **Material** 📱
-- **Estilo**: Material Design
-- **Colores**: Azul material + Gris
-- **Perfecto para**: Look moderno
-
-### 15. **Ayu Dark** 🎯
-- **Estilo**: Minimalista, limpio
-- **Colores**: Azul cielo + Negro
-- **Perfecto para**: Simplicidad
+```
+Colores: Cyan neón + Verde oscuro
+Estilo: Futurista, neón brillante
+Ideal para: Look cyberpunk clásico
+```
+**Paleta:**
+- Primary: `#00ffff` (Cyan brillante)
+- Secondary: `#14611E` (Verde oscuro)
+- Success: `#1ae313` (Verde neón)
+- Warning: `#ffaa00` (Naranja)
+- Danger: `#ff3333` (Rojo)
 
 ---
 
-## ⚙️ Cambiar Tema Manualmente
-
-Si prefieres cambiar el tema editando archivos:
-
-### Método 1: Editar archivo de configuración
-
-```bash
-# Editar el archivo de tema
-nano data/theme_config.json
+### 2. **Matrix** 💚
 ```
+Colores: Verde Matrix brillante
+Estilo: Película Matrix
+Ideal para: Fans de Matrix
+```
+**Paleta:**
+- Primary: `#00ff00` (Verde Matrix)
+- Secondary: `#0aff0a` (Verde brillante)
+- Success: `#00ff00` (Verde puro)
+- Warning: `#ccff00` (Verde-amarillo lima)
+- Danger: `#ff0000` (Rojo)
 
+**✨ Colores optimizados** para alto contraste.
+
+---
+
+### 3. **Sunset** 🌅
+```
+Colores: Naranja cálido + Púrpura
+Estilo: Atardecer cálido
+Ideal para: Ambiente acogedor
+```
+**Paleta:**
+- Primary: `#ff6b35` (Naranja cálido)
+- Secondary: `#f7931e` (Naranja dorado)
+- Success: `#ffd23f` (Amarillo dorado)
+- Warning: `#ffd23f` (Amarillo)
+- Danger: `#d62828` (Rojo oscuro)
+
+---
+
+### 4. **Ocean** 🌊
+```
+Colores: Azul océano + Aqua
+Estilo: Marino refrescante
+Ideal para: Look fresco y limpio
+```
+**Paleta:**
+- Primary: `#00d4ff` (Azul cielo)
+- Secondary: `#48dbfb` (Azul claro)
+- Success: `#1dd1a1` (Verde agua)
+- Warning: `#feca57` (Amarillo suave)
+- Danger: `#ee5a6f` (Rosa coral)
+
+---
+
+### 5. **Dracula** 🦇
+```
+Colores: Púrpura + Rosa pastel
+Estilo: Elegante oscuro
+Ideal para: Desarrolladores
+```
+**Paleta:**
+- Primary: `#bd93f9` (Púrpura pastel)
+- Secondary: `#ff79c6` (Rosa)
+- Success: `#50fa7b` (Verde pastel)
+- Warning: `#f1fa8c` (Amarillo pastel)
+- Danger: `#ff5555` (Rojo pastel)
+
+**Popular en editores de código.**
+
+---
+
+### 6. **Nord** ❄️
+```
+Colores: Azul hielo nórdico
+Estilo: Minimalista frío
+Ideal para: Estética nórdica
+```
+**Paleta:**
+- Primary: `#88c0d0` (Azul hielo)
+- Secondary: `#5e81ac` (Azul oscuro)
+- Success: `#a3be8c` (Verde suave)
+- Warning: `#ebcb8b` (Amarillo suave)
+- Danger: `#bf616a` (Rojo suave)
+
+---
+
+### 7. **Tokyo Night** 🌃
+```
+Colores: Azul + Púrpura noche
+Estilo: Noche de Tokio
+Ideal para: Ambiente nocturno
+```
+**Paleta:**
+- Primary: `#7aa2f7` (Azul brillante)
+- Secondary: `#bb9af7` (Púrpura)
+- Success: `#9ece6a` (Verde)
+- Warning: `#e0af68` (Naranja suave)
+- Danger: `#f7768e` (Rosa)
+
+---
+
+### 8. **Monokai** 🎨
+```
+Colores: Cyan + Verde lima
+Estilo: IDE clásico
+Ideal para: Programadores
+```
+**Paleta:**
+- Primary: `#66d9ef` (Azul claro)
+- Secondary: `#fd971f` (Naranja)
+- Success: `#a6e22e` (Verde lima)
+- Warning: `#e6db74` (Amarillo)
+- Danger: `#f92672` (Rosa fucsia)
+
+**Tema icónico de Sublime Text.**
+
+---
+
+### 9. **Gruvbox** 🏜️
+```
+Colores: Naranja + Beige retro
+Estilo: Cálido vintage
+Ideal para: Fans del retro
+```
+**Paleta:**
+- Primary: `#fe8019` (Naranja)
+- Secondary: `#d65d0e` (Naranja oscuro)
+- Success: `#b8bb26` (Verde lima)
+- Warning: `#fabd2f` (Amarillo)
+- Danger: `#fb4934` (Rojo)
+
+---
+
+### 10. **Solarized Dark** ☀️
+```
+Colores: Azul + Cyan
+Estilo: Elegante científico
+Ideal para: Precisión visual
+```
+**Paleta:**
+- Primary: `#268bd2` (Azul)
+- Secondary: `#2aa198` (Cyan)
+- Success: `#859900` (Verde oliva)
+- Warning: `#b58900` (Amarillo oscuro)
+- Danger: `#dc322f` (Rojo)
+
+**Diseñado para reducir fatiga visual.**
+
+---
+
+### 11. **One Dark** 🌑
+```
+Colores: Azul claro + Cyan
+Estilo: Moderno equilibrado
+Ideal para: Uso prolongado
+```
+**Paleta:**
+- Primary: `#61afef` (Azul claro)
+- Secondary: `#56b6c2` (Cyan)
+- Success: `#98c379` (Verde)
+- Warning: `#e5c07b` (Amarillo)
+- Danger: `#e06c75` (Rojo suave)
+
+**Tema de Atom editor.**
+
+---
+
+### 12. **Synthwave 84** 🌆
+```
+Colores: Rosa + Verde neón
+Estilo: Retro 80s
+Ideal para: Nostalgia synthwave
+```
+**Paleta:**
+- Primary: `#f92aad` (Rosa neón)
+- Secondary: `#fe4450` (Rojo neón)
+- Success: `#72f1b8` (Verde neón)
+- Warning: `#fede5d` (Amarillo neón)
+- Danger: `#fe4450` (Rojo neón)
+
+**Inspirado en los 80s.**
+
+---
+
+### 13. **GitHub Dark** 🐙
+```
+Colores: Azul GitHub
+Estilo: Profesional limpio
+Ideal para: Desarrolladores
+```
+**Paleta:**
+- Primary: `#58a6ff` (Azul GitHub)
+- Secondary: `#1f6feb` (Azul oscuro)
+- Success: `#3fb950` (Verde)
+- Warning: `#d29922` (Amarillo)
+- Danger: `#f85149` (Rojo)
+
+---
+
+### 14. **Material Dark** 📱
+```
+Colores: Azul Material Design
+Estilo: Google Material
+Ideal para: Estética moderna
+```
+**Paleta:**
+- Primary: `#82aaff` (Azul material)
+- Secondary: `#c792ea` (Púrpura)
+- Success: `#c3e88d` (Verde claro)
+- Warning: `#ffcb6b` (Amarillo)
+- Danger: `#f07178` (Rojo suave)
+
+---
+
+### 15. **Ayu Dark** 🌙
+```
+Colores: Azul cielo minimalista
+Estilo: Moderno limpio
+Ideal para: Simplicidad
+```
+**Paleta:**
+- Primary: `#59c2ff` (Azul cielo)
+- Secondary: `#39bae6` (Azul claro)
+- Success: `#aad94c` (Verde lima)
+- Warning: `#ffb454` (Naranja)
+- Danger: `#f07178` (Rosa)
+
+---
+
+## 🔄 Cambiar Tema
+
+### **Desde la Interfaz:**
+1. Menú principal → "Cambiar Tema"
+2. Selecciona tu tema favorito
+3. Clic en "Aplicar y Reiniciar"
+4. ✨ Dashboard se reinicia automáticamente
+
+### **Desde Código:**
+Editar `data/theme_config.json`:
 ```json
 {
   "selected_theme": "matrix"
 }
 ```
 
-Opciones válidas:
-- `cyberpunk` (original)
-- `matrix`
-- `sunset`
-- `ocean`
-- `dracula`
-- `nord`
-- `tokyo_night`
-- `monokai`
-- `gruvbox`
-- `solarized_dark`
-- `one_dark`
-- `synthwave`
-- `github_dark`
-- `material`
-- `ayu_dark`
-
-### Método 2: Desde Python
-
-```python
-from config.themes import save_selected_theme
-
-# Cambiar a tema Matrix
-save_selected_theme("matrix")
-
-# Reiniciar el dashboard
-```
-
 ---
 
-## 🎨 Crear Tu Propio Tema
+## 🎨 Crear Tema Personalizado
 
-### Opción 1: Editar `config/themes.py`
-
-Añade tu tema al diccionario `THEMES`:
+### **Paso 1: Editar `config/themes.py`**
 
 ```python
-"mi_tema": {
-    "name": "Mi Tema Personalizado",
-    "colors": {
-        "primary": "#ff00ff",      # Color principal
-        "secondary": "#330033",    # Color secundario
-        "success": "#00ff00",      # Verde éxito
-        "warning": "#ffaa00",      # Naranja advertencia
-        "danger": "#ff0000",       # Rojo peligro
-        "bg_dark": "#000000",      # Fondo oscuro
-        "bg_medium": "#111111",    # Fondo medio
-        "bg_light": "#222222",     # Fondo claro
-        "text": "#ffffff",         # Color texto
-        "border": "#ff00ff"        # Color bordes
+THEMES = {
+    # ... temas existentes ...
+    
+    "mi_tema": {
+        "name": "Mi Tema Personalizado",
+        "colors": {
+            "primary": "#ff00ff",      # Color principal
+            "secondary": "#00ffff",    # Color secundario
+            "success": "#00ff00",      # Verde éxito
+            "warning": "#ffff00",      # Amarillo advertencia
+            "danger": "#ff0000",       # Rojo peligro
+            "bg_dark": "#000000",      # Fondo oscuro
+            "bg_medium": "#111111",    # Fondo medio
+            "bg_light": "#222222",     # Fondo claro
+            "text": "#ffffff",         # Texto
+            "text_dim": "#aaaaaa",     # Texto tenue
+            "border": "#ff00ff"        # Borde
+        }
     }
 }
 ```
 
-### Opción 2: Usar la función create_custom_theme
+### **Paso 2: Usar el Tema**
 
+1. Reinicia el dashboard
+2. "Cambiar Tema" → Aparecerá "Mi Tema Personalizado"
+3. Selecciónalo y aplica
+
+---
+
+## 🎯 Guía de Colores
+
+### **Colores Obligatorios:**
 ```python
-from config.themes import create_custom_theme, THEMES
-
-mi_tema = create_custom_theme(
-    name="Mi Tema",
-    colors={
-        "primary": "#ff00ff",
-        "secondary": "#330033",
-        "success": "#00ff00",
-        "warning": "#ffaa00",
-        "danger": "#ff0000",
-        "bg_dark": "#000000",
-        "bg_medium": "#111111",
-        "bg_light": "#222222",
-        "text": "#ffffff",
-        "border": "#ff00ff"
-    }
-)
-
-# Añadirlo a THEMES
-THEMES["mi_tema"] = mi_tema
+"primary"    # Botones, sliders, elementos principales
+"secondary"  # Títulos, elementos secundarios
+"success"    # Indicadores positivos (<30% uso)
+"warning"    # Indicadores medios (30-70% uso)
+"danger"     # Indicadores altos (>70% uso)
+"bg_dark"    # Fondo más oscuro
+"bg_medium"  # Fondo medio
+"bg_light"   # Fondo más claro
+"text"       # Texto principal
+"text_dim"   # Texto secundario/tenue
+"border"     # Bordes de elementos
 ```
 
----
+### **Dónde se Usa Cada Color:**
 
-## 🎯 Tips para Colores
-
-### Colores Recomendados por Categoría
-
-**Fondos oscuros:**
-- Negro: `#000000`
-- Negro azulado: `#0a0e14`
-- Gris muy oscuro: `#1e1f29`
-
-**Primarios (color principal del tema):**
-- Cyan: `#00ffff`
-- Verde neón: `#00ff00`
-- Azul: `#61afef`
-- Rosa: `#f92aad`
-
-**Texto:**
-- Blanco: `#ffffff`
-- Gris claro: `#abb2bf`
-- Beige: `#f8f0e3`
-
-**Estados:**
-- Éxito (verde): `#00ff00`, `#50fa7b`, `#a3be8c`
-- Advertencia (amarillo/naranja): `#ffaa00`, `#e5c07b`
-- Peligro (rojo): `#ff3333`, `#f85149`
+| Color | Uso |
+|-------|-----|
+| `primary` | Botones, sliders activos, bordes principales |
+| `secondary` | Títulos de sección, hover de sliders/scrollbars |
+| `success` | CPU/RAM <30%, mensajes de éxito |
+| `warning` | CPU/RAM 30-70%, advertencias |
+| `danger` | CPU/RAM >70%, errores, botón "Matar" |
+| `bg_dark` | Fondo de cards, filas alternadas |
+| `bg_medium` | Fondo principal de ventanas |
+| `bg_light` | Fondo de sliders, elementos elevados |
+| `text` | Texto principal |
+| `text_dim` | Texto secundario (usuarios, paths) |
+| `border` | Bordes de botones y elementos |
 
 ---
 
-## 🔍 Ver Preview de Todos los Temas
+## 💡 Tips para Crear Temas
 
+### **1. Contraste**
+Asegura que `text` contraste bien con todos los fondos:
 ```python
-from config.themes import get_theme_preview
+# Bueno
+"bg_dark": "#000000"
+"text": "#ffffff"
 
-print(get_theme_preview())
+# Malo (poco contraste)
+"bg_dark": "#222222"
+"text": "#333333"
 ```
 
-Esto mostrará todos los temas con sus colores principales.
+### **2. Secondary Distintivo**
+El color `secondary` debe ser diferente de los fondos:
+```python
+# ❌ Malo - secondary igual a bg_medium
+"secondary": "#111111"
+"bg_medium": "#111111"
 
----
-
-## 📸 Capturas de Pantalla
-
-(Los temas se ven mejor en vivo, pero aquí una guía rápida)
-
-**Temas Neón**: Cyberpunk, Matrix, Synthwave
-- Alto contraste
-- Colores brillantes
-- Efecto futurista
-
-**Temas Pastel**: Dracula, Nord, Material
-- Colores suaves
-- Fácil a la vista
-- Profesional
-
-**Temas Cálidos**: Sunset, Gruvbox
-- Naranja/marrones
-- Acogedor
-- Vintage
-
-**Temas Fríos**: Ocean, Tokyo Night, Ayu
-- Azules
-- Moderno
-- Limpio
-
----
-
-## 🐛 Solución de Problemas
-
-### El tema no cambia al reiniciar
-
-**Verifica:**
-```bash
-# Ver tema guardado
-cat data/theme_config.json
-
-# Debe mostrar:
-# {"selected_theme": "tu_tema"}
+# ✅ Bueno - secondary visible
+"secondary": "#00ffff"
+"bg_medium": "#111111"
 ```
 
-### Error al cargar tema
-
-El sistema volverá automáticamente al tema `cyberpunk` por defecto.
-
-### Los colores se ven mal
-
-Algunos terminales/pantallas pueden mostrar colores ligeramente diferentes. Prueba otro tema o ajusta los colores manualmente.
-
----
-
-## 💡 Recomendaciones
-
-**Para trabajar de noche**: Nord, Tokyo Night, Ayu Dark
-**Para trabajar de día**: Ocean, Material, GitHub Dark
-**Para impresionar**: Synthwave, Cyberpunk, Matrix
-**Para productividad**: One Dark, Solarized Dark, Dracula
-
----
-
-## 🎨 Combinaciones Populares
-
-### Gaming Setup
-- **Tema**: Synthwave o Cyberpunk
-- **Monitor**: RGB sincronizado
-
-### Desarrollo
-- **Tema**: One Dark o Dracula
-- **Monitor**: Editor con mismo tema
-
-### Server Monitoring
-- **Tema**: Matrix o GitHub Dark
-- **Monitor**: Terminal verde
-
----
-
-## 📝 Guardar Tus Favoritos
-
-Crea un archivo con tus temas preferidos:
-
-```bash
-# Crear lista de favoritos
-nano data/my_favorite_themes.txt
+### **3. Jerarquía de Fondos**
+```python
+bg_dark < bg_medium < bg_light
+#000000   #111111     #222222
 ```
 
-```
-Trabajo: one_dark
-Noche: nord
-Fin de semana: synthwave
-```
+### **4. Paleta Armónica**
+Usa una herramienta como:
+- [Coolors.co](https://coolors.co)
+- [Adobe Color](https://color.adobe.com)
+- [Paletton](https://paletton.com)
 
 ---
 
-## 🚀 Próximamente
+## 🔍 Preview de Temas
 
-- [ ] Temas claros (light themes)
-- [ ] Editor de temas visual
-- [ ] Importar temas desde archivo
-- [ ] Compartir temas entre usuarios
+Todos los temas han sido optimizados para:
+- ✅ Alto contraste
+- ✅ Legibilidad
+- ✅ `secondary` distintivo
+- ✅ Colores armónicos
+
+**11 temas fueron corregidos** en v2.0 para tener `secondary` visible.
 
 ---
 
-**¡Disfruta personalizando tu dashboard!** 🎨✨
+## 📊 Comparación de Temas
+
+| Tema | Estilo | Colores Dominantes | Ideal Para |
+|------|--------|-------------------|------------|
+| Cyberpunk | Neón | Cyan + Verde | Original |
+| Matrix | Película | Verde | Fans Matrix |
+| Sunset | Cálido | Naranja + Púrpura | Acogedor |
+| Ocean | Fresco | Azul + Aqua | Limpio |
+| Dracula | Elegante | Púrpura + Rosa | Devs |
+| Nord | Minimalista | Azul hielo | Nórdico |
+| Tokyo Night | Nocturno | Azul + Púrpura | Noche |
+| Monokai | IDE | Cyan + Verde | Código |
+| Gruvbox | Retro | Naranja + Beige | Vintage |
+| Solarized | Científico | Azul + Cyan | Precisión |
+| One Dark | Moderno | Azul claro | Equilibrado |
+| Synthwave | 80s | Rosa + Verde | Nostalgia |
+| GitHub | Profesional | Azul GitHub | Devs |
+| Material | Google | Azul material | Moderno |
+| Ayu | Simple | Azul cielo | Minimalista |
+
+---
+
+## 🔄 Persistencia de Temas
+
+El tema seleccionado se guarda en:
+```
+data/theme_config.json
+```
+
+**Se mantiene entre reinicios** del dashboard.
+
+---
+
+## 🆘 Troubleshooting
+
+### **Tema no se aplica**
+**Solución**: Usa "Aplicar y Reiniciar" (reinicia automáticamente)
+
+### **Colores se ven mal**
+**Causa**: Tema con contraste bajo  
+**Solución**: Prueba otro tema o ajusta `text` y fondos
+
+### **Secondary no se ve**
+**Causa**: Color igual a fondo  
+**Solución**: Ya corregido en v2.0. Actualiza.
+
+---
+
+**¡Personaliza tu dashboard!** 🎨✨
