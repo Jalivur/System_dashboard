@@ -7,6 +7,7 @@ import atexit
 from datetime import datetime
 from core.data_logger import DataLogger
 from utils.file_manager import FileManager
+from utils.system_utils import SystemUtils 
 
 
 class DataCollectionService:
@@ -97,14 +98,14 @@ class DataCollectionService:
         # Construir diccionario de métricas
         metrics = {
             'cpu_percent': system_stats.get('cpu', 0),
-            'ram_percent': system_stats.get('ram_percent', 0),
-            'ram_used_gb': system_stats.get('ram_used', 0) / 1024,  # MB a GB
+            'ram_percent': system_stats.get('ram', 0),
+            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),# MB a GB
             'temperature': system_stats.get('temp', 0),
-            'disk_used_percent': disk_stats.get('percent', 0),
-            'disk_read_mb': disk_stats.get('read_speed', 0),
-            'disk_write_mb': disk_stats.get('write_speed', 0),
-            'net_download_mb': network_stats.get('download', 0),
-            'net_upload_mb': network_stats.get('upload', 0),
+            'disk_used_percent': disk_stats.get('disk_usage', 0),
+            'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
+            'disk_write_mb': "{:.2f}".format(disk_stats.get('disk_write_mb', 0)),
+            'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
+            'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
             'fan_pwm': fan_state.get('target_pwm', 0),
             'fan_mode': fan_state.get('mode', 'unknown')
         }

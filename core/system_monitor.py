@@ -34,6 +34,7 @@ class SystemMonitor:
         """
         cpu = psutil.cpu_percent()
         ram = psutil.virtual_memory().percent
+        ram_used = psutil.virtual_memory().used
         temp = self.system_utils.get_cpu_temp()
         disk_usage = psutil.disk_usage('/').percent
         
@@ -52,6 +53,7 @@ class SystemMonitor:
         return {
             'cpu': cpu,
             'ram': ram,
+            'ram_used': ram_used,
             'temp': temp,
             'disk_usage': disk_usage,
             'disk_read_mb': disk_read_mb,

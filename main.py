@@ -68,7 +68,7 @@ def main():
         fan_controller=fan_controller,
         network_monitor=network_monitor,
         disk_monitor=disk_monitor,
-        interval_minutes=5  # Recolectar cada 5 minutos
+        interval_minutes=5  # Recolectar cada 5 minutos, este valor son segundos pero en el metodo los convierte a minutos multiplicando por 60
     )
     data_service.start()
     
