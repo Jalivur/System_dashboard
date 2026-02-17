@@ -88,7 +88,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 ### 🔧 **Requisitos del Sistema**
 - **Hardware**: Raspberry Pi 3/4/5
 - **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
-- **Pantalla**: DSI 7" (800x480) o HDMI
+- **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
 - **Python**: 3.8 o superior
 - **Extras**: Ventiladores PWM (opcional), NVMe (opcional)
 
