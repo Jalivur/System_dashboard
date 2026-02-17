@@ -7,6 +7,7 @@ from .network_monitor import NetworkMonitor
 from .fan_auto_service import FanAutoService
 from .disk_monitor import DiskMonitor
 from .process_monitor import ProcessMonitor
+from .service_monitor import ServiceMonitor
 
 __all__ = [
     'FanController',
@@ -14,5 +15,6 @@ __all__ = [
     'NetworkMonitor',
     'FanAutoService',
     'DiskMonitor',
-    'ProcessMonitor'
+    'ProcessMonitor',
+    'ServiceMonitor',
 ]

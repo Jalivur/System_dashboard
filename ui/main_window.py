@@ -11,8 +11,7 @@ from utils.system_utils import SystemUtils
 class MainWindow:
     """Ventana principal del dashboard"""
     
-    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, process_monitor,
-                 update_interval=2000,  ):
+    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, process_monitor, service_monitor, update_interval=2000,  ):
         """
         Inicializa la ventana principal
         
@@ -21,6 +20,9 @@ class MainWindow:
             system_monitor: Instancia de SystemMonitor
             fan_controller: Instancia de FanController
             network_monitor: Instancia de NetworkMonitor
+            disk_monitor: Instancia de DiskMonitor
+            process_monitor: Instancia de ProcessMonitor
+            service_monitor: Instancia de ServiceMonitor
             update_interval: Intervalo de actualización en ms
         """
         self.root = root
@@ -29,6 +31,7 @@ class MainWindow:
         self.network_monitor = network_monitor
         self.disk_monitor = disk_monitor
         self.process_monitor= process_monitor
+        self.service_monitor = service_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -41,6 +44,7 @@ class MainWindow:
         self.launchers_window = None
         self.disk_window = None
         self.process_window = None
+        self.service_window = None
         # Crear interfaz
         self._create_ui()
         
@@ -128,6 +132,7 @@ class MainWindow:
             ("  Monitor Disco", self.open_disk_window),  
             ("󱓞  Lanzadores", self.open_launchers),
             ("⚙️ Monitor Procesos", self.open_process_window),
+            ("⚙️ Monitor Servicios", self.open_service_window),
             ("󰔎  Cambiar Tema", self.open_theme_selector),
             ("  Reiniciar", self.restart_application),  # NUEVO
             ("󰿅  Salir", self.exit_application),  # NUEVO
@@ -202,6 +207,17 @@ class MainWindow:
             self.process_window = ProcessWindow(self.root, self.process_monitor)
         else:
             self.process_window.lift()
+    
+    def open_service_window(self):
+        """Abre el monitor de servicios"""
+        if self.service_window is None or not self.service_window.winfo_exists():
+            from ui.windows.service import ServiceWindow
+            self.service_window = ServiceWindow(
+                self.root,
+                self.service_monitor
+            )
+        else:
+            self.service_window.lift()
 
     def open_launchers(self):
         """Abre la ventana de lanzadores"""
