@@ -8,6 +8,7 @@ from .usb import USBWindow
 from .launchers import LaunchersWindow
 from .disk import DiskWindow
 from .process_window import ProcessWindow
+from .service import ServiceWindow
 
 __all__ = [
     'FanControlWindow',
@@ -17,4 +18,5 @@ __all__ = [
     'LaunchersWindow',
     'DiskWindow',
     'ProcessWindow',
+    'ServiceWindow',
 ]
