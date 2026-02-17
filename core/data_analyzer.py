@@ -72,7 +72,15 @@ class DataAnalyzer:
                 AVG(temperature) as temp_avg,
                 MAX(temperature) as temp_max,
                 MIN(temperature) as temp_min,
+                AVG(net_download_mb) as down_avg,
+                MAX(net_download_mb) as down_max,
+                MIN(net_download_mb) as down_min,
+                AVG(net_upload_mb) as up_avg,
+                MAX(net_upload_mb) as up_max,
+                MIN(net_upload_mb) as up_min,
                 AVG(fan_pwm) as pwm_avg,
+                MAX(fan_pwm) as pwm_max,
+                MIN(fan_pwm) as pwm_min,
                 COUNT(*) as total_samples
             FROM metrics
             WHERE timestamp >= ?
@@ -92,8 +100,16 @@ class DataAnalyzer:
                 'temp_avg': round(row[6], 1) if row[6] else 0,
                 'temp_max': round(row[7], 1) if row[7] else 0,
                 'temp_min': round(row[8], 1) if row[8] else 0,
-                'pwm_avg': round(row[9], 0) if row[9] else 0,
-                'total_samples': row[10]
+                'down_avg': round(row[9], 2) if row[9] else 0,
+                'down_max': round(row[10], 2) if row[10] else 0,
+                'down_min': round(row[11], 2) if row[11] else 0,
+                'up_avg': round(row[12], 2) if row[12] else 0,
+                'up_max': round(row[13], 2) if row[13] else 0,
+                'up_min': round(row[14], 2) if row[14] else 0,
+                'pwm_avg': round(row[15], 0) if row[15] else 0,
+                'pwm_max': round(row[16], 0) if row[16] else 0,
+                'pwm_min': round(row[17], 0) if row[17] else 0,
+                'total_samples': row[18]
             }
 
         return {}

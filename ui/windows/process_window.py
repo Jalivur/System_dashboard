@@ -180,10 +180,10 @@ class ProcessWindow(ctk.CTkToplevel):
     def _create_column_headers(self, parent):
         """Crea encabezados de columnas ordenables"""
         headers = ctk.CTkFrame(parent, fg_color=COLORS['bg_light'])
-        headers.pack(fill="x", padx=0, pady=(5, 0))
+        headers.pack(fill="x", padx=10, pady=(5, 0))
         
         # Configurar grid
-        headers.grid_columnconfigure(0, weight=1, minsize=70)   # PID
+        headers.grid_columnconfigure(0, weight=1, minsize=20)   # PID
         headers.grid_columnconfigure(1, weight=4, minsize=200)  # Nombre
         headers.grid_columnconfigure(2, weight=2, minsize=100)  # Usuario
         headers.grid_columnconfigure(3, weight=1, minsize=80)   # CPU
@@ -209,6 +209,7 @@ class ProcessWindow(ctk.CTkToplevel):
                     fg_color=COLORS['bg_medium'],
                     hover_color=COLORS['bg_dark'],
                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
+                    width=50,
                     height=30
                 )
             else:
@@ -219,7 +220,7 @@ class ProcessWindow(ctk.CTkToplevel):
                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
                 )
             
-            btn.grid(row=0, column=i, sticky="nw", padx=2, pady=5)
+            btn.grid(row=0, column=i, sticky="n", padx=2, pady=5)
     
     def _on_sort_change(self, column: str):
         """Cambia el orden de procesos"""
@@ -351,11 +352,11 @@ class ProcessWindow(ctk.CTkToplevel):
         # Frame de la fila (sin altura fija, se adapta al contenido)
         bg_color = COLORS['bg_dark'] if row % 2 == 0 else COLORS['bg_medium']
         row_frame = ctk.CTkFrame(self.process_frame, fg_color=bg_color)
-        row_frame.pack(fill="x", pady=2)  # Más padding vertical
+        row_frame.pack(fill="x", pady=2, padx=10)  # Más padding vertical
         
         # Configurar grid igual que headers
         row_frame.grid_columnconfigure(0, weight=1, minsize=70)
-        row_frame.grid_columnconfigure(1, weight=3, minsize=200)
+        row_frame.grid_columnconfigure(1, weight=3, minsize=300)
         row_frame.grid_columnconfigure(2, weight=2, minsize=100)
         row_frame.grid_columnconfigure(3, weight=1, minsize=80)
         row_frame.grid_columnconfigure(4, weight=1, minsize=80)

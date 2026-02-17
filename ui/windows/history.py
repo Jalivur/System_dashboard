@@ -228,7 +228,9 @@ class HistoryWindow(ctk.CTkToplevel):
         stats_text = f"""• CPU promedio: {stats.get('cpu_avg', 0):.1f}%  (min: {stats.get('cpu_min', 0):.1f}%, max: {stats.get('cpu_max', 0):.1f}%)
 • RAM promedio: {stats.get('ram_avg', 0):.1f}%  (min: {stats.get('ram_min', 0):.1f}%, max: {stats.get('ram_max', 0):.1f}%)
 • Temp promedio: {stats.get('temp_avg', 0):.1f}°C  (min: {stats.get('temp_min', 0):.1f}°C, max: {stats.get('temp_max', 0):.1f}°C)
-• PWM promedio: {stats.get('pwm_avg', 0):.0f}
+• Red Down promedio: {stats.get('down_avg', 0):.2f} MB/s (min: {stats.get('down_min', 0):.2f}, max: {stats.get('down_max', 0):.2f})
+• Red Up promedio: {stats.get('up_avg', 0):.2f} MB/s (min: {stats.get('up_min', 0):.2f}, max: {stats.get('up_max', 0):.2f})
+• PWM promedio: {stats.get('pwm_avg', 0):.0f} (min: {stats.get('pwm_min', 0):.0f}, max: {stats.get('pwm_max', 0):.0f})
 • Muestras: {stats.get('total_samples', 0)} en {period}
 • Total registros: {total_records}  |  DB: {db_size:.2f} MB"""
 
@@ -242,15 +244,21 @@ class HistoryWindow(ctk.CTkToplevel):
         # Limpiar figura
         self.fig.clear()
 
-        # Crear 3 subplots
-        ax1 = self.fig.add_subplot(3, 1, 1)
-        ax2 = self.fig.add_subplot(3, 1, 2)
-        ax3 = self.fig.add_subplot(3, 1, 3)
+        # Crear 6 subplots
+        ax1 = self.fig.add_subplot(6, 1, 1)  # CPU
+        ax2 = self.fig.add_subplot(6, 1, 2)  # RAM
+        ax3 = self.fig.add_subplot(6, 1, 3)  # Temperatura
+        ax4 = self.fig.add_subplot(6, 1, 4)  # Red Download
+        ax5 = self.fig.add_subplot(6, 1, 5)  # Red Upload
+        ax6 = self.fig.add_subplot(6, 1, 6)  # PWM
 
         # Obtener datos
         ts_cpu, vals_cpu = self.analyzer.get_graph_data('cpu_percent', hours)
         ts_ram, vals_ram = self.analyzer.get_graph_data('ram_percent', hours)
         ts_temp, vals_temp = self.analyzer.get_graph_data('temperature', hours)
+        ts_down, vals_down = self.analyzer.get_graph_data('net_download_mb', hours)
+        ts_up, vals_up = self.analyzer.get_graph_data('net_upload_mb', hours)
+        ts_pwm, vals_pwm = self.analyzer.get_graph_data('fan_pwm', hours)
 
         # Gráfica CPU
         if ts_cpu:
@@ -276,6 +284,33 @@ class HistoryWindow(ctk.CTkToplevel):
             ax3.set_facecolor(COLORS['bg_dark'])
             ax3.tick_params(colors=COLORS['text'])
             ax3.grid(True, alpha=0.2)
+
+        # Gráfica Red Download
+        if ts_down:
+            ax4.plot(ts_down, vals_down, color=COLORS['primary'], linewidth=1.5)
+            ax4.set_ylabel('Red Down MB/s', color=COLORS['text'])
+            ax4.set_xlabel('Tiempo', color=COLORS['text'])
+            ax4.set_facecolor(COLORS['bg_dark'])
+            ax4.tick_params(colors=COLORS['text'])
+            ax4.grid(True, alpha=0.2)
+            
+        # Gráfica Red Upload
+        if ts_up:
+            ax5.plot(ts_up, vals_up, color=COLORS["success"], linewidth=1.5)
+            ax5.set_ylabel('Red Up MB/s', color=COLORS['text'])
+            ax5.set_xlabel('Tiempo', color=COLORS['text'])
+            ax5.set_facecolor(COLORS['bg_dark'])
+            ax5.tick_params(colors=COLORS['text'])
+            ax5.grid(True, alpha=0.2)
+        
+        # Gráfica PWM
+        if ts_pwm:
+            ax6.plot(ts_pwm, vals_pwm, color=COLORS["warning"], linewidth=1.5)
+            ax6.set_ylabel('PWM', color=COLORS['text'])
+            ax6.set_xlabel('Tiempo', color=COLORS['text'])
+            ax6.set_facecolor(COLORS['bg_dark'])
+            ax6.tick_params(colors=COLORS['text'])
+            ax6.grid(True, alpha=0.2)
 
         # Ajustar layout
         self.fig.tight_layout()
