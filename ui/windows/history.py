@@ -9,7 +9,7 @@ from ui.widgets import custom_msgbox
 from core.data_analyzer import DataAnalyzer
 from core.data_logger import DataLogger
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
 
@@ -144,6 +144,18 @@ class HistoryWindow(ctk.CTkToplevel):
         # Canvas para incrustar en tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
+        # AÑADIR: Toolbar de navegación
+        toolbar_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        toolbar_frame.pack(fill="x", pady=(5, 0))
+
+        self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
+        self.toolbar.update()
+
+        # Estilizar toolbar
+        self.toolbar.config(background=COLORS['bg_dark'])
+        for widget in self.toolbar.winfo_children():
+            if hasattr(widget, 'config'):
+                widget.config(bg=COLORS['primary'], highlightcolor=COLORS['text'])
 
     def _create_stats_area(self, parent):
         """Crea área de estadísticas"""
@@ -256,6 +268,11 @@ class HistoryWindow(ctk.CTkToplevel):
         ax7 = self.fig.add_subplot(8, 1, 7)  # Disk Write
         ax8 = self.fig.add_subplot(8, 1, 8)  # PWM
         
+        # Habilitar interactividad
+        """self.canvas.mpl_connect('button_press_event', self._on_click)
+        self.canvas.mpl_connect('button_release_event', self._on_release)
+        self.canvas.mpl_connect('motion_notify_event', self._on_motion)
+                """
         # Obtener datos
         ts_cpu, vals_cpu = self.analyzer.get_graph_data('cpu_percent', hours)
         ts_ram, vals_ram = self.analyzer.get_graph_data('ram_percent', hours)
