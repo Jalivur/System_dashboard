@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
+from utils import DashboardLogger
 
 
 class DataLogger:
@@ -23,6 +24,9 @@ class DataLogger:
 
         self.db_path = db_path
         self._init_database()
+        self.dashboard_logger = DashboardLogger()  # Logger para eventos y errores
+        self.check_and_rotate_db(max_mb=5.0)  # Verificar tamaño al iniciar
+
 
     def _init_database(self):
         """Inicializa la base de datos con las tablas necesarias"""
@@ -156,7 +160,7 @@ class DataLogger:
             return db_file.stat().st_size / (1024 * 1024)
         return 0.0
 
-    def clean_old_data(self, days: int = 90):
+    def clean_old_data(self, days: int = 7):
         """
         Elimina datos más antiguos de X días
 
@@ -185,3 +189,12 @@ class DataLogger:
         cursor.execute('VACUUM')
 
         conn.close()
+    def check_and_rotate_db(self, max_mb: float = 5.0):
+        """Si la DB supera el tamaño máximo, elimina datos antiguos de más de 30 días"""
+        self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Verificando tamaño de la base de datos... Tamaño actual: {self.get_db_size_mb():.2f} MB")
+        current_size = self.get_db_size_mb()
+        if current_size > max_mb:
+            # Limpia datos de más de 7 días para reducir tamaño
+            self.dashboard_logger.get_logger(__name__).warning(f"[DataLogger]La base de datos ha superado el tamaño máximo de {max_mb} MB. Limpiando datos antiguos...")
+            self.clean_old_data(days=7)
+            self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Limpieza completada. Nuevo tamaño de la base de datos: {self.get_db_size_mb():.2f} MB")

@@ -61,6 +61,7 @@ class DataCollectionService:
     def start(self):
         """Inicia el servicio de recolección"""
         if self.running:
+            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio ya está corriendo")
             return
 
         self.running = True

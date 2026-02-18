@@ -11,6 +11,7 @@ from core.data_logger import DataLogger
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
+from utils import DashboardLogger
 
 
 class HistoryWindow(ctk.CTkToplevel):
@@ -22,6 +23,7 @@ class HistoryWindow(ctk.CTkToplevel):
         # Referencias
         self.analyzer = DataAnalyzer()
         self.logger = DataLogger()
+        self.dashboard_logger = DashboardLogger()
 
         # Estado
         self.period_var = ctk.StringVar(value="24h")
@@ -106,6 +108,9 @@ class HistoryWindow(ctk.CTkToplevel):
             font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
         )
         title.pack(pady=10)
+        # Contenedor para la barra de herramientas de Matplotlib
+        self.toolbar_container = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
+        self.toolbar_container.pack(side="top", padx=10)
 
     def _create_period_controls(self, parent):
         """Crea controles de periodo"""
@@ -135,27 +140,68 @@ class HistoryWindow(ctk.CTkToplevel):
 
     def _create_graphs_area(self, parent):
         """Crea área de gráficas"""
+        # 1. Ajustamos el frame contenedor para que no tenga padding interno innecesario
         graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        graphs_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        graphs_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10)) # pady superior en 0
 
-        # Figura de matplotlib
+        # Mantener tu figura original
         self.fig = Figure(figsize=(10, 20), facecolor=COLORS['bg_medium'])
+        
+        # IMPORTANTE: Esto elimina los márgenes blancos alrededor de las gráficas
+        # sin cambiar el tamaño 10x20. Aprovecha mejor el espacio.
+        self.fig.set_tight_layout(True) 
 
-        # Canvas para incrustar en tkinter
+        # 2. El master del canvas DEBE ser el frame que creaste, no el parent general
+        # Esto evita que el canvas "flote" en el contenedor de la ventana
         self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_frame)
-        self.canvas.get_tk_widget().pack(fill="both", expand=True)
-        # AÑADIR: Toolbar de navegación
-        toolbar_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        toolbar_frame.pack(fill="x", pady=(5, 0))
+        self.canvas.draw()
+        
+        self.canvas_widget = self.canvas.get_tk_widget()
+        # pack con pady=0 para pegar la gráfica arriba del todo
+        self.canvas_widget.pack(fill="both", expand=True, pady=0)
 
-        self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
-        self.toolbar.update()
+        # --- LOGICA DE TOOLBAR INVISIBLE ---
+        # La creamos vinculada a 'self' (la ventana) para que no ocupe sitio en el layout
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
+        self.toolbar.pack_forget() 
+        
+        # --- TUS BOTONES EN EL HEADER ---
+        self.home_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🏠 Inicio",
+            command=self.toolbar.home,
+            height=6,
+        )
+        self.home_btn.pack(side="left", padx=5)
 
-        # Estilizar toolbar
-        self.toolbar.config(background=COLORS['bg_dark'])
-        for widget in self.toolbar.winfo_children():
-            if hasattr(widget, 'config'):
-                widget.config(bg=COLORS['primary'], highlightcolor=COLORS['text'])
+        self.zoom_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🔍 Zoom",
+            command=self.toolbar.zoom,
+            height=6,
+        )
+        self.zoom_btn.pack(side="left", padx=5)
+
+        self.pan_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🖐️ Mover",
+            command=self.toolbar.pan,
+            height=6,
+        )
+        self.pan_btn.pack(side="left", padx=5)
+        self.save_btn = make_futuristic_button(
+            self.toolbar_container,
+            text=" Guardar",
+            command=self._export_figure_image,
+            height=6,
+        )
+        self.save_btn.pack(side="left", padx=5)
+
+        # 2. Conectar eventos
+        self.canvas.mpl_connect('button_press_event', self._on_click)
+        self.canvas.mpl_connect('button_release_event', self._on_release)
+        self.canvas.mpl_connect('motion_notify_event', self._on_motion)
+
 
     def _create_stats_area(self, parent):
         """Crea área de estadísticas"""
@@ -268,11 +314,7 @@ class HistoryWindow(ctk.CTkToplevel):
         ax7 = self.fig.add_subplot(8, 1, 7)  # Disk Write
         ax8 = self.fig.add_subplot(8, 1, 8)  # PWM
         
-        # Habilitar interactividad
-        """self.canvas.mpl_connect('button_press_event', self._on_click)
-        self.canvas.mpl_connect('button_release_event', self._on_release)
-        self.canvas.mpl_connect('motion_notify_event', self._on_motion)
-                """
+
         # Obtener datos
         ts_cpu, vals_cpu = self.analyzer.get_graph_data('cpu_percent', hours)
         ts_ram, vals_ram = self.analyzer.get_graph_data('ram_percent', hours)
@@ -377,19 +419,73 @@ class HistoryWindow(ctk.CTkToplevel):
     def _clean_old_data(self):
         """Limpia datos antiguos"""
         from ui.widgets import confirm_dialog
-
+        self.days_to_clean = 7  # Puedes ajustar este valor o pedirlo al usuario en el confirm_dialog   
         def do_clean():
             try:
-                self.logger.clean_old_data(days=90)
-                custom_msgbox(self, "Datos antiguos eliminados\n(mayores a 90 días)", "✅ Limpiado")
+                self.logger.clean_old_data(days=self.days_to_clean)
+                custom_msgbox(self, f"Datos antiguos eliminados\n(mayores a {self.days_to_clean} días)", "✅ Limpiado")
+                self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Datos antiguos eliminados (mayores a {self.days_to_clean} días)")
                 self._update_data()
             except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al limpiar datos antiguos: {str(e)}")
                 custom_msgbox(self, f"Error al limpiar:\n{str(e)}", "❌ Error")
 
         confirm_dialog(
             parent=self,
-            text="¿Eliminar datos mayores a 90 días?\n\nEsto liberará espacio en disco.",
+            text=f"¿Eliminar datos mayores a {self.days_to_clean} días?\n\nEsto liberará espacio en disco.",
             title="⚠️ Confirmar",
             on_confirm=do_clean,
             on_cancel=None
         )
+        # Agrega estos métodos al final de la clase HistoryWindow
+    def _on_click(self, event):
+        """Maneja el evento de presión del botón del mouse"""
+        if event.inaxes:
+            self.dashboard_logger.get_logger(__name__).info(f"Punto seleccionado: x={event.xdata}, y={event.ydata}")
+
+    def _on_release(self, event):
+        
+        """Maneja el evento de liberación del botón del mouse"""
+        pass
+
+    def _on_motion(self, event):
+        """Maneja el movimiento del mouse sobre la gráfica"""
+        if event.inaxes:
+            # Aquí podrías actualizar un label con las coordenadas actuales
+            pass
+    def _export_figure_image(self):
+        """Guarda la figura completa como imagen PNG sin usar popups del sistema"""
+        import os
+        from datetime import datetime
+        from ui.widgets import custom_msgbox
+        
+        try:
+            # 1. Crear carpeta de capturas si no existe
+            save_dir = os.path.join(os.getcwd(), "data/screenshots")
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            
+            # 2. Generar nombre de archivo con fecha y hora
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            filename = f"graficas_{timestamp}.png"
+            filepath = os.path.join(save_dir, filename)
+            
+            # 3. Guardar la figura
+            # facecolor asegura que el fondo coincida con tu tema
+            self.fig.savefig(
+                filepath, 
+                dpi=150, 
+                facecolor=self.fig.get_facecolor(),
+                bbox_inches='tight'
+            )
+            self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Figura guardada: {filepath}")
+            # 4. Mostrar confirmación con TU propio dialogo
+            custom_msgbox(
+                self, 
+                f"Imagen guardada con éxito en:\n\n{filepath}", 
+                "✅ Captura Guardada"
+            )
+            
+        except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al guardar imagen: {str(e)}")
+            custom_msgbox(self, f"Error al guardar la imagen: {str(e)}", "❌ Error")
