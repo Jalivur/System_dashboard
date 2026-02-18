@@ -3,10 +3,12 @@ Ventana principal del sistema de monitoreo
 """
 import customtkinter as ctk
 from typing import Optional
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import make_futuristic_button
+import customtkinter as ctk
+from ui.widgets import confirm_dialog, custom_msgbox
 from utils.system_utils import SystemUtils
-
+import subprocess
 
 class MainWindow:
     """Ventana principal del dashboard"""
@@ -255,23 +257,171 @@ class MainWindow:
             self.disk_window.lift()
             
     def exit_application(self):
-        """Cierra la aplicación completamente"""
-        from ui.widgets import confirm_dialog
+        """Cierra la aplicación con opciones de salida o apagado"""
+
+        # Crear ventana de selección
+        selection_window = ctk.CTkToplevel(self.root)
+        selection_window.title("Opciones de Salida")
+        selection_window.configure(fg_color=COLORS['bg_medium'])
+        selection_window.geometry("450x280")
+        selection_window.resizable(False, False)
+        selection_window.overrideredirect(True)
         
-        def do_exit():
-            """Cierra todo"""
-            self.root.quit()
-            self.root.destroy()
         
-        # Usar confirm_dialog existente
-        confirm_dialog(
-            parent=self.root,
-            text="¿Seguro que quieres salir?",
-            title="⚠️ Confirmar Salida",
-            on_confirm=do_exit,
-            on_cancel=None
-            
+        # Centrar en pantalla
+        selection_window.update_idletasks()
+        x = DSI_X + (450 // 2) - 40
+        y = DSI_Y + (280 // 2) - 40
+        selection_window.geometry(f"450x280+{x}+{y}")
+        
+        # Hacer modal
+        selection_window.transient(self.root)
+        selection_window.focus_force()
+        selection_window.grab_set()
+        
+        # Frame principal
+        main_frame = ctk.CTkFrame(selection_window, fg_color=COLORS['bg_medium'])
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Título
+        title_label = ctk.CTkLabel(
+            main_frame,
+            text="⚠️ ¿Qué deseas hacer?",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
         )
+        title_label.pack(pady=(10, 20))
+        
+        # Variable para la selección
+        selection_var = ctk.StringVar(value="exit")
+        
+        # Frame de opciones
+        options_frame = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_dark'])
+        options_frame.pack(fill="x", pady=10, padx=20)
+        
+        # Opción 1: Salir de la aplicación
+        exit_radio = ctk.CTkRadioButton(
+            options_frame,
+            text="  Salir de la aplicación",
+            variable=selection_var,
+            value="exit",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'])
+        )
+        exit_radio.pack(anchor="w", padx=20, pady=12)
+        
+        # Opción 2: Apagar el sistema
+        shutdown_radio = ctk.CTkRadioButton(
+            options_frame,
+            text="󰐥  Apagar el sistema",
+            variable=selection_var,
+            value="shutdown",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'])
+        )
+        shutdown_radio.pack(anchor="w", padx=20, pady=12)
+        
+        # Estilizar radio buttons
+        from ui.styles import StyleManager
+        StyleManager.style_radiobutton_ctk(exit_radio)
+        StyleManager.style_radiobutton_ctk(shutdown_radio)
+        
+        # Frame de botones
+        buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        buttons_frame.pack(fill="x", pady=(20, 0))
+        
+        def on_confirm():
+            """Ejecuta la acción seleccionada con confirmación"""
+            selected = selection_var.get()
+            selection_window.destroy()
+            
+            if selected == "exit":
+                # Salir de la aplicación
+                def do_exit():
+                    """Cierra todo"""
+                    self.root.quit()
+                    self.root.destroy()
+                
+                confirm_dialog(
+                    parent=self.root,
+                    text="¿Confirmar salir de la aplicación?",
+                    title="⚠️ Confirmar Salida",
+                    on_confirm=do_exit,
+                    on_cancel=None
+                )
+                
+            else:  # shutdown
+                # Apagar el sistema
+                def do_shutdown():
+                    """Ejecuta script de apagado"""
+                    shutdown_script = str(SCRIPTS_DIR / "apagado.sh")
+                    
+                    try:
+                        # Ejecutar script
+                        result = subprocess.run(
+                            ["bash", shutdown_script],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        
+                        if result.returncode == 0:
+                            # Cerrar aplicación después de lanzar shutdown
+                            self.root.quit()
+                            self.root.destroy()
+                        else:
+                            custom_msgbox(
+                                self.root,
+                                f"Error al ejecutar apagado:\n{result.stderr}",
+                                "❌ Error"
+                            )
+                    except subprocess.TimeoutExpired:
+                        custom_msgbox(
+                            self.root,
+                            "Timeout al ejecutar script de apagado",
+                            "❌ Error"
+                        )
+                    except Exception as e:
+                        custom_msgbox(
+                            self.root,
+                            f"Error: {str(e)}",
+                            "❌ Error"
+                        )
+                
+                confirm_dialog(
+                    parent=self.root,
+                    text="⚠️ ¿Confirmar APAGAR el sistema?\n\nEsta acción apagará completamente el equipo.",
+                    title="🔴 Confirmar Apagado",
+                    on_confirm=do_shutdown,
+                    on_cancel=None
+                )
+        
+        def on_cancel():
+            """Cancela y cierra ventana de selección"""
+            selection_window.destroy()
+        
+        # Botón Confirmar
+        confirm_btn = make_futuristic_button(
+            buttons_frame,
+            text="Continuar",
+            command=on_confirm,
+            width=18,
+            height=6
+        )
+        confirm_btn.pack(side="right", padx=5)
+        
+        # Botón Cancelar
+        cancel_btn = make_futuristic_button(
+            buttons_frame,
+            text="Cancelar",
+            command=on_cancel,
+            width=18,
+            height=6
+        )
+        cancel_btn.pack(side="right", padx=5)
+        
+        # Bind ESC para cancelar
+        selection_window.bind("<Escape>", lambda e: on_cancel())
     
     
     def restart_application(self):
