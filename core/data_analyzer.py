@@ -78,6 +78,12 @@ class DataAnalyzer:
                 AVG(net_upload_mb) as up_avg,
                 MAX(net_upload_mb) as up_max,
                 MIN(net_upload_mb) as up_min,
+                AVG(disk_read_mb) as disk_read_avg,
+                MAX(disk_read_mb) as disk_read_max,
+                MIN(disk_read_mb) as disk_read_min,
+                AVG(disk_write_mb) as disk_write_avg,
+                MAX(disk_write_mb) as disk_write_max,
+                MIN(disk_write_mb) as disk_write_min,
                 AVG(fan_pwm) as pwm_avg,
                 MAX(fan_pwm) as pwm_max,
                 MIN(fan_pwm) as pwm_min,
@@ -106,10 +112,16 @@ class DataAnalyzer:
                 'up_avg': round(row[12], 2) if row[12] else 0,
                 'up_max': round(row[13], 2) if row[13] else 0,
                 'up_min': round(row[14], 2) if row[14] else 0,
-                'pwm_avg': round(row[15], 0) if row[15] else 0,
-                'pwm_max': round(row[16], 0) if row[16] else 0,
-                'pwm_min': round(row[17], 0) if row[17] else 0,
-                'total_samples': row[18]
+                'disk_read_avg': round(row[15], 2) if row[15] else 0,
+                'disk_read_max': round(row[16], 2) if row[16] else 0,
+                'disk_read_min': round(row[17], 2) if row[17] else 0,
+                'disk_write_avg': round(row[18], 2) if row[18] else 0,
+                'disk_write_max': round(row[19], 2) if row[19] else 0,
+                'disk_write_min': round(row[20], 2) if row[20] else 0,
+                'pwm_avg': round(row[21], 0) if row[21] else 0,
+                'pwm_max': round(row[22], 0) if row[22] else 0,
+                'pwm_min': round(row[23], 0) if row[23] else 0,
+                'total_samples': row[24]
             }
 
         return {}
