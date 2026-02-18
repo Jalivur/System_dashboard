@@ -118,210 +118,6 @@ Paquete de configuración
 from .settings import *
 
 ================
-File: core/data_logger.py
-================
-"""
-Sistema de logging de datos históricos
-"""
-import sqlite3
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional
-from utils import DashboardLogger
-
-
-class DataLogger:
-    """Registra datos del sistema en base de datos SQLite"""
-
-    def __init__(self, db_path: str = "data/history.db"):
-        """
-        Inicializa el logger
-
-        Args:
-            db_path: Ruta a la base de datos SQLite
-        """
-        # Crear directorio si no existe
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-        self.db_path = db_path
-        self._init_database()
-        self.dashboard_logger = DashboardLogger()  # Logger para eventos y errores
-        self.check_and_rotate_db(max_mb=100.0)  # Verificar tamaño al iniciar
-
-
-    def _init_database(self):
-        """Inicializa la base de datos con las tablas necesarias"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # Tabla principal de métricas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS metrics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                cpu_percent REAL,
-                ram_percent REAL,
-                ram_used_gb REAL,
-                temperature REAL,
-                disk_used_percent REAL,
-                disk_read_mb REAL,
-                disk_write_mb REAL,
-                net_download_mb REAL,
-                net_upload_mb REAL,
-                fan_pwm INTEGER,
-                fan_mode TEXT
-            )
-        ''')
-
-        # Índice para búsquedas por timestamp
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_timestamp 
-            ON metrics(timestamp)
-        ''')
-
-        # Tabla de eventos (opcional, para alertas futuras)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                event_type TEXT,
-                severity TEXT,
-                message TEXT,
-                data JSON
-            )
-        ''')
-
-        conn.commit()
-        conn.close()
-
-    def log_metrics(self, metrics: Dict):
-        """
-        Guarda un conjunto de métricas
-
-        Args:
-            metrics: Diccionario con las métricas a guardar
-
-        Ejemplo:
-            metrics = {
-                'cpu_percent': 45.2,
-                'ram_percent': 62.3,
-                'ram_used_gb': 5.2,
-                'temperature': 58.5,
-                'disk_used_percent': 75.0,
-                'disk_read_mb': 120.5,
-                'disk_write_mb': 45.2,
-                'net_download_mb': 2.5,
-                'net_upload_mb': 0.8,
-                'fan_pwm': 128,
-                'fan_mode': 'auto'
-            }
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO metrics (
-                cpu_percent, ram_percent, ram_used_gb, temperature,
-                disk_used_percent, disk_read_mb, disk_write_mb,
-                net_download_mb, net_upload_mb, fan_pwm, fan_mode
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            metrics.get('cpu_percent'),
-            metrics.get('ram_percent'),
-            metrics.get('ram_used_gb'),
-            metrics.get('temperature'),
-            metrics.get('disk_used_percent'),
-            metrics.get('disk_read_mb'),
-            metrics.get('disk_write_mb'),
-            metrics.get('net_download_mb'),
-            metrics.get('net_upload_mb'),
-            metrics.get('fan_pwm'),
-            metrics.get('fan_mode')
-        ))
-
-        conn.commit()
-        conn.close()
-
-    def log_event(self, event_type: str, severity: str, message: str, data: Dict = None):
-        """
-        Registra un evento
-
-        Args:
-            event_type: Tipo de evento (cpu_high, disk_full, etc)
-            severity: Severidad (info, warning, critical)
-            message: Mensaje descriptivo
-            data: Datos adicionales (opcional)
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO events (event_type, severity, message, data)
-            VALUES (?, ?, ?, ?)
-        ''', (event_type, severity, message, json.dumps(data) if data else None))
-
-        conn.commit()
-        conn.close()
-
-    def get_metrics_count(self) -> int:
-        """Obtiene el número total de registros"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('SELECT COUNT(*) FROM metrics')
-        count = cursor.fetchone()[0]
-
-        conn.close()
-        return count
-
-    def get_db_size_mb(self) -> float:
-        """Obtiene el tamaño de la base de datos en MB"""
-        db_file = Path(self.db_path)
-        if db_file.exists():
-            return db_file.stat().st_size / (1024 * 1024)
-        return 0.0
-
-    def clean_old_data(self, days: int = 90):
-        """
-        Elimina datos más antiguos de X días
-
-        Args:
-            days: Número de días a mantener
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cutoff_date = datetime.now() - timedelta(days=days)
-
-        cursor.execute('''
-            DELETE FROM metrics 
-            WHERE timestamp < ?
-        ''', (cutoff_date,))
-
-        # También limpiar eventos
-        cursor.execute('''
-            DELETE FROM events 
-            WHERE timestamp < ?
-        ''', (cutoff_date,))
-
-        conn.commit()
-
-        # Vacuum para recuperar espacio
-        cursor.execute('VACUUM')
-
-        conn.close()
-    def check_and_rotate_db(self, max_mb: float = 100.0):
-        """Si la DB supera el tamaño máximo, elimina datos antiguos de más de 30 días"""
-        self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Verificando tamaño de la base de datos... Tamaño actual: {self.get_db_size_mb():.2f} MB")
-        current_size = self.get_db_size_mb()
-        if current_size > max_mb:
-            # Limpia datos de más de 30 días para reducir tamaño
-            self.dashboard_logger.get_logger(__name__).warning(f"[DataLogger]La base de datos ha superado el tamaño máximo de {max_mb} MB. Limpiando datos antiguos...")
-            self.clean_old_data(days=30)
-            self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Limpieza completada. Nuevo tamaño de la base de datos: {self.get_db_size_mb():.2f} MB")
-
-================
 File: core/disk_monitor.py
 ================
 """
@@ -2436,145 +2232,6 @@ class FileManager:
         with open(tmp, "w") as f:
             json.dump(data, f, indent=2)
         os.replace(tmp, CURVE_FILE)
-
-================
-File: utils/logger.py
-================
-"""
-Sistema de logging robusto para el dashboard
-Funciona correctamente tanto desde terminal como desde auto-start
-
-Ubicación: utils/logger.py
-"""
-import logging
-import sys
-from pathlib import Path
-from datetime import datetime
-from logging.handlers import RotatingFileHandler
-import os
-
-
-class DashboardLogger:
-    """Logger centralizado para el dashboard"""
-    
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._setup_logger()
-        return cls._instance
-    
-    def _setup_logger(self):
-        """Configura el logger con rutas absolutas y rotación automática"""
-        
-        # 1. Obtener directorio del proyecto de forma absoluta
-        if hasattr(sys, '_MEIPASS'):
-            # Si está empaquetado con PyInstaller
-            project_root = Path(sys._MEIPASS)
-        else:
-            # utils/logger.py -> utils/ -> project_root/
-            project_root = Path(__file__).parent.parent.resolve()
-        
-        # 2. Crear directorio de logs
-        log_dir = project_root / "data" / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 3. Nombre fijo para que la rotación funcione
-        # (Si el nombre cambia cada día, el sistema no puede detectar el tamaño del archivo previo)
-        log_file = log_dir / "dashboard.log"
-        
-        formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-        
-        # 4. Configurar RotatingFileHandler
-        # maxBytes: 2MB (2 * 1024 * 1024)
-        # backupCount: 1 (mantiene el archivo actual y uno de respaldo .log.1)
-        file_handler = RotatingFileHandler(
-            log_file, 
-            maxBytes=2*1024*1024, 
-            backupCount=1,
-            encoding='utf-8'
-        )
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel(logging.DEBUG)
-        
-        # 5. Handler para consola (solo si hay terminal)
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(formatter)
-        console_handler.setLevel(logging.WARNING)
-        
-        # 6. Configurar root logger
-        self.logger = logging.getLogger('Dashboard')
-        self.logger.setLevel(logging.DEBUG)
-        
-        # Evitar duplicar handlers si se instancia varias veces
-        if not self.logger.handlers:
-            self.logger.addHandler(file_handler)
-            
-            try:
-                if sys.stdout and sys.stdout.isatty():
-                    self.logger.addHandler(console_handler)
-            except:
-                pass
-        
-        # Log de confirmación
-        self.logger.info("=" * 60)
-        self.logger.info(f"Logger inicializado - Archivo: {log_file}")
-        self.logger.info(f"Límite de tamaño: 2MB con rotación activa")
-        self.logger.info("=" * 60)
-
-    def get_logger(self, name: str):
-        """Obtiene un sub-logger para un módulo específico (ej: Dashboard.Database)"""
-        return logging.getLogger(f'Dashboard.{name}')
-
-
-# Singleton global
-_dashboard_logger = None
-
-def get_logger(name: str):
-    """
-    Obtiene logger para un módulo
-    
-    Uso:
-        from utils.logger import get_logger
-        logger = get_logger(__name__)
-        logger.info("Mensaje")
-        logger.warning("Advertencia")
-        logger.error("Error")
-        logger.debug("Debug")
-    
-    Args:
-        name: Nombre del módulo (usa __name__)
-        
-    Returns:
-        Logger configurado
-    """
-    global _dashboard_logger
-    if _dashboard_logger is None:
-        _dashboard_logger = DashboardLogger()
-    return _dashboard_logger.get_logger(name)
-
-
-def log_startup_info():
-    """Log información de inicio del sistema"""
-    logger = get_logger('startup')
-    
-    # Información del entorno
-    logger.info(f"Python: {sys.version}")
-    logger.info(f"Platform: {sys.platform}")
-    logger.info(f"CWD: {os.getcwd()}")
-    logger.info(f"User: {os.getenv('USER', 'unknown')}")
-    logger.info(f"HOME: {os.getenv('HOME', 'unknown')}")
-    
-    # Variables de entorno relevantes
-    display = os.getenv('DISPLAY', 'not set')
-    logger.info(f"DISPLAY: {display}")
-    
-    if display == 'not set':
-        logger.warning("DISPLAY no configurado - posible problema de GUI")
 
 ================
 File: .gitignore
@@ -5057,6 +4714,210 @@ def load_selected_theme() -> str:
         return DEFAULT_THEME
 
 ================
+File: core/data_logger.py
+================
+"""
+Sistema de logging de datos históricos
+"""
+import sqlite3
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional
+from utils import DashboardLogger
+
+
+class DataLogger:
+    """Registra datos del sistema en base de datos SQLite"""
+
+    def __init__(self, db_path: str = "data/history.db"):
+        """
+        Inicializa el logger
+
+        Args:
+            db_path: Ruta a la base de datos SQLite
+        """
+        # Crear directorio si no existe
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        self.db_path = db_path
+        self._init_database()
+        self.dashboard_logger = DashboardLogger()  # Logger para eventos y errores
+        self.check_and_rotate_db(max_mb=5.0)  # Verificar tamaño al iniciar
+
+
+    def _init_database(self):
+        """Inicializa la base de datos con las tablas necesarias"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Tabla principal de métricas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                cpu_percent REAL,
+                ram_percent REAL,
+                ram_used_gb REAL,
+                temperature REAL,
+                disk_used_percent REAL,
+                disk_read_mb REAL,
+                disk_write_mb REAL,
+                net_download_mb REAL,
+                net_upload_mb REAL,
+                fan_pwm INTEGER,
+                fan_mode TEXT
+            )
+        ''')
+
+        # Índice para búsquedas por timestamp
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_timestamp 
+            ON metrics(timestamp)
+        ''')
+
+        # Tabla de eventos (opcional, para alertas futuras)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                event_type TEXT,
+                severity TEXT,
+                message TEXT,
+                data JSON
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+
+    def log_metrics(self, metrics: Dict):
+        """
+        Guarda un conjunto de métricas
+
+        Args:
+            metrics: Diccionario con las métricas a guardar
+
+        Ejemplo:
+            metrics = {
+                'cpu_percent': 45.2,
+                'ram_percent': 62.3,
+                'ram_used_gb': 5.2,
+                'temperature': 58.5,
+                'disk_used_percent': 75.0,
+                'disk_read_mb': 120.5,
+                'disk_write_mb': 45.2,
+                'net_download_mb': 2.5,
+                'net_upload_mb': 0.8,
+                'fan_pwm': 128,
+                'fan_mode': 'auto'
+            }
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO metrics (
+                cpu_percent, ram_percent, ram_used_gb, temperature,
+                disk_used_percent, disk_read_mb, disk_write_mb,
+                net_download_mb, net_upload_mb, fan_pwm, fan_mode
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            metrics.get('cpu_percent'),
+            metrics.get('ram_percent'),
+            metrics.get('ram_used_gb'),
+            metrics.get('temperature'),
+            metrics.get('disk_used_percent'),
+            metrics.get('disk_read_mb'),
+            metrics.get('disk_write_mb'),
+            metrics.get('net_download_mb'),
+            metrics.get('net_upload_mb'),
+            metrics.get('fan_pwm'),
+            metrics.get('fan_mode')
+        ))
+
+        conn.commit()
+        conn.close()
+
+    def log_event(self, event_type: str, severity: str, message: str, data: Dict = None):
+        """
+        Registra un evento
+
+        Args:
+            event_type: Tipo de evento (cpu_high, disk_full, etc)
+            severity: Severidad (info, warning, critical)
+            message: Mensaje descriptivo
+            data: Datos adicionales (opcional)
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO events (event_type, severity, message, data)
+            VALUES (?, ?, ?, ?)
+        ''', (event_type, severity, message, json.dumps(data) if data else None))
+
+        conn.commit()
+        conn.close()
+
+    def get_metrics_count(self) -> int:
+        """Obtiene el número total de registros"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT COUNT(*) FROM metrics')
+        count = cursor.fetchone()[0]
+
+        conn.close()
+        return count
+
+    def get_db_size_mb(self) -> float:
+        """Obtiene el tamaño de la base de datos en MB"""
+        db_file = Path(self.db_path)
+        if db_file.exists():
+            return db_file.stat().st_size / (1024 * 1024)
+        return 0.0
+
+    def clean_old_data(self, days: int = 7):
+        """
+        Elimina datos más antiguos de X días
+
+        Args:
+            days: Número de días a mantener
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cutoff_date = datetime.now() - timedelta(days=days)
+
+        cursor.execute('''
+            DELETE FROM metrics 
+            WHERE timestamp < ?
+        ''', (cutoff_date,))
+
+        # También limpiar eventos
+        cursor.execute('''
+            DELETE FROM events 
+            WHERE timestamp < ?
+        ''', (cutoff_date,))
+
+        conn.commit()
+
+        # Vacuum para recuperar espacio
+        cursor.execute('VACUUM')
+
+        conn.close()
+    def check_and_rotate_db(self, max_mb: float = 5.0):
+        """Si la DB supera el tamaño máximo, elimina datos antiguos de más de 30 días"""
+        self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Verificando tamaño de la base de datos... Tamaño actual: {self.get_db_size_mb():.2f} MB")
+        current_size = self.get_db_size_mb()
+        if current_size > max_mb:
+            # Limpia datos de más de 7 días para reducir tamaño
+            self.dashboard_logger.get_logger(__name__).warning(f"[DataLogger]La base de datos ha superado el tamaño máximo de {max_mb} MB. Limpiando datos antiguos...")
+            self.clean_old_data(days=7)
+            self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Limpieza completada. Nuevo tamaño de la base de datos: {self.get_db_size_mb():.2f} MB")
+
+================
 File: core/fan_auto_service.py
 ================
 """
@@ -7230,16 +7091,143 @@ def make_futuristic_button(parent, text: str, command=None,
     return btn
 
 ================
-File: utils/__init__.py
+File: utils/logger.py
 ================
 """
-Paquete de utilidades
-"""
-from .file_manager import FileManager
-from .system_utils import SystemUtils
-from .logger import DashboardLogger
+Sistema de logging robusto para el dashboard
+Funciona correctamente tanto desde terminal como desde auto-start
 
-__all__ = ['FileManager', 'SystemUtils', 'DashboardLogger']
+Ubicación: utils/logger.py
+"""
+import logging
+import sys
+from pathlib import Path
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+import os
+
+
+class DashboardLogger:
+    """Logger centralizado para el dashboard"""
+    
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._setup_logger()
+        return cls._instance
+    
+    def _setup_logger(self):
+        """Configura el logger con rutas absolutas y rotación automática"""
+        
+        # 1. Obtener directorio del proyecto de forma absoluta
+        if hasattr(sys, '_MEIPASS'):
+            # Si está empaquetado con PyInstaller
+            project_root = Path(sys._MEIPASS)
+        else:
+            # utils/logger.py -> utils/ -> project_root/
+            project_root = Path(__file__).parent.parent.resolve()
+        
+        # 2. Crear directorio de logs
+        log_dir = project_root / "data" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 3. Nombre fijo para que la rotación funcione
+        # (Si el nombre cambia cada día, el sistema no puede detectar el tamaño del archivo previo)
+        log_file = log_dir / "dashboard.log"
+        
+        formatter = logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        
+        # 4. Configurar RotatingFileHandler
+        # maxBytes: 2MB (2 * 1024 * 1024)
+        # backupCount: 1 (mantiene el archivo actual y uno de respaldo .log.1)
+        file_handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=2*1024*1024, 
+            backupCount=1,
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(logging.DEBUG)
+        
+        # 5. Handler para consola (solo si hay terminal)
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(logging.WARNING)
+        
+        # 6. Configurar root logger
+        self.logger = logging.getLogger('Dashboard')
+        self.logger.setLevel(logging.DEBUG)
+        
+        # Evitar duplicar handlers si se instancia varias veces
+        if not self.logger.handlers:
+            self.logger.addHandler(file_handler)
+            
+            try:
+                if sys.stdout and sys.stdout.isatty():
+                    self.logger.addHandler(console_handler)
+            except:
+                pass
+        
+        # Log de confirmación
+        self.logger.info("=" * 60)
+        self.logger.info(f"Logger inicializado - Archivo: {log_file}")
+        self.logger.info(f"Límite de tamaño: 2MB con rotación activa")
+        self.logger.info("=" * 60)
+
+    def get_logger(self, name: str):
+        """Obtiene un sub-logger para un módulo específico (ej: Dashboard.Database)"""
+        return logging.getLogger(f'Dashboard.{name}')
+
+
+# Singleton global
+_dashboard_logger = None
+
+def get_logger(name: str):
+    """
+    Obtiene logger para un módulo
+    
+    Uso:
+        from utils.logger import get_logger
+        logger = get_logger(__name__)
+        logger.info("Mensaje")
+        logger.warning("Advertencia")
+        logger.error("Error")
+        logger.debug("Debug")
+    
+    Args:
+        name: Nombre del módulo (usa __name__)
+        
+    Returns:
+        Logger configurado
+    """
+    global _dashboard_logger
+    if _dashboard_logger is None:
+        _dashboard_logger = DashboardLogger()
+    return _dashboard_logger.get_logger(name)
+
+
+def log_startup_info():
+    """Log información de inicio del sistema"""
+    logger = get_logger('startup')
+    
+    # Información del entorno
+    logger.info(f"Python: {sys.version}")
+    logger.info(f"Platform: {sys.platform}")
+    logger.info(f"CWD: {os.getcwd()}")
+    logger.info(f"User: {os.getenv('USER', 'unknown')}")
+    logger.info(f"HOME: {os.getenv('HOME', 'unknown')}")
+    
+    # Variables de entorno relevantes
+    display = os.getenv('DISPLAY', 'not set')
+    logger.info(f"DISPLAY: {display}")
+    
+    if display == 'not set':
+        logger.warning("DISPLAY no configurado - posible problema de GUI")
 
 ================
 File: THEMES_GUIDE.md
@@ -7897,150 +7885,6 @@ class DataAnalyzer:
                 writer.writerow(row)
 
 ================
-File: core/data_collection_service.py
-================
-"""
-Servicio de recolección automática de datos
-"""
-import threading
-import time
-import atexit
-from datetime import datetime
-from core.data_logger import DataLogger
-from utils.file_manager import FileManager
-from utils.system_utils import SystemUtils 
-from utils import DashboardLogger
-
-
-
-class DataCollectionService:
-    """Servicio que recolecta métricas cada X minutos"""
-
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls, *args, **kwargs):
-        """Implementa singleton thread-safe"""
-        if not cls._instance:
-            with cls._lock:
-                if not cls._instance:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self, system_monitor, fan_controller, network_monitor, 
-                 disk_monitor, interval_minutes: int = 5):
-        """
-        Inicializa el servicio
-
-        Args:
-            system_monitor: Instancia de SystemMonitor
-            fan_controller: Instancia de FanController
-            network_monitor: Instancia de NetworkMonitor
-            disk_monitor: Instancia de DiskMonitor
-            interval_minutes: Intervalo de recolección en minutos
-        """
-        # Evitar re-inicialización del singleton
-        if hasattr(self, '_initialized'):
-            return
-
-        self.system_monitor = system_monitor
-        self.fan_controller = FileManager()
-        self.network_monitor = network_monitor
-        self.disk_monitor = disk_monitor
-        self.interval_minutes = interval_minutes
-
-        self.logger = DataLogger()
-        self.running = False
-        self.thread = None
-        self.dashboard_logger = DashboardLogger()
-
-        self._initialized = True
-
-        # Registrar cleanup al salir
-        atexit.register(self.stop)
-
-    def start(self):
-        """Inicia el servicio de recolección"""
-        if self.running:
-            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio ya está corriendo")
-            return
-
-        self.running = True
-        self.thread = threading.Thread(target=self._collection_loop, daemon=True)
-        self.thread.start()
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
-
-    def stop(self):
-        """Detiene el servicio"""
-        if not self.running:
-            return
-
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=5)
-            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
-
-    def _collection_loop(self):
-        """Bucle principal de recolección"""
-        while self.running:
-            try:
-                self._collect_and_save()
-            except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[DataCollection] Error en recolección: {e}")
-                pass
-            # Dormir por el intervalo especificado
-            time.sleep(self.interval_minutes * 60)
-
-    def _collect_and_save(self):
-        """Recolecta métricas y las guarda"""
-        # Obtener métricas de cada monitor
-        system_stats = self.system_monitor.get_current_stats()
-        network_stats = self.network_monitor.get_current_stats()
-        disk_stats = self.disk_monitor.get_current_stats()
-
-        # Obtener estado del ventilador
-        fan_state = self.fan_controller.load_state()
-        # Construir diccionario de métricas
-        metrics = {
-            'cpu_percent': system_stats.get('cpu', 0),
-            'ram_percent': system_stats.get('ram', 0),
-            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),# MB a GB
-            'temperature': system_stats.get('temp', 0),
-            'disk_used_percent': disk_stats.get('disk_usage', 0),
-            'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
-            'disk_write_mb': "{:.2f}".format(disk_stats.get('disk_write_mb', 0)),
-            'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
-            'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
-            'fan_pwm': fan_state.get('target_pwm', 0),
-            'fan_mode': fan_state.get('mode', 'unknown')
-        }
-        # Guardar en base de datos
-        self.logger.log_metrics(metrics)
-
-        # Detectar y registrar eventos críticos
-        if metrics['temperature'] > 80:
-            self.logger.log_event(
-                'temp_high',
-                'critical',
-                f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
-                {'temperature': metrics['temperature']}
-            )
-
-        if metrics['cpu_percent'] > 90:
-            self.logger.log_event(
-                'cpu_high',
-                'warning',
-                f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
-                {'cpu': metrics['cpu_percent']}
-            )
-        
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    def force_collection(self):
-        """Fuerza una recolección inmediata (útil para testing)"""
-        self._collect_and_save()
-
-================
 File: ui/windows/launchers.py
 ================
 """
@@ -8629,6 +8473,18 @@ class NetworkWindow(ctk.CTkToplevel):
                 text_color=COLORS['danger']
             )
             self.speedtest_btn.configure(state="normal")
+
+================
+File: utils/__init__.py
+================
+"""
+Paquete de utilidades
+"""
+from .file_manager import FileManager
+from .system_utils import SystemUtils
+from .logger import DashboardLogger
+
+__all__ = ['FileManager', 'SystemUtils', 'DashboardLogger']
 
 ================
 File: utils/system_utils.py
@@ -10053,6 +9909,150 @@ FONT_SIZES = {
 }
 
 ================
+File: core/data_collection_service.py
+================
+"""
+Servicio de recolección automática de datos
+"""
+import threading
+import time
+import atexit
+from datetime import datetime
+from core.data_logger import DataLogger
+from utils.file_manager import FileManager
+from utils.system_utils import SystemUtils 
+from utils import DashboardLogger
+
+
+
+class DataCollectionService:
+    """Servicio que recolecta métricas cada X minutos"""
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        """Implementa singleton thread-safe"""
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, system_monitor, fan_controller, network_monitor, 
+                 disk_monitor, interval_minutes: int = 5):
+        """
+        Inicializa el servicio
+
+        Args:
+            system_monitor: Instancia de SystemMonitor
+            fan_controller: Instancia de FanController
+            network_monitor: Instancia de NetworkMonitor
+            disk_monitor: Instancia de DiskMonitor
+            interval_minutes: Intervalo de recolección en minutos
+        """
+        # Evitar re-inicialización del singleton
+        if hasattr(self, '_initialized'):
+            return
+
+        self.system_monitor = system_monitor
+        self.fan_controller = FileManager()
+        self.network_monitor = network_monitor
+        self.disk_monitor = disk_monitor
+        self.interval_minutes = interval_minutes
+
+        self.logger = DataLogger()
+        self.running = False
+        self.thread = None
+        self.dashboard_logger = DashboardLogger()
+
+        self._initialized = True
+
+        # Registrar cleanup al salir
+        atexit.register(self.stop)
+
+    def start(self):
+        """Inicia el servicio de recolección"""
+        if self.running:
+            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio ya está corriendo")
+            return
+
+        self.running = True
+        self.thread = threading.Thread(target=self._collection_loop, daemon=True)
+        self.thread.start()
+        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
+
+    def stop(self):
+        """Detiene el servicio"""
+        if not self.running:
+            return
+
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=5)
+            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
+
+    def _collection_loop(self):
+        """Bucle principal de recolección"""
+        while self.running:
+            try:
+                self._collect_and_save()
+            except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[DataCollection] Error en recolección: {e}")
+                pass
+            # Dormir por el intervalo especificado
+            time.sleep(self.interval_minutes * 60)
+
+    def _collect_and_save(self):
+        """Recolecta métricas y las guarda"""
+        # Obtener métricas de cada monitor
+        system_stats = self.system_monitor.get_current_stats()
+        network_stats = self.network_monitor.get_current_stats()
+        disk_stats = self.disk_monitor.get_current_stats()
+
+        # Obtener estado del ventilador
+        fan_state = self.fan_controller.load_state()
+        # Construir diccionario de métricas
+        metrics = {
+            'cpu_percent': system_stats.get('cpu', 0),
+            'ram_percent': system_stats.get('ram', 0),
+            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),# MB a GB
+            'temperature': system_stats.get('temp', 0),
+            'disk_used_percent': disk_stats.get('disk_usage', 0),
+            'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
+            'disk_write_mb': "{:.2f}".format(disk_stats.get('disk_write_mb', 0)),
+            'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
+            'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
+            'fan_pwm': fan_state.get('target_pwm', 0),
+            'fan_mode': fan_state.get('mode', 'unknown')
+        }
+        # Guardar en base de datos
+        self.logger.log_metrics(metrics)
+
+        # Detectar y registrar eventos críticos
+        if metrics['temperature'] > 80:
+            self.logger.log_event(
+                'temp_high',
+                'critical',
+                f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
+                {'temperature': metrics['temperature']}
+            )
+
+        if metrics['cpu_percent'] > 90:
+            self.logger.log_event(
+                'cpu_high',
+                'warning',
+                f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
+                {'cpu': metrics['cpu_percent']}
+            )
+        
+        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    def force_collection(self):
+        """Fuerza una recolección inmediata (útil para testing)"""
+        self._collect_and_save()
+
+================
 File: ui/windows/__init__.py
 ================
 """
@@ -10562,499 +10562,6 @@ class FanControlWindow(ctk.CTkToplevel):
         self.after(2000, self._update_pwm_display)
 
 ================
-File: ui/windows/history.py
-================
-"""
-Ventana de histórico de datos
-"""
-import customtkinter as ctk
-from datetime import datetime, timedelta
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
-from ui.styles import make_futuristic_button
-from ui.widgets import custom_msgbox
-from core.data_analyzer import DataAnalyzer
-from core.data_logger import DataLogger
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.figure import Figure
-from utils import DashboardLogger
-
-
-class HistoryWindow(ctk.CTkToplevel):
-    """Ventana de visualización de histórico"""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # Referencias
-        self.analyzer = DataAnalyzer()
-        self.logger = DataLogger()
-        self.dashboard_logger = DashboardLogger()
-
-        # Estado
-        self.period_var = ctk.StringVar(value="24h")
-
-        # Configurar ventana
-        self.title("Histórico de Datos")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-
-        # Crear interfaz
-        self._create_ui()
-
-        # Cargar datos iniciales
-        self._update_data()
-
-    def _create_ui(self):
-        """Crea la interfaz"""
-        # Frame principal
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-
-        # Título
-        self._create_header(main)
-
-        # Controles de periodo
-        self._create_period_controls(main)
-        # Área de scroll
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Limitar altura
-        max_height = DSI_HEIGHT - 300
-
-        # Canvas y scrollbar
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0,
-            height=max_height
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        
-        from ui.styles import StyleManager
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        # Área de gráficas
-        self._create_graphs_area(inner)
-
-        # Estadísticas
-        self._create_stats_area(inner)
-
-        # Botones inferiores
-        self._create_buttons(main)
-
-    def _create_header(self, parent):
-        """Crea el encabezado"""
-        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        header.pack(fill="x", padx=10, pady=(10, 5))
-
-        title = ctk.CTkLabel(
-            header,
-            text="HISTÓRICO DE DATOS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=10)
-        # Contenedor para la barra de herramientas de Matplotlib
-        self.toolbar_container = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
-        self.toolbar_container.pack(side="top", padx=10)
-
-    def _create_period_controls(self, parent):
-        """Crea controles de periodo"""
-        controls = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        controls.pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkLabel(
-            controls,
-            text="Periodo:",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        ).pack(side="left", padx=10)
-
-        for period, label in [("24h", "24 horas"), ("7d", "7 días"), ("30d", "30 días")]:
-            rb = ctk.CTkRadioButton(
-                controls,
-                text=label,
-                variable=self.period_var,
-                value=period,
-                command=self._update_data,
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            rb.pack(side="left", padx=10)
-            from ui.styles import StyleManager
-            StyleManager.style_radiobutton_ctk(rb)
-
-    def _create_graphs_area(self, parent):
-        """Crea área de gráficas"""
-        # 1. Ajustamos el frame contenedor para que no tenga padding interno innecesario
-        graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        graphs_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10)) # pady superior en 0
-
-        # Mantener tu figura original
-        self.fig = Figure(figsize=(10, 20), facecolor=COLORS['bg_medium'])
-        
-        # IMPORTANTE: Esto elimina los márgenes blancos alrededor de las gráficas
-        # sin cambiar el tamaño 10x20. Aprovecha mejor el espacio.
-        self.fig.set_tight_layout(True) 
-
-        # 2. El master del canvas DEBE ser el frame que creaste, no el parent general
-        # Esto evita que el canvas "flote" en el contenedor de la ventana
-        self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_frame)
-        self.canvas.draw()
-        
-        self.canvas_widget = self.canvas.get_tk_widget()
-        # pack con pady=0 para pegar la gráfica arriba del todo
-        self.canvas_widget.pack(fill="both", expand=True, pady=0)
-
-        # --- LOGICA DE TOOLBAR INVISIBLE ---
-        # La creamos vinculada a 'self' (la ventana) para que no ocupe sitio en el layout
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
-        self.toolbar.pack_forget() 
-        
-        # --- TUS BOTONES EN EL HEADER ---
-        self.home_btn = make_futuristic_button(
-            self.toolbar_container,
-            text="🏠 Inicio",
-            command=self.toolbar.home,
-            height=6,
-        )
-        self.home_btn.pack(side="left", padx=5)
-
-        self.zoom_btn = make_futuristic_button(
-            self.toolbar_container,
-            text="🔍 Zoom",
-            command=self.toolbar.zoom,
-            height=6,
-        )
-        self.zoom_btn.pack(side="left", padx=5)
-
-        self.pan_btn = make_futuristic_button(
-            self.toolbar_container,
-            text="🖐️ Mover",
-            command=self.toolbar.pan,
-            height=6,
-        )
-        self.pan_btn.pack(side="left", padx=5)
-        self.save_btn = make_futuristic_button(
-            self.toolbar_container,
-            text=" Guardar",
-            command=self._export_figure_image,
-            height=6,
-        )
-        self.save_btn.pack(side="left", padx=5)
-
-        # 2. Conectar eventos
-        self.canvas.mpl_connect('button_press_event', self._on_click)
-        self.canvas.mpl_connect('button_release_event', self._on_release)
-        self.canvas.mpl_connect('motion_notify_event', self._on_motion)
-
-
-    def _create_stats_area(self, parent):
-        """Crea área de estadísticas"""
-        stats_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        stats_frame.pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text="Estadísticas:",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        ).pack(pady=(10, 5))
-
-        self.stats_label = ctk.CTkLabel(
-            stats_frame,
-            text="Cargando...",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            justify="left"
-        )
-        self.stats_label.pack(pady=(0, 10), padx=20)
-
-    def _create_buttons(self, parent):
-        """Crea botones inferiores"""
-        buttons = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        buttons.pack(fill="x", pady=10, padx=10)
-        
-        update_btn = make_futuristic_button(
-            buttons,
-            text="Actualizar",
-            command=self._update_data,
-            width=18,
-            height=6
-        )
-        update_btn.pack(side="left", padx=5)
-
-        export_btn = make_futuristic_button(
-            buttons,
-            text="Exportar CSV",
-            command=self._export_csv,
-            width=18,
-            height=6
-        )
-        export_btn.pack(side="left", padx=5)
-
-        clean_btn = make_futuristic_button(
-            buttons,
-            text="Limpiar Antiguos",
-            command=self._clean_old_data,
-            width=18,
-            height=6
-        )
-        clean_btn.pack(side="left", padx=5)
-
-        close_btn = make_futuristic_button(
-            buttons,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-
-    def _update_data(self):
-        """Actualiza datos y gráficas"""
-        # Obtener horas según periodo
-        period = self.period_var.get()
-        if period == "24h":
-            hours = 24
-        elif period == "7d":
-            hours = 24 * 7
-        else:  # 30d
-            hours = 24 * 30
-
-        # Obtener estadísticas
-        stats = self.analyzer.get_stats(hours)
-
-        # Actualizar label de estadísticas
-        total_records = self.logger.get_metrics_count()
-        db_size = self.logger.get_db_size_mb()
-
-        stats_text = f"""• CPU promedio: {stats.get('cpu_avg', 0):.1f}%  (min: {stats.get('cpu_min', 0):.1f}%, max: {stats.get('cpu_max', 0):.1f}%)
-• RAM promedio: {stats.get('ram_avg', 0):.1f}%  (min: {stats.get('ram_min', 0):.1f}%, max: {stats.get('ram_max', 0):.1f}%)
-• Temp promedio: {stats.get('temp_avg', 0):.1f}°C  (min: {stats.get('temp_min', 0):.1f}°C, max: {stats.get('temp_max', 0):.1f}°C)
-• Red Down promedio: {stats.get('down_avg', 0):.2f} MB/s (min: {stats.get('down_min', 0):.2f} MB/s, max: {stats.get('down_max', 0):.2f} MB/s)
-• Red Up promedio: {stats.get('up_avg', 0):.2f} MB/s (min: {stats.get('up_min', 0):.2f} MB/s, max: {stats.get('up_max', 0):.2f} MB/s)
-• Disk Read promedio: {stats.get('disk_read_avg', 0):.2f} MB/s (min: {stats.get('disk_read_min', 0):.2f} MB/s, max: {stats.get('disk_read_max', 0):.2f} MB/s)
-• Disk Write promedio: {stats.get('disk_write_avg', 0):.2f} MB/s (min: {stats.get('disk_write_min', 0):.2f} MB/s, max: {stats.get('disk_write_max', 0):.2f} MB/s)
-• PWM promedio: {stats.get('pwm_avg', 0):.0f} (min: {stats.get('pwm_min', 0):.0f}, max: {stats.get('pwm_max', 0):.0f})
-• Muestras: {stats.get('total_samples', 0)} en {period}
-• Total registros: {total_records}  |  DB: {db_size:.2f} MB"""
-
-        self.stats_label.configure(text=stats_text)
-
-        # Actualizar gráficas
-        self._update_graphs(hours)
-
-    def _update_graphs(self, hours: int):
-        """Actualiza las gráficas"""
-        # Limpiar figura
-        self.fig.clear()
-
-        # Crear 8 subplots
-        ax1 = self.fig.add_subplot(8, 1, 1)  # CPU
-        ax2 = self.fig.add_subplot(8, 1, 2)  # RAM
-        ax3 = self.fig.add_subplot(8, 1, 3)  # Temperatura
-        ax4 = self.fig.add_subplot(8, 1, 4)  # Red Download
-        ax5 = self.fig.add_subplot(8, 1, 5)  # Red Upload
-        ax6 = self.fig.add_subplot(8, 1, 6)  # Disk Read
-        ax7 = self.fig.add_subplot(8, 1, 7)  # Disk Write
-        ax8 = self.fig.add_subplot(8, 1, 8)  # PWM
-        
-
-        # Obtener datos
-        ts_cpu, vals_cpu = self.analyzer.get_graph_data('cpu_percent', hours)
-        ts_ram, vals_ram = self.analyzer.get_graph_data('ram_percent', hours)
-        ts_temp, vals_temp = self.analyzer.get_graph_data('temperature', hours)
-        ts_down, vals_down = self.analyzer.get_graph_data('net_download_mb', hours)
-        ts_up, vals_up = self.analyzer.get_graph_data('net_upload_mb', hours)
-        ts_disk_read, vals_disk_read = self.analyzer.get_graph_data('disk_read_mb', hours)
-        ts_disk_write, vals_disk_write = self.analyzer.get_graph_data('disk_write_mb', hours)
-        ts_pwm, vals_pwm = self.analyzer.get_graph_data('fan_pwm', hours)
-
-        # Gráfica CPU
-        if ts_cpu:
-            ax1.plot(ts_cpu, vals_cpu, color=COLORS['primary'], linewidth=1.5)
-            ax1.set_ylabel('CPU %', color=COLORS['text'])
-            ax1.set_xlabel('Tiempo', color=COLORS['text'])
-            ax1.set_facecolor(COLORS['bg_dark'])
-            ax1.tick_params(colors=COLORS['text'])
-            ax1.grid(True, alpha=0.2)
-
-        # Gráfica RAM
-        if ts_ram:
-            ax2.plot(ts_ram, vals_ram, color=COLORS['secondary'], linewidth=1.5)
-            ax2.set_ylabel('RAM %', color=COLORS['text'])
-            ax2.set_xlabel('Tiempo', color=COLORS['text'])
-            ax2.set_facecolor(COLORS['bg_dark'])
-            ax2.tick_params(colors=COLORS['text'])
-            ax2.grid(True, alpha=0.2)
-
-        # Gráfica Temperatura
-        if ts_temp:
-            ax3.plot(ts_temp, vals_temp, color=COLORS['danger'], linewidth=1.5)
-            ax3.set_ylabel('Temp °C', color=COLORS['text'])
-            ax3.set_xlabel('Tiempo', color=COLORS['text'])
-            ax3.set_facecolor(COLORS['bg_dark'])
-            ax3.tick_params(colors=COLORS['text'])
-            ax3.grid(True, alpha=0.2)
-
-        # Gráfica Red Download
-        if ts_down:
-            ax4.plot(ts_down, vals_down, color=COLORS['primary'], linewidth=1.5)
-            ax4.set_ylabel('Red Down MB/s', color=COLORS['text'])
-            ax4.set_xlabel('Tiempo', color=COLORS['text'])
-            ax4.set_facecolor(COLORS['bg_dark'])
-            ax4.tick_params(colors=COLORS['text'])
-            ax4.grid(True, alpha=0.2)
-            
-        # Gráfica Red Upload
-        if ts_up:
-            ax5.plot(ts_up, vals_up, color=COLORS["secondary"], linewidth=1.5)
-            ax5.set_ylabel('Red Up MB/s', color=COLORS['text'])
-            ax5.set_xlabel('Tiempo', color=COLORS['text'])
-            ax5.set_facecolor(COLORS['bg_dark'])
-            ax5.tick_params(colors=COLORS['text'])
-            ax5.grid(True, alpha=0.2)
-        
-        # Gráfica Disk Read
-        if ts_disk_read:
-            ax6.plot(ts_disk_read, vals_disk_read, color=COLORS["primary"], linewidth=1.5)
-            ax6.set_ylabel('Disk Read MB/s', color=COLORS['text'])
-            ax6.set_xlabel('Tiempo', color=COLORS['text'])
-            ax6.set_facecolor(COLORS['bg_dark'])
-            ax6.tick_params(colors=COLORS['text'])
-            ax6.grid(True, alpha=0.2)
-            
-        # Gráfica Disk Write
-        if ts_disk_write:
-            ax7.plot(ts_disk_write, vals_disk_write, color=COLORS["secondary"], linewidth=1.5)
-            ax7.set_ylabel('Disk Write MB/s', color=COLORS['text'])
-            ax7.set_xlabel('Tiempo', color=COLORS['text'])
-            ax7.set_facecolor(COLORS['bg_dark'])
-            ax7.tick_params(colors=COLORS['text'])
-            ax7.grid(True, alpha=0.2)
-        
-        # Gráfica PWM
-        if ts_pwm:
-            ax8.plot(ts_pwm, vals_pwm, color=COLORS["warning"], linewidth=1.5)
-            ax8.set_ylabel('PWM', color=COLORS['text'])
-            ax8.set_xlabel('Tiempo', color=COLORS['text'])
-            ax8.set_facecolor(COLORS['bg_dark'])
-            ax8.tick_params(colors=COLORS['text'])
-            ax8.grid(True, alpha=0.2)
-
-        # Ajustar layout
-        self.fig.tight_layout()
-
-        # Redibujar
-        self.canvas.draw()
-
-    def _export_csv(self):
-        """Exporta datos a CSV"""
-        period = self.period_var.get()
-        hours = 24 if period == "24h" else (24 * 7 if period == "7d" else 24 * 30)
-
-        output_path = f"{DATA_DIR}/history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-
-        try:
-            self.analyzer.export_to_csv(output_path, hours)
-            custom_msgbox(self, f"Datos exportados a:\n{output_path}", "✅ Exportado")
-        except Exception as e:
-            custom_msgbox(self, f"Error al exportar:\n{str(e)}", "❌ Error")
-
-    def _clean_old_data(self):
-        """Limpia datos antiguos"""
-        from ui.widgets import confirm_dialog
-
-        def do_clean():
-            try:
-                self.logger.clean_old_data(days=90)
-                custom_msgbox(self, "Datos antiguos eliminados\n(mayores a 90 días)", "✅ Limpiado")
-                self._update_data()
-            except Exception as e:
-                custom_msgbox(self, f"Error al limpiar:\n{str(e)}", "❌ Error")
-
-        confirm_dialog(
-            parent=self,
-            text="¿Eliminar datos mayores a 90 días?\n\nEsto liberará espacio en disco.",
-            title="⚠️ Confirmar",
-            on_confirm=do_clean,
-            on_cancel=None
-        )
-        # Agrega estos métodos al final de la clase HistoryWindow
-    def _on_click(self, event):
-        """Maneja el evento de presión del botón del mouse"""
-        if event.inaxes:
-            self.dashboard_logger.get_logger(__name__).info(f"Punto seleccionado: x={event.xdata}, y={event.ydata}")
-
-    def _on_release(self, event):
-        
-        """Maneja el evento de liberación del botón del mouse"""
-        pass
-
-    def _on_motion(self, event):
-        """Maneja el movimiento del mouse sobre la gráfica"""
-        if event.inaxes:
-            # Aquí podrías actualizar un label con las coordenadas actuales
-            pass
-    def _export_figure_image(self):
-        """Guarda la figura completa como imagen PNG sin usar popups del sistema"""
-        import os
-        from datetime import datetime
-        from ui.widgets import custom_msgbox
-        
-        try:
-            # 1. Crear carpeta de capturas si no existe
-            save_dir = os.path.join(os.getcwd(), "data/screenshots")
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            
-            # 2. Generar nombre de archivo con fecha y hora
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            filename = f"graficas_{timestamp}.png"
-            filepath = os.path.join(save_dir, filename)
-            
-            # 3. Guardar la figura
-            # facecolor asegura que el fondo coincida con tu tema
-            self.fig.savefig(
-                filepath, 
-                dpi=150, 
-                facecolor=self.fig.get_facecolor(),
-                bbox_inches='tight'
-            )
-            self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Figura guardada: {filepath}")
-            # 4. Mostrar confirmación con TU propio dialogo
-            custom_msgbox(
-                self, 
-                f"Imagen guardada con éxito en:\n\n{filepath}", 
-                "✅ Captura Guardada"
-            )
-            
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al guardar imagen: {str(e)}")
-            custom_msgbox(self, f"Error al guardar la imagen: {str(e)}", "❌ Error")
-
-================
 File: README.md
 ================
 # 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5
@@ -11509,6 +11016,501 @@ __all__ = [
     'ProcessMonitor',
     'ServiceMonitor',
 ]
+
+================
+File: ui/windows/history.py
+================
+"""
+Ventana de histórico de datos
+"""
+import customtkinter as ctk
+from datetime import datetime, timedelta
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
+from ui.styles import make_futuristic_button
+from ui.widgets import custom_msgbox
+from core.data_analyzer import DataAnalyzer
+from core.data_logger import DataLogger
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+from utils import DashboardLogger
+
+
+class HistoryWindow(ctk.CTkToplevel):
+    """Ventana de visualización de histórico"""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # Referencias
+        self.analyzer = DataAnalyzer()
+        self.logger = DataLogger()
+        self.dashboard_logger = DashboardLogger()
+
+        # Estado
+        self.period_var = ctk.StringVar(value="24h")
+
+        # Configurar ventana
+        self.title("Histórico de Datos")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+
+        # Crear interfaz
+        self._create_ui()
+
+        # Cargar datos iniciales
+        self._update_data()
+
+    def _create_ui(self):
+        """Crea la interfaz"""
+        # Frame principal
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Título
+        self._create_header(main)
+
+        # Controles de periodo
+        self._create_period_controls(main)
+        # Área de scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Limitar altura
+        max_height = DSI_HEIGHT - 300
+
+        # Canvas y scrollbar
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0,
+            height=max_height
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        
+        from ui.styles import StyleManager
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Frame interno
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Área de gráficas
+        self._create_graphs_area(inner)
+
+        # Estadísticas
+        self._create_stats_area(inner)
+
+        # Botones inferiores
+        self._create_buttons(main)
+
+    def _create_header(self, parent):
+        """Crea el encabezado"""
+        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        header.pack(fill="x", padx=10, pady=(10, 5))
+
+        title = ctk.CTkLabel(
+            header,
+            text="HISTÓRICO DE DATOS",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(pady=10)
+        # Contenedor para la barra de herramientas de Matplotlib
+        self.toolbar_container = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
+        self.toolbar_container.pack(side="top", padx=10)
+
+    def _create_period_controls(self, parent):
+        """Crea controles de periodo"""
+        controls = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        controls.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            controls,
+            text="Periodo:",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'])
+        ).pack(side="left", padx=10)
+
+        for period, label in [("24h", "24 horas"), ("7d", "7 días"), ("30d", "30 días")]:
+            rb = ctk.CTkRadioButton(
+                controls,
+                text=label,
+                variable=self.period_var,
+                value=period,
+                command=self._update_data,
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            )
+            rb.pack(side="left", padx=10)
+            from ui.styles import StyleManager
+            StyleManager.style_radiobutton_ctk(rb)
+
+    def _create_graphs_area(self, parent):
+        """Crea área de gráficas"""
+        # 1. Ajustamos el frame contenedor para que no tenga padding interno innecesario
+        graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        graphs_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10)) # pady superior en 0
+
+        # Mantener tu figura original
+        self.fig = Figure(figsize=(10, 20), facecolor=COLORS['bg_medium'])
+        
+        # IMPORTANTE: Esto elimina los márgenes blancos alrededor de las gráficas
+        # sin cambiar el tamaño 10x20. Aprovecha mejor el espacio.
+        self.fig.set_tight_layout(True) 
+
+        # 2. El master del canvas DEBE ser el frame que creaste, no el parent general
+        # Esto evita que el canvas "flote" en el contenedor de la ventana
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_frame)
+        self.canvas.draw()
+        
+        self.canvas_widget = self.canvas.get_tk_widget()
+        # pack con pady=0 para pegar la gráfica arriba del todo
+        self.canvas_widget.pack(fill="both", expand=True, pady=0)
+
+        # --- LOGICA DE TOOLBAR INVISIBLE ---
+        # La creamos vinculada a 'self' (la ventana) para que no ocupe sitio en el layout
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
+        self.toolbar.pack_forget() 
+        
+        # --- TUS BOTONES EN EL HEADER ---
+        self.home_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🏠 Inicio",
+            command=self.toolbar.home,
+            height=6,
+        )
+        self.home_btn.pack(side="left", padx=5)
+
+        self.zoom_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🔍 Zoom",
+            command=self.toolbar.zoom,
+            height=6,
+        )
+        self.zoom_btn.pack(side="left", padx=5)
+
+        self.pan_btn = make_futuristic_button(
+            self.toolbar_container,
+            text="🖐️ Mover",
+            command=self.toolbar.pan,
+            height=6,
+        )
+        self.pan_btn.pack(side="left", padx=5)
+        self.save_btn = make_futuristic_button(
+            self.toolbar_container,
+            text=" Guardar",
+            command=self._export_figure_image,
+            height=6,
+        )
+        self.save_btn.pack(side="left", padx=5)
+
+        # 2. Conectar eventos
+        self.canvas.mpl_connect('button_press_event', self._on_click)
+        self.canvas.mpl_connect('button_release_event', self._on_release)
+        self.canvas.mpl_connect('motion_notify_event', self._on_motion)
+
+
+    def _create_stats_area(self, parent):
+        """Crea área de estadísticas"""
+        stats_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        stats_frame.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            stats_frame,
+            text="Estadísticas:",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(pady=(10, 5))
+
+        self.stats_label = ctk.CTkLabel(
+            stats_frame,
+            text="Cargando...",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            justify="left"
+        )
+        self.stats_label.pack(pady=(0, 10), padx=20)
+
+    def _create_buttons(self, parent):
+        """Crea botones inferiores"""
+        buttons = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        buttons.pack(fill="x", pady=10, padx=10)
+        
+        update_btn = make_futuristic_button(
+            buttons,
+            text="Actualizar",
+            command=self._update_data,
+            width=18,
+            height=6
+        )
+        update_btn.pack(side="left", padx=5)
+
+        export_btn = make_futuristic_button(
+            buttons,
+            text="Exportar CSV",
+            command=self._export_csv,
+            width=18,
+            height=6
+        )
+        export_btn.pack(side="left", padx=5)
+
+        clean_btn = make_futuristic_button(
+            buttons,
+            text="Limpiar Antiguos",
+            command=self._clean_old_data,
+            width=18,
+            height=6
+        )
+        clean_btn.pack(side="left", padx=5)
+
+        close_btn = make_futuristic_button(
+            buttons,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        )
+        close_btn.pack(side="right", padx=5)
+
+    def _update_data(self):
+        """Actualiza datos y gráficas"""
+        # Obtener horas según periodo
+        period = self.period_var.get()
+        if period == "24h":
+            hours = 24
+        elif period == "7d":
+            hours = 24 * 7
+        else:  # 30d
+            hours = 24 * 30
+
+        # Obtener estadísticas
+        stats = self.analyzer.get_stats(hours)
+
+        # Actualizar label de estadísticas
+        total_records = self.logger.get_metrics_count()
+        db_size = self.logger.get_db_size_mb()
+
+        stats_text = f"""• CPU promedio: {stats.get('cpu_avg', 0):.1f}%  (min: {stats.get('cpu_min', 0):.1f}%, max: {stats.get('cpu_max', 0):.1f}%)
+• RAM promedio: {stats.get('ram_avg', 0):.1f}%  (min: {stats.get('ram_min', 0):.1f}%, max: {stats.get('ram_max', 0):.1f}%)
+• Temp promedio: {stats.get('temp_avg', 0):.1f}°C  (min: {stats.get('temp_min', 0):.1f}°C, max: {stats.get('temp_max', 0):.1f}°C)
+• Red Down promedio: {stats.get('down_avg', 0):.2f} MB/s (min: {stats.get('down_min', 0):.2f} MB/s, max: {stats.get('down_max', 0):.2f} MB/s)
+• Red Up promedio: {stats.get('up_avg', 0):.2f} MB/s (min: {stats.get('up_min', 0):.2f} MB/s, max: {stats.get('up_max', 0):.2f} MB/s)
+• Disk Read promedio: {stats.get('disk_read_avg', 0):.2f} MB/s (min: {stats.get('disk_read_min', 0):.2f} MB/s, max: {stats.get('disk_read_max', 0):.2f} MB/s)
+• Disk Write promedio: {stats.get('disk_write_avg', 0):.2f} MB/s (min: {stats.get('disk_write_min', 0):.2f} MB/s, max: {stats.get('disk_write_max', 0):.2f} MB/s)
+• PWM promedio: {stats.get('pwm_avg', 0):.0f} (min: {stats.get('pwm_min', 0):.0f}, max: {stats.get('pwm_max', 0):.0f})
+• Muestras: {stats.get('total_samples', 0)} en {period}
+• Total registros: {total_records}  |  DB: {db_size:.2f} MB"""
+
+        self.stats_label.configure(text=stats_text)
+
+        # Actualizar gráficas
+        self._update_graphs(hours)
+
+    def _update_graphs(self, hours: int):
+        """Actualiza las gráficas"""
+        # Limpiar figura
+        self.fig.clear()
+
+        # Crear 8 subplots
+        ax1 = self.fig.add_subplot(8, 1, 1)  # CPU
+        ax2 = self.fig.add_subplot(8, 1, 2)  # RAM
+        ax3 = self.fig.add_subplot(8, 1, 3)  # Temperatura
+        ax4 = self.fig.add_subplot(8, 1, 4)  # Red Download
+        ax5 = self.fig.add_subplot(8, 1, 5)  # Red Upload
+        ax6 = self.fig.add_subplot(8, 1, 6)  # Disk Read
+        ax7 = self.fig.add_subplot(8, 1, 7)  # Disk Write
+        ax8 = self.fig.add_subplot(8, 1, 8)  # PWM
+        
+
+        # Obtener datos
+        ts_cpu, vals_cpu = self.analyzer.get_graph_data('cpu_percent', hours)
+        ts_ram, vals_ram = self.analyzer.get_graph_data('ram_percent', hours)
+        ts_temp, vals_temp = self.analyzer.get_graph_data('temperature', hours)
+        ts_down, vals_down = self.analyzer.get_graph_data('net_download_mb', hours)
+        ts_up, vals_up = self.analyzer.get_graph_data('net_upload_mb', hours)
+        ts_disk_read, vals_disk_read = self.analyzer.get_graph_data('disk_read_mb', hours)
+        ts_disk_write, vals_disk_write = self.analyzer.get_graph_data('disk_write_mb', hours)
+        ts_pwm, vals_pwm = self.analyzer.get_graph_data('fan_pwm', hours)
+
+        # Gráfica CPU
+        if ts_cpu:
+            ax1.plot(ts_cpu, vals_cpu, color=COLORS['primary'], linewidth=1.5)
+            ax1.set_ylabel('CPU %', color=COLORS['text'])
+            ax1.set_xlabel('Tiempo', color=COLORS['text'])
+            ax1.set_facecolor(COLORS['bg_dark'])
+            ax1.tick_params(colors=COLORS['text'])
+            ax1.grid(True, alpha=0.2)
+
+        # Gráfica RAM
+        if ts_ram:
+            ax2.plot(ts_ram, vals_ram, color=COLORS['secondary'], linewidth=1.5)
+            ax2.set_ylabel('RAM %', color=COLORS['text'])
+            ax2.set_xlabel('Tiempo', color=COLORS['text'])
+            ax2.set_facecolor(COLORS['bg_dark'])
+            ax2.tick_params(colors=COLORS['text'])
+            ax2.grid(True, alpha=0.2)
+
+        # Gráfica Temperatura
+        if ts_temp:
+            ax3.plot(ts_temp, vals_temp, color=COLORS['danger'], linewidth=1.5)
+            ax3.set_ylabel('Temp °C', color=COLORS['text'])
+            ax3.set_xlabel('Tiempo', color=COLORS['text'])
+            ax3.set_facecolor(COLORS['bg_dark'])
+            ax3.tick_params(colors=COLORS['text'])
+            ax3.grid(True, alpha=0.2)
+
+        # Gráfica Red Download
+        if ts_down:
+            ax4.plot(ts_down, vals_down, color=COLORS['primary'], linewidth=1.5)
+            ax4.set_ylabel('Red Down MB/s', color=COLORS['text'])
+            ax4.set_xlabel('Tiempo', color=COLORS['text'])
+            ax4.set_facecolor(COLORS['bg_dark'])
+            ax4.tick_params(colors=COLORS['text'])
+            ax4.grid(True, alpha=0.2)
+            
+        # Gráfica Red Upload
+        if ts_up:
+            ax5.plot(ts_up, vals_up, color=COLORS["secondary"], linewidth=1.5)
+            ax5.set_ylabel('Red Up MB/s', color=COLORS['text'])
+            ax5.set_xlabel('Tiempo', color=COLORS['text'])
+            ax5.set_facecolor(COLORS['bg_dark'])
+            ax5.tick_params(colors=COLORS['text'])
+            ax5.grid(True, alpha=0.2)
+        
+        # Gráfica Disk Read
+        if ts_disk_read:
+            ax6.plot(ts_disk_read, vals_disk_read, color=COLORS["primary"], linewidth=1.5)
+            ax6.set_ylabel('Disk Read MB/s', color=COLORS['text'])
+            ax6.set_xlabel('Tiempo', color=COLORS['text'])
+            ax6.set_facecolor(COLORS['bg_dark'])
+            ax6.tick_params(colors=COLORS['text'])
+            ax6.grid(True, alpha=0.2)
+            
+        # Gráfica Disk Write
+        if ts_disk_write:
+            ax7.plot(ts_disk_write, vals_disk_write, color=COLORS["secondary"], linewidth=1.5)
+            ax7.set_ylabel('Disk Write MB/s', color=COLORS['text'])
+            ax7.set_xlabel('Tiempo', color=COLORS['text'])
+            ax7.set_facecolor(COLORS['bg_dark'])
+            ax7.tick_params(colors=COLORS['text'])
+            ax7.grid(True, alpha=0.2)
+        
+        # Gráfica PWM
+        if ts_pwm:
+            ax8.plot(ts_pwm, vals_pwm, color=COLORS["warning"], linewidth=1.5)
+            ax8.set_ylabel('PWM', color=COLORS['text'])
+            ax8.set_xlabel('Tiempo', color=COLORS['text'])
+            ax8.set_facecolor(COLORS['bg_dark'])
+            ax8.tick_params(colors=COLORS['text'])
+            ax8.grid(True, alpha=0.2)
+
+        # Ajustar layout
+        self.fig.tight_layout()
+
+        # Redibujar
+        self.canvas.draw()
+
+    def _export_csv(self):
+        """Exporta datos a CSV"""
+        period = self.period_var.get()
+        hours = 24 if period == "24h" else (24 * 7 if period == "7d" else 24 * 30)
+
+        output_path = f"{DATA_DIR}/history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+        try:
+            self.analyzer.export_to_csv(output_path, hours)
+            custom_msgbox(self, f"Datos exportados a:\n{output_path}", "✅ Exportado")
+        except Exception as e:
+            custom_msgbox(self, f"Error al exportar:\n{str(e)}", "❌ Error")
+
+    def _clean_old_data(self):
+        """Limpia datos antiguos"""
+        from ui.widgets import confirm_dialog
+        self.days_to_clean = 7  # Puedes ajustar este valor o pedirlo al usuario en el confirm_dialog   
+        def do_clean():
+            try:
+                self.logger.clean_old_data(days=self.days_to_clean)
+                custom_msgbox(self, f"Datos antiguos eliminados\n(mayores a {self.days_to_clean} días)", "✅ Limpiado")
+                self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Datos antiguos eliminados (mayores a {self.days_to_clean} días)")
+                self._update_data()
+            except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al limpiar datos antiguos: {str(e)}")
+                custom_msgbox(self, f"Error al limpiar:\n{str(e)}", "❌ Error")
+
+        confirm_dialog(
+            parent=self,
+            text=f"¿Eliminar datos mayores a {self.days_to_clean} días?\n\nEsto liberará espacio en disco.",
+            title="⚠️ Confirmar",
+            on_confirm=do_clean,
+            on_cancel=None
+        )
+        # Agrega estos métodos al final de la clase HistoryWindow
+    def _on_click(self, event):
+        """Maneja el evento de presión del botón del mouse"""
+        if event.inaxes:
+            self.dashboard_logger.get_logger(__name__).info(f"Punto seleccionado: x={event.xdata}, y={event.ydata}")
+
+    def _on_release(self, event):
+        
+        """Maneja el evento de liberación del botón del mouse"""
+        pass
+
+    def _on_motion(self, event):
+        """Maneja el movimiento del mouse sobre la gráfica"""
+        if event.inaxes:
+            # Aquí podrías actualizar un label con las coordenadas actuales
+            pass
+    def _export_figure_image(self):
+        """Guarda la figura completa como imagen PNG sin usar popups del sistema"""
+        import os
+        from datetime import datetime
+        from ui.widgets import custom_msgbox
+        
+        try:
+            # 1. Crear carpeta de capturas si no existe
+            save_dir = os.path.join(os.getcwd(), "data/screenshots")
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            
+            # 2. Generar nombre de archivo con fecha y hora
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            filename = f"graficas_{timestamp}.png"
+            filepath = os.path.join(save_dir, filename)
+            
+            # 3. Guardar la figura
+            # facecolor asegura que el fondo coincida con tu tema
+            self.fig.savefig(
+                filepath, 
+                dpi=150, 
+                facecolor=self.fig.get_facecolor(),
+                bbox_inches='tight'
+            )
+            self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Figura guardada: {filepath}")
+            # 4. Mostrar confirmación con TU propio dialogo
+            custom_msgbox(
+                self, 
+                f"Imagen guardada con éxito en:\n\n{filepath}", 
+                "✅ Captura Guardada"
+            )
+            
+        except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al guardar imagen: {str(e)}")
+            custom_msgbox(self, f"Error al guardar la imagen: {str(e)}", "❌ Error")
 
 ================
 File: main.py
