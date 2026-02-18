@@ -4,6 +4,7 @@ Monitor de procesos del sistema
 import psutil
 from typing import List, Dict, Optional
 from datetime import datetime
+from utils import DashboardLogger
 
 
 class ProcessMonitor:
@@ -14,6 +15,7 @@ class ProcessMonitor:
         self.sort_by = "cpu"  # cpu, memory, name, pid
         self.sort_reverse = True
         self.filter_type = "all"  # all, user, system
+        self.dashboard_logger = DashboardLogger
     
     def get_processes(self, limit: int = 20) -> List[Dict]:
         """
@@ -112,20 +114,25 @@ class ProcessMonitor:
             
             # Esperar un poco
             proc.wait(timeout=3)
-            
+            self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor]Proceso '{name}' (PID {pid}) terminado correctamente")
             return True, f"Proceso '{name}' (PID {pid}) terminado correctamente"
         except psutil.NoSuchProcess:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Proceso con PID {pid} no existe")
             return False, f"Proceso con PID {pid} no existe"
         except psutil.AccessDenied:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Sin permisos para terminar proceso {pid}")
             return False, f"Sin permisos para terminar proceso {pid}"
         except psutil.TimeoutExpired:
             # Si no se cierra, forzar
             try:
                 proc.kill()
+                self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor]Proceso {pid} forzado a cerrar")
                 return True, f"Proceso {pid} forzado a cerrar"
             except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Error forzando cierre del proceso {pid}: {e}")
                 return False, f"Error: {str(e)}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Error terminando proceso {pid}: {e}")
             return False, f"Error: {str(e)}"
     
     def get_system_stats(self) -> Dict:

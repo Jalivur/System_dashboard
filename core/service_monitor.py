@@ -4,6 +4,7 @@ Monitor de servicios systemd
 import subprocess
 import re
 from typing import List, Dict, Optional
+from utils import DashboardLogger
 
 
 class ServiceMonitor:
@@ -14,6 +15,7 @@ class ServiceMonitor:
         self.sort_by = "name"  # name, state
         self.sort_reverse = False
         self.filter_type = "all"  # all, active, inactive, failed
+        self.dashboard_logger = DashboardLogger()
 
     def get_services(self) -> List[Dict]:
         """
@@ -81,7 +83,7 @@ class ServiceMonitor:
                 })
 
         except Exception as e:
-            print(f"Error getting services: {e}")
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor]Error getting services: {e}")
             return []
 
         # Ordenar
@@ -137,10 +139,14 @@ class ServiceMonitor:
             )
 
             if result.returncode == 0:
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' iniciado correctamente")
                 return True, f"Servicio '{name}' iniciado correctamente"
+                
             else:
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error iniciando servicio '{name}': {result.stderr}")
                 return False, f"Error: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error iniciando servicio '{name}': {e}")
             return False, f"Error: {str(e)}"
 
     def stop_service(self, name: str) -> tuple[bool, str]:
@@ -162,10 +168,13 @@ class ServiceMonitor:
             )
 
             if result.returncode == 0:
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' detenido correctamente")
                 return True, f"Servicio '{name}' detenido correctamente"
             else:
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deteniendo servicio '{name}': {result.stderr}")
                 return False, f"Error: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deteniendo servicio '{name}': {e}")
             return False, f"Error: {str(e)}"
 
     def restart_service(self, name: str) -> tuple[bool, str]:
@@ -187,10 +196,13 @@ class ServiceMonitor:
             )
 
             if result.returncode == 0:
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' reiniciado correctamente")
                 return True, f"Servicio '{name}' reiniciado correctamente"
             else:
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error reiniciando servicio '{name}': {result.stderr}")
                 return False, f"Error: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error reiniciando servicio '{name}': {e}")
             return False, f"Error: {str(e)}"
 
     def enable_service(self, name: str) -> tuple[bool, str]:
@@ -211,11 +223,14 @@ class ServiceMonitor:
                 timeout=10
             )
 
-            if result.returncode == 0:
+            if result.returncode == 0: 
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Autostart habilitado para '{name}'")
                 return True, f"Autostart habilitado para '{name}'"
             else:
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error habilitando autostart para '{name}': {result.stderr}")
                 return False, f"Error: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error habilitando autostart para '{name}': {e}")
             return False, f"Error: {str(e)}"
 
     def disable_service(self, name: str) -> tuple[bool, str]:
@@ -237,10 +252,13 @@ class ServiceMonitor:
             )
 
             if result.returncode == 0:
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Autostart deshabilitado para '{name}'")
                 return True, f"Autostart deshabilitado para '{name}'"
-            else:
+            else:  
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deshabilitando autostart para '{name}': {result.stderr}")
                 return False, f"Error: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deshabilitando autostart para '{name}': {e}")
             return False, f"Error: {str(e)}"
 
     def get_logs(self, name: str, lines: int = 50) -> str:
@@ -263,10 +281,13 @@ class ServiceMonitor:
             )
 
             if result.returncode == 0:
+                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Logs obtenidos para '{name}'")
                 return result.stdout
             else:
+                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error obteniendo logs para '{name}': {result.stderr}")
                 return f"Error obteniendo logs: {result.stderr}"
         except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error obteniendo logs para '{name}': {e}")
             return f"Error: {str(e)}"
 
     def search_services(self, query: str) -> List[Dict]:

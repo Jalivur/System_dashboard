@@ -6,7 +6,7 @@ import time
 from typing import Optional
 from core.fan_controller import FanController
 from core.system_monitor import SystemMonitor
-from utils.file_manager import FileManager
+from utils import FileManager, DashboardLogger
 
 
 class FanAutoService:
@@ -52,12 +52,13 @@ class FanAutoService:
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._update_interval = 2.0  # segundos
-        
+        self.dashboard_logger = DashboardLogger()
         self._initialized = True
     
     def start(self):
         """Inicia el servicio en segundo plano"""
         if self._running:
+            self.dashboard_logger.get_logger(__name__).info("[FanAutoService] ya está corriendo")
             return
         
         self._running = True
@@ -71,6 +72,7 @@ class FanAutoService:
     def stop(self):
         """Detiene el servicio"""
         if not self._running:
+            self.dashboard_logger.get_logger(__name__).warning("[FanAutoService] no está corriendo")
             return
         
         self._running = False
@@ -83,8 +85,9 @@ class FanAutoService:
         while self._running:
             try:
                 self._update_auto_mode()
-            except Exception:
-                pass  # Silenciar errores
+                #self.dashboard_logger.get_logger(__name__).debug("[FanAutoService] Actualización automática ejecutada")
+            except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error en actualización automática: {e}")
             
             # Dormir en intervalos pequeños para poder detener rápido
             for _ in range(int(self._update_interval * 10)):
@@ -96,11 +99,14 @@ class FanAutoService:
         """Actualiza el PWM si está en modo auto"""
         try:
             state = self.file_manager.load_state()
-        except Exception:
+            #self.dashboard_logger.get_logger(__name__).debug(f"[FanAutoService] Estado actual cargado: {state}")
+        except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error cargando estado: {e}")
             return
         
         # Solo actuar si está en modo auto
         if state.get("mode") != "auto":
+            self.dashboard_logger.get_logger(__name__).warning("[FanAutoService] Modo no es auto, no se actualiza")
             return
         
         try:
@@ -123,8 +129,8 @@ class FanAutoService:
                     "target_pwm": target_pwm
                 })
         
-        except Exception:
-            pass  # Silenciar errores
+        except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error calculando o guardando PWM: {e}")
     
     def set_update_interval(self, seconds: float):
         """
@@ -142,6 +148,7 @@ class FanAutoService:
         Returns:
             True si está activo, False si no
         """
+        self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] is_running: {self._running}")
         return self._running
     
     def get_status(self) -> dict:
