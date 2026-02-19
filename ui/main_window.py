@@ -13,7 +13,7 @@ import subprocess
 class MainWindow:
     """Ventana principal del dashboard"""
     
-    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, process_monitor, service_monitor, update_interval=2000,  ):
+    def __init__(self, root, system_monitor, fan_controller, network_monitor, disk_monitor, process_monitor, service_monitor, update_monitor, update_interval=2000,):
         """
         Inicializa la ventana principal
         
@@ -34,6 +34,7 @@ class MainWindow:
         self.disk_monitor = disk_monitor
         self.process_monitor= process_monitor
         self.service_monitor = service_monitor
+        self.update_monitor = update_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -48,6 +49,7 @@ class MainWindow:
         self.process_window = None
         self.service_window = None
         self.history_window = None
+        self.update_window = None
         # Crear interfaz
         self._create_ui()
         
@@ -137,6 +139,7 @@ class MainWindow:
             ("⚙️ Monitor Procesos", self.open_process_window),
             ("⚙️ Monitor Servicios", self.open_service_window),
             ("󱘿  Histórico Datos", self.open_history_window),
+            ("󰆧  Actualizaciones", self.open_update_window),
             ("󰔎  Cambiar Tema", self.open_theme_selector),
             ("  Reiniciar", self.restart_application),  # NUEVO
             ("󰿅  Salir", self.exit_application),  # NUEVO
@@ -255,6 +258,15 @@ class MainWindow:
             )
         else:
             self.disk_window.lift()
+    def open_update_window(self):
+        """Abre la ventana de monitor de actualizaciones"""
+        if self.update_window is None or not self.update_window.winfo_exists():
+            from ui.windows.update import UpdatesWindow
+            self.update_window = UpdatesWindow(
+                self.root,
+            )
+        else:
+            self.update_window.lift()
             
     def exit_application(self):
         """Cierra la aplicación con opciones de salida o apagado"""

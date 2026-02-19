@@ -54,7 +54,7 @@ class FanAutoService:
         self._update_interval = 2.0  # segundos
         self.dashboard_logger = DashboardLogger()
         self._initialized = True
-    
+        self.start_cycle = 0
     def start(self):
         """Inicia el servicio en segundo plano"""
         if self._running:
@@ -97,6 +97,7 @@ class FanAutoService:
     
     def _update_auto_mode(self):
         """Actualiza el PWM si está en modo auto"""
+        
         try:
             state = self.file_manager.load_state()
             #self.dashboard_logger.get_logger(__name__).debug(f"[FanAutoService] Estado actual cargado: {state}")
@@ -106,7 +107,10 @@ class FanAutoService:
         
         # Solo actuar si está en modo auto
         if state.get("mode") != "auto":
-            self.dashboard_logger.get_logger(__name__).warning("[FanAutoService] Modo no es auto, no se actualiza")
+            
+            if self.start_cycle == 0:
+                self.dashboard_logger.get_logger(__name__).info("[FanAutoService] Modo no es auto, esperando para iniciar actualizaciones automáticas...")
+                self.start_cycle += 1
             return
         
         try:

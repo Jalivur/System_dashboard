@@ -8,6 +8,7 @@ from .fan_auto_service import FanAutoService
 from .disk_monitor import DiskMonitor
 from .process_monitor import ProcessMonitor
 from .service_monitor import ServiceMonitor
+from .update_monitor import UpdateMonitor
 
 __all__ = [
     'FanController',
@@ -17,4 +18,5 @@ __all__ = [
     'DiskMonitor',
     'ProcessMonitor',
     'ServiceMonitor',
+    'UpdateMonitor',
 ]

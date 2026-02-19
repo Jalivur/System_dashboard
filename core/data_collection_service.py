@@ -27,7 +27,7 @@ class DataCollectionService:
         return cls._instance
 
     def __init__(self, system_monitor, fan_controller, network_monitor, 
-                 disk_monitor, interval_minutes: int = 5):
+                 disk_monitor, update_monitor, interval_minutes: int = 5):
         """
         Inicializa el servicio
 
@@ -36,6 +36,7 @@ class DataCollectionService:
             fan_controller: Instancia de FanController
             network_monitor: Instancia de NetworkMonitor
             disk_monitor: Instancia de DiskMonitor
+            update_monitor: Instancia de UpdateMonitor
             interval_minutes: Intervalo de recolección en minutos
         """
         # Evitar re-inicialización del singleton
@@ -46,6 +47,7 @@ class DataCollectionService:
         self.fan_controller = FileManager()
         self.network_monitor = network_monitor
         self.disk_monitor = disk_monitor
+        self.update_monitor = update_monitor
         self.interval_minutes = interval_minutes
 
         self.logger = DataLogger()
@@ -96,7 +98,7 @@ class DataCollectionService:
         system_stats = self.system_monitor.get_current_stats()
         network_stats = self.network_monitor.get_current_stats()
         disk_stats = self.disk_monitor.get_current_stats()
-
+        update_stats = self.update_monitor.check_updates()
         # Obtener estado del ventilador
         fan_state = self.fan_controller.load_state()
         # Construir diccionario de métricas
@@ -111,7 +113,8 @@ class DataCollectionService:
             'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
             'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
             'fan_pwm': fan_state.get('target_pwm', 0),
-            'fan_mode': fan_state.get('mode', 'unknown')
+            'fan_mode': fan_state.get('mode', 'unknown'),
+            'updates_available': update_stats.get('pending', 0),
         }
         # Guardar en base de datos
         self.logger.log_metrics(metrics)
@@ -134,6 +137,7 @@ class DataCollectionService:
             )
         
         self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
     def force_collection(self):
         """Fuerza una recolección inmediata (útil para testing)"""

@@ -4,6 +4,8 @@ Diálogos y ventanas modales personalizadas
 import customtkinter as ctk
 from ui.styles import make_futuristic_button
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
+import subprocess
+import threading
 
 
 def custom_msgbox(parent, text: str, title: str = "Info") -> None:
@@ -159,4 +161,36 @@ def confirm_dialog(parent, text: str, title: str = "Confirmar",
     
     popup.lift()
     popup.focus_force()
+    popup.grab_set()
+def terminal_dialog(parent, script_path, title="Consola de Sistema"):
+    popup = ctk.CTkToplevel(parent)
+    popup.overrideredirect(True)
+    popup.configure(fg_color=COLORS['bg_dark'])
+    
+    # Tamaño para pantalla 800x480
+    w, h = 720, 400
+    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
+    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
+    popup.geometry(f"{w}x{h}+{x}+{y}")
+
+    frame = ctk.CTkFrame(popup, fg_color=COLORS['bg_dark'], border_width=2, border_color=COLORS['primary'])
+    frame.pack(fill="both", expand=True, padx=2, pady=2)
+
+    ctk.CTkLabel(frame, text=title, font=(FONT_FAMILY, 18, "bold"), text_color=COLORS['secondary']).pack(pady=5)
+
+    console = ctk.CTkTextbox(frame, fg_color="black", text_color="#00FF00", font=("Courier New", 12))
+    console.pack(fill="both", expand=True, padx=10, pady=5)
+
+    btn_close = ctk.CTkButton(frame, text="Cerrar", command=popup.destroy, state="disabled")
+    btn_close.pack(pady=10)
+
+    def run_command():
+        process = subprocess.Popen(["bash", script_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in process.stdout:
+            popup.after(0, lambda l=line: console.insert("end", l))
+            popup.after(0, lambda: console.see("end"))
+        process.wait()
+        popup.after(0, lambda: btn_close.configure(state="normal"))
+
+    threading.Thread(target=run_command, daemon=True).start()
     popup.grab_set()

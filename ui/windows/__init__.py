@@ -9,6 +9,7 @@ from .launchers import LaunchersWindow
 from .disk import DiskWindow
 from .process_window import ProcessWindow
 from .service import ServiceWindow
+from .update import UpdatesWindow
 
 __all__ = [
     'FanControlWindow',
@@ -19,4 +20,5 @@ __all__ = [
     'DiskWindow',
     'ProcessWindow',
     'ServiceWindow',
+    'UpdatesWindow',
 ]

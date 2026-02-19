@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import customtkinter as ctk
 from config.settings import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor
+from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor
 from core.data_collection_service import DataCollectionService
 from ui.main_window import MainWindow
 
@@ -61,6 +61,7 @@ def main():
     disk_monitor = DiskMonitor()
     process_monitor = ProcessMonitor()
     service_monitor = ServiceMonitor()
+    update_monitor = UpdateMonitor()
     
     # Iniciar servicio de recolección de datos (cada 5 minutos)
     data_service = DataCollectionService(
@@ -68,6 +69,7 @@ def main():
         fan_controller=fan_controller,
         network_monitor=network_monitor,
         disk_monitor=disk_monitor,
+        update_monitor=update_monitor,
         interval_minutes=5  # Recolectar cada 5 minutos, este valor son segundos pero en el metodo los convierte a minutos multiplicando por 60
     )
     data_service.start()
@@ -93,6 +95,7 @@ def main():
         update_interval=UPDATE_MS,
         process_monitor=process_monitor,
         service_monitor=service_monitor,
+        update_monitor=update_monitor
     )
     
     # Iniciar bucle principal

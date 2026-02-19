@@ -143,40 +143,24 @@ class LaunchersWindow(ctk.CTkToplevel):
             parent.grid_columnconfigure(c, weight=1)
     
     def _run_script(self, script_path: str, label: str):
-        """
-        Ejecuta un script (con confirmación previa)
-        
-        Args:
-            script_path: Ruta al script
-            label: Nombre del lanzador para mostrar en mensajes
-        """
-        def do_execute():
-            """Ejecuta el script después de confirmar"""
-            # Mostrar mensaje de ejecución
-            executing_msg = f"Ejecutando '{label}'...\n\nEsto puede tardar unos segundos."
-            custom_msgbox(self, executing_msg, "Ejecutando")
+            """
+            Ejecuta un script usando la terminal integrada tras confirmar
+            """
+            from ui.widgets.dialogs import terminal_dialog  # Importamos la terminal
             
-            # Ejecutar script en background
-            self.after(100, lambda: self._execute_and_show_result(script_path, label))
-        
-        # Mostrar diálogo de confirmación usando el sistema existente
-        confirm_dialog(
-            parent=self,
-            text=f"¿Ejecutar '{label}'?\n\n{script_path}",
-            title="⚠️ Confirmar Ejecución",
-            on_confirm=do_execute,
-            on_cancel=None
-        )
-    
-    def _execute_and_show_result(self, script_path: str, label: str):
-        """Ejecuta el script y muestra el resultado"""
-        success, message = self.system_utils.run_script(script_path)
-        
-        if success:
-            title = "Éxito"
-            msg = f"'{label}' se ejecutó correctamente.\n\n{message}"
-        else:
-            title = "Error"
-            msg = f"Error al ejecutar '{label}':\n\n{message}"
-        
-        custom_msgbox(self, msg, title)
+            def do_execute():
+                """Lanza la consola integrada para el script seleccionado"""
+                # Usamos la terminal_dialog que creamos para ver el proceso en vivo
+                terminal_dialog(
+                    parent=self, 
+                    script_path=script_path, 
+                    title=f"EJECUTANDO: {label.upper()}"
+                )
+            
+            # Diálogo de confirmación antes de abrir la consola
+            confirm_dialog(
+                parent=self,
+                text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
+                title="⚠️ Lanzador de Sistema",
+                on_confirm=do_execute
+            )
