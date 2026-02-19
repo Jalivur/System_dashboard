@@ -3,13 +3,11 @@ Servicio de recolección automática de datos
 """
 import threading
 import time
-import atexit
 from datetime import datetime
 from core.data_logger import DataLogger
 from utils.file_manager import FileManager
-from utils.system_utils import SystemUtils 
+from utils.system_utils import SystemUtils
 from utils import DashboardLogger
-
 
 
 class DataCollectionService:
@@ -26,19 +24,8 @@ class DataCollectionService:
                     cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, system_monitor, fan_controller, network_monitor, 
+    def __init__(self, system_monitor, fan_controller, network_monitor,
                  disk_monitor, update_monitor, interval_minutes: int = 5):
-        """
-        Inicializa el servicio
-
-        Args:
-            system_monitor: Instancia de SystemMonitor
-            fan_controller: Instancia de FanController
-            network_monitor: Instancia de NetworkMonitor
-            disk_monitor: Instancia de DiskMonitor
-            update_monitor: Instancia de UpdateMonitor
-            interval_minutes: Intervalo de recolección en minutos
-        """
         # Evitar re-inicialización del singleton
         if hasattr(self, '_initialized'):
             return
@@ -57,8 +44,9 @@ class DataCollectionService:
 
         self._initialized = True
 
-        # Registrar cleanup al salir
-        atexit.register(self.stop)
+        # ELIMINADO: atexit.register(self.stop)
+        # El registro del cleanup se hace en main.py junto con fan_service.stop()
+        # para evitar que se dispare durante os.execv() en el reinicio
 
     def start(self):
         """Inicia el servicio de recolección"""
@@ -79,7 +67,7 @@ class DataCollectionService:
         self.running = False
         if self.thread:
             self.thread.join(timeout=5)
-            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
+        self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
 
     def _collection_loop(self):
         """Bucle principal de recolección"""
@@ -88,24 +76,20 @@ class DataCollectionService:
                 self._collect_and_save()
             except Exception as e:
                 self.dashboard_logger.get_logger(__name__).error(f"[DataCollection] Error en recolección: {e}")
-                pass
-            # Dormir por el intervalo especificado
             time.sleep(self.interval_minutes * 60)
 
     def _collect_and_save(self):
         """Recolecta métricas y las guarda"""
-        # Obtener métricas de cada monitor
         system_stats = self.system_monitor.get_current_stats()
         network_stats = self.network_monitor.get_current_stats()
         disk_stats = self.disk_monitor.get_current_stats()
         update_stats = self.update_monitor.check_updates()
-        # Obtener estado del ventilador
         fan_state = self.fan_controller.load_state()
-        # Construir diccionario de métricas
+
         metrics = {
             'cpu_percent': system_stats.get('cpu', 0),
             'ram_percent': system_stats.get('ram', 0),
-            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),# MB a GB
+            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),
             'temperature': system_stats.get('temp', 0),
             'disk_used_percent': disk_stats.get('disk_usage', 0),
             'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
@@ -116,28 +100,24 @@ class DataCollectionService:
             'fan_mode': fan_state.get('mode', 'unknown'),
             'updates_available': update_stats.get('pending', 0),
         }
-        # Guardar en base de datos
+
         self.logger.log_metrics(metrics)
 
-        # Detectar y registrar eventos críticos
         if metrics['temperature'] > 80:
             self.logger.log_event(
-                'temp_high',
-                'critical',
+                'temp_high', 'critical',
                 f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
                 {'temperature': metrics['temperature']}
             )
 
         if metrics['cpu_percent'] > 90:
             self.logger.log_event(
-                'cpu_high',
-                'warning',
+                'cpu_high', 'warning',
                 f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
                 {'cpu': metrics['cpu_percent']}
             )
-        
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
+        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     def force_collection(self):
         """Fuerza una recolección inmediata (útil para testing)"""

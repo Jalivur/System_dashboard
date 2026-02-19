@@ -7,7 +7,6 @@ import sys
 import os
 import atexit
 
-# Agregar el directorio actual al path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import customtkinter as ctk
@@ -19,37 +18,20 @@ from ui.main_window import MainWindow
 
 def main():
     """Función principal"""
-    # Configurar modo de apariencia
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("dark-blue")
     
-    # Crear ventana principal
     root = ctk.CTk()
     root.title("Sistema de Monitoreo")
     
-    # IMPORTANTE: Configurar posición ANTES de mostrar
-    root.withdraw()  # Ocultar temporalmente
-    
-    # Configurar geometría
+    root.withdraw()
     root.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
     root.configure(bg="#111111")
-    
-    # Forzar procesamiento de geometría
     root.update_idletasks()
-    
-    # Sin bordes
     root.overrideredirect(True)
-    
-    # Reconfirmar posición después de overrideredirect
     root.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-    
-    # Procesar cambios
     root.update_idletasks()
-    
-    # Mostrar ventana en posición correcta
     root.deiconify()
-    
-    # Asegurar que está en primer plano
     root.lift()
     root.attributes('-topmost', True)
     root.after(100, lambda: root.attributes('-topmost', False))
@@ -63,25 +45,27 @@ def main():
     service_monitor = ServiceMonitor()
     update_monitor = UpdateMonitor()
     
-    # Iniciar servicio de recolección de datos (cada 5 minutos)
+
+    # Iniciar servicio de recolección de datos
     data_service = DataCollectionService(
         system_monitor=system_monitor,
         fan_controller=fan_controller,
         network_monitor=network_monitor,
         disk_monitor=disk_monitor,
         update_monitor=update_monitor,
-        interval_minutes=5  # Recolectar cada 5 minutos, este valor son segundos pero en el metodo los convierte a minutos multiplicando por 60
+        interval_minutes=5
     )
     data_service.start()
     
-    # Iniciar servicio de ventiladores AUTO (background)
+    # Iniciar servicio de ventiladores AUTO
     fan_service = FanAutoService(fan_controller, system_monitor)
     fan_service.start()
     
-    # Asegurar que el servicio se detiene al cerrar
+    # Cleanup centralizado — ambos servicios aquí, ninguno en atexit interno
     def cleanup():
         """Limpieza al cerrar la aplicación"""
         fan_service.stop()
+        data_service.stop()
     
     atexit.register(cleanup)
     
@@ -97,10 +81,11 @@ def main():
         service_monitor=service_monitor,
         update_monitor=update_monitor
     )
-    
-    # Iniciar bucle principal
+
     try:
         root.mainloop()
+        # Esto se ejecuta una vez al arrancar y llena el caché inicial
+        update_monitor.check_updates(force=True)
     finally:
         cleanup()
 

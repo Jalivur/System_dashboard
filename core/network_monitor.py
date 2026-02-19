@@ -9,6 +9,9 @@ from typing import Dict, Optional, Tuple
 from config.settings import (HISTORY, NET_MIN_SCALE, NET_MAX_SCALE, 
                              NET_IDLE_THRESHOLD, NET_IDLE_RESET_TIME, NET_MAX_MB)
 from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class NetworkMonitor:
@@ -85,7 +88,6 @@ class NetworkMonitor:
         
         peak = max(recent_data) if recent_data else 0
         
-        # Si el pico es muy bajo, considerar idle
         if peak < NET_IDLE_THRESHOLD:
             self.idle_counter += 1
             if self.idle_counter >= NET_IDLE_RESET_TIME:
@@ -94,7 +96,6 @@ class NetworkMonitor:
         else:
             self.idle_counter = 0
         
-        # Ajustar escala
         if peak > current_max * 0.8:
             new_max = peak * 1.2
         elif peak < current_max * 0.3:
@@ -102,7 +103,6 @@ class NetworkMonitor:
         else:
             new_max = current_max
         
-        # Limitar escala
         return max(NET_MIN_SCALE, min(NET_MAX_SCALE, new_max))
     
     def update_dynamic_scale(self) -> None:
@@ -126,6 +126,7 @@ class NetworkMonitor:
     def run_speedtest(self) -> None:
         """Ejecuta speedtest en un thread separado"""
         def _run():
+            logger.info("[NetworkMonitor] Iniciando speedtest...")
             self.speedtest_result["status"] = "running"
             try:
                 result = subprocess.run(
@@ -143,9 +144,9 @@ class NetworkMonitor:
                         if line.startswith("Ping:"):
                             ping = float(line.split()[1])
                         elif line.startswith("Download:"):
-                            download = float(line.split()[1])/8
+                            download = float(line.split()[1]) / 8
                         elif line.startswith("Upload:"):
-                            upload = float(line.split()[1])/8
+                            upload = float(line.split()[1]) / 8
                     
                     self.speedtest_result.update({
                         "status": "done",
@@ -153,12 +154,19 @@ class NetworkMonitor:
                         "download": download,
                         "upload": upload
                     })
+                    logger.info(f"[NetworkMonitor] Speedtest completado — Ping: {ping}ms, ↓{download:.2f} MB/s, ↑{upload:.2f} MB/s")
                 else:
+                    logger.error(f"[NetworkMonitor] speedtest-cli retornó código {result.returncode}: {result.stderr}")
                     self.speedtest_result["status"] = "error"
                     
             except subprocess.TimeoutExpired:
+                logger.warning("[NetworkMonitor] Speedtest timeout (>60s)")
                 self.speedtest_result["status"] = "timeout"
-            except Exception:
+            except FileNotFoundError:
+                logger.error("[NetworkMonitor] speedtest-cli no encontrado. Instala: sudo apt install speedtest-cli")
+                self.speedtest_result["status"] = "error"
+            except Exception as e:
+                logger.error(f"[NetworkMonitor] Error inesperado en speedtest: {e}")
                 self.speedtest_result["status"] = "error"
         
         thread = threading.Thread(target=_run, daemon=True)

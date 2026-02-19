@@ -136,7 +136,6 @@ class DiskWindow(ctk.CTkToplevel):
         }    
     def _create_usage_section(self, parent):
         """Crea la sección de uso de disco"""
-        # TODO: Implementar (similar a MonitorWindow)
         # Frame con label, valor y gráfica
         self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
 
@@ -211,8 +210,6 @@ class DiskWindow(ctk.CTkToplevel):
     
     def _create_nvme_temp_section(self, parent):
         """Crea la sección de temperatura NVMe"""
-        # TODO: Implementar (NUEVO)
-
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
 
@@ -256,7 +253,6 @@ class DiskWindow(ctk.CTkToplevel):
         self.disk_monitor.update_history(stats)
         history = self.disk_monitor.get_history()
         
-        # TODO: Actualizar cada sección con sus datos
         # Actualizar Disco (uso)
         self._update_metric(
             'disk',

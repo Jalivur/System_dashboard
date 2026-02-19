@@ -15,7 +15,7 @@ class ProcessMonitor:
         self.sort_by = "cpu"  # cpu, memory, name, pid
         self.sort_reverse = True
         self.filter_type = "all"  # all, user, system
-        self.dashboard_logger = DashboardLogger
+        self.dashboard_logger = DashboardLogger()
     
     def get_processes(self, limit: int = 20) -> List[Dict]:
         """
@@ -97,6 +97,9 @@ class ProcessMonitor:
         return [p for p in all_processes 
                 if query in p['name'].lower() or query in p.get('display_name', '').lower()]
     
+
+
+
     def kill_process(self, pid: int) -> tuple[bool, str]:
         """
         Mata un proceso por su PID
@@ -110,31 +113,38 @@ class ProcessMonitor:
         try:
             proc = psutil.Process(pid)
             name = proc.name()
+
+            # Obtener display_name igual que en get_processes
+            try:
+                cmdline = proc.cmdline()
+                display_name = ' '.join(cmdline[:2]) if cmdline else name
+            except (psutil.AccessDenied, psutil.ZombieProcess):
+                display_name = name
+
             proc.terminate()  # Intenta cerrar limpiamente
             
             # Esperar un poco
             proc.wait(timeout=3)
-            self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor]Proceso '{name}' (PID {pid}) terminado correctamente")
-            return True, f"Proceso '{name}' (PID {pid}) terminado correctamente"
+            self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) terminado correctamente")
+            return True, f"Proceso '{display_name}' (PID {pid}) terminado correctamente"
         except psutil.NoSuchProcess:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Proceso con PID {pid} no existe")
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Proceso con PID {pid} no existe")
             return False, f"Proceso con PID {pid} no existe"
         except psutil.AccessDenied:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Sin permisos para terminar proceso {pid}")
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Sin permisos para terminar proceso {pid}")
             return False, f"Sin permisos para terminar proceso {pid}"
         except psutil.TimeoutExpired:
             # Si no se cierra, forzar
             try:
                 proc.kill()
-                self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor]Proceso {pid} forzado a cerrar")
-                return True, f"Proceso {pid} forzado a cerrar"
+                self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) forzado a cerrar")
+                return True, f"Proceso '{display_name}' (PID {pid}) forzado a cerrar"
             except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Error forzando cierre del proceso {pid}: {e}")
+                self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error forzando cierre del proceso '{display_name}' (PID {pid}): {e}")
                 return False, f"Error: {str(e)}"
         except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor]Error terminando proceso {pid}: {e}")
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error terminando proceso '{display_name}' (PID {pid}): {e}")
             return False, f"Error: {str(e)}"
-    
     def get_system_stats(self) -> Dict:
         """
         Obtiene estadísticas generales del sistema

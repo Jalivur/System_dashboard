@@ -5,6 +5,9 @@ import json
 import os
 from typing import Dict, List, Any, Optional
 from config.settings import STATE_FILE, CURVE_FILE
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class FileManager:
@@ -19,9 +22,13 @@ class FileManager:
             data: Diccionario con los datos a guardar
         """
         tmp = str(STATE_FILE) + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp, STATE_FILE)
+        try:
+            with open(tmp, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, STATE_FILE)
+        except OSError as e:
+            logger.error(f"[FileManager] write_state: error escribiendo estado: {e}")
+            raise
     
     @staticmethod
     def load_state() -> Dict[str, Any]:
@@ -37,12 +44,17 @@ class FileManager:
             with open(STATE_FILE) as f:
                 data = json.load(f)
                 if not isinstance(data, dict):
+                    logger.warning("[FileManager] load_state: contenido inválido, usando estado por defecto")
                     return default_state
                 return {
                     "mode": data.get("mode", "auto"),
                     "target_pwm": data.get("target_pwm")
                 }
-        except (FileNotFoundError, json.JSONDecodeError):
+        except FileNotFoundError:
+            logger.debug(f"[FileManager] load_state: {STATE_FILE} no existe, usando estado por defecto")
+            return default_state
+        except json.JSONDecodeError as e:
+            logger.error(f"[FileManager] load_state: JSON corrupto en {STATE_FILE}: {e} — usando estado por defecto")
             return default_state
     
     @staticmethod
@@ -67,6 +79,7 @@ class FileManager:
                 pts = data.get("points", [])
                 
                 if not isinstance(pts, list):
+                    logger.warning("[FileManager] load_curve: 'points' no es una lista, usando curva por defecto")
                     return default_curve
                 
                 sanitized = []
@@ -85,11 +98,16 @@ class FileManager:
                     sanitized.append({"temp": temp, "pwm": pwm})
                 
                 if not sanitized:
+                    logger.warning("[FileManager] load_curve: curva vacía tras sanear, usando curva por defecto")
                     return default_curve
                 
                 return sorted(sanitized, key=lambda x: x["temp"])
                 
-        except (FileNotFoundError, json.JSONDecodeError):
+        except FileNotFoundError:
+            logger.debug(f"[FileManager] load_curve: {CURVE_FILE} no existe, usando curva por defecto")
+            return default_curve
+        except json.JSONDecodeError as e:
+            logger.error(f"[FileManager] load_curve: JSON corrupto en {CURVE_FILE}: {e} — usando curva por defecto")
             return default_curve
     
     @staticmethod
@@ -102,6 +120,11 @@ class FileManager:
         """
         data = {"points": points}
         tmp = str(CURVE_FILE) + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp, CURVE_FILE)
+        try:
+            with open(tmp, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, CURVE_FILE)
+            logger.info(f"[FileManager] save_curve: curva guardada ({len(points)} puntos)")
+        except OSError as e:
+            logger.error(f"[FileManager] save_curve: error guardando curva: {e}")
+            raise

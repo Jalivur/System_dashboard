@@ -10,6 +10,10 @@ from typing import Tuple, Dict, Optional, Any
 from collections import namedtuple
 from config.settings import UPDATE_MS
 import json
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class SystemUtils:
     """Utilidades para interactuar con el sistema"""
@@ -32,12 +36,12 @@ class SystemUtils:
                 universal_newlines=True,
                 timeout=2
             )
-            # Formato: temp=45.0'C
             temp_str = out.replace("temp=", "").replace("'C", "").strip()
             return float(temp_str)
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, 
-                FileNotFoundError, ValueError):
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             pass
+        except ValueError as e:
+            logger.warning(f"[SystemUtils] get_cpu_temp: formato inesperado de vcgencmd: {e}")
         
         # Método 2: sensors (Linux genérico)
         try:
@@ -48,13 +52,14 @@ class SystemUtils:
                     if m:
                         return float(m.group(1))
                         
-            # Intentar CPU temp genérico
             for line in out.split('\n'):
                 if 'temp' in line.lower():
                     m = re.search(r'[\+\-](\d+\.\d+).C', line)
                     if m:
                         return float(m.group(1))
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+        except subprocess.TimeoutExpired:
+            logger.warning("[SystemUtils] get_cpu_temp: timeout leyendo sensors")
+        except (subprocess.CalledProcessError, FileNotFoundError):
             pass
         
         # Método 3: Fallback - leer de thermal_zone
@@ -62,8 +67,10 @@ class SystemUtils:
             with open("/sys/class/thermal/thermal_zone0/temp") as f:
                 val = f.read().strip()
                 return float(val) / 1000.0
-        except (FileNotFoundError, ValueError):
-            pass
+        except FileNotFoundError:
+            logger.warning("[SystemUtils] get_cpu_temp: no se encontró thermal_zone0, retornando 0.0")
+        except ValueError as e:
+            logger.error(f"[SystemUtils] get_cpu_temp: error leyendo thermal_zone0: {e}")
         
         return 0.0
     
@@ -77,15 +84,14 @@ class SystemUtils:
         """
         try:
             return socket.gethostname()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[SystemUtils] get_hostname: {e}")
             return "unknown"
     
-    # Variable de clase para mantener el estado entre llamadas
     @staticmethod
     def get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]:
         """
         Obtiene estadísticas de red con auto-detección de interfaz activa
-        (Implementación idéntica al código original fase2dashboard.py)
         
         Args:
             interface: Nombre de la interfaz o None para auto-detección
@@ -93,63 +99,51 @@ class SystemUtils:
         Returns:
             Tupla (nombre_interfaz, estadísticas)
         """
-        # Inicializar estado si no existe (primera vez)
         if not SystemUtils._last_net_io:
             SystemUtils._last_net_io = psutil.net_io_counters(pernic=True)
         
         stats = psutil.net_io_counters(pernic=True)
         
-        # Si se especifica interfaz y existe, usarla
         if interface and interface in stats:
             SystemUtils._last_net_io = stats
             return interface, stats[interface]
         
-        # Auto-detectar: buscar interfaz con más tráfico ACTUAL
         best_name = None
         best_speed = -1
         
         for name in stats:
-            # Saltar si no está en el estado anterior (interfaz nueva)
             if name not in SystemUtils._last_net_io:
                 continue
             
             curr = stats[name]
             prev = SystemUtils._last_net_io[name]
             
-            # Calcular velocidad total desde última medición
             speed = (
                 (curr.bytes_recv - prev.bytes_recv) +
                 (curr.bytes_sent - prev.bytes_sent)
             )
             
-            # Evitar picos absurdos (reinicio de contador)
-            if speed < 0 or speed > 500 * 1024 * 1024:  # 500 MB
+            if speed < 0 or speed > 500 * 1024 * 1024:
                 continue
             
-            # Elegir la interfaz con MÁS tráfico
             if speed > best_speed:
                 best_speed = speed
                 best_name = name
         
-        # CRÍTICO: Actualizar estado SIEMPRE (para próxima medición)
         SystemUtils._last_net_io = stats
         
-        # Si encontramos interfaz con tráfico, retornarla
         if best_name:
             return best_name, stats[best_name]
         
-        # Fallback: Primera interfaz con tráfico acumulado
         for iface, s in stats.items():
             if iface.startswith(('eth', 'enp', 'wlan', 'wlp', 'tun')):
                 if s.bytes_sent > 0 or s.bytes_recv > 0:
                     return iface, s
         
-        # Última opción: cualquier interfaz disponible
         if stats:
             first = list(stats.items())[0]
             return first[0], first[1]
         
-        # Sin interfaces: retornar vacío
         EmptyStats = namedtuple('EmptyStats', 
             ['bytes_sent', 'bytes_recv', 'packets_sent', 'packets_recv',
              'errin', 'errout', 'dropin', 'dropout'])
@@ -174,15 +168,14 @@ class SystemUtils:
             dl_bytes = max(0, current.bytes_recv - previous.bytes_recv)
             ul_bytes = max(0, current.bytes_sent - previous.bytes_sent)
             
-            # Convertir a MB/s (asumiendo UPDATE_MS = 2000ms)
-            
             seconds = UPDATE_MS / 1000.0
             
             dl_mb = (dl_bytes / (1024 * 1024)) / seconds
             ul_mb = (ul_bytes / (1024 * 1024)) / seconds
             
             return dl_mb, ul_mb
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError) as e:
+            logger.warning(f"[SystemUtils] safe_net_speed: error calculando velocidad de red: {e}")
             return 0.0, 0.0
     
     @staticmethod
@@ -191,25 +184,7 @@ class SystemUtils:
         Lista dispositivos USB de almacenamiento (discos)
         
         Returns:
-            Lista de diccionarios con información de almacenamiento USB:
-            [
-                {
-                    'name': 'SanDisk Ultra',
-                    'type': 'disk',
-                    'mount': None,
-                    'dev': '/dev/sda',
-                    'size': '32G',
-                    'children': [
-                        {
-                            'name': 'sda1',
-                            'type': 'part',
-                            'mount': '/media/usb',
-                            'dev': '/dev/sda1',
-                            'size': '32G'
-                        }
-                    ]
-                }
-            ]
+            Lista de diccionarios con información de almacenamiento USB
         """
         storage_devices = []
         
@@ -222,11 +197,9 @@ class SystemUtils:
             )
             
             if result.returncode == 0:
-                
                 data = json.loads(result.stdout)
                 
                 for block in data.get('blockdevices', []):
-                    # Solo dispositivos USB
                     if block.get('tran') == 'usb':
                         dev = {
                             'name': block.get('model', 'USB Disk').strip(),
@@ -237,7 +210,6 @@ class SystemUtils:
                             'children': []
                         }
                         
-                        # Procesar particiones hijas
                         for child in block.get('children', []):
                             child_dev = {
                                 'name': child.get('name', ''),
@@ -249,9 +221,15 @@ class SystemUtils:
                             dev['children'].append(child_dev)
                         
                         storage_devices.append(dev)
+            else:
+                logger.warning(f"[SystemUtils] list_usb_storage_devices: lsblk retornó código {result.returncode}")
         
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+        except subprocess.TimeoutExpired:
+            logger.error("[SystemUtils] list_usb_storage_devices: timeout ejecutando lsblk")
+        except FileNotFoundError:
+            logger.error("[SystemUtils] list_usb_storage_devices: lsblk no encontrado")
+        except json.JSONDecodeError as e:
+            logger.error(f"[SystemUtils] list_usb_storage_devices: error parseando JSON de lsblk: {e}")
         
         return storage_devices
     
@@ -274,9 +252,13 @@ class SystemUtils:
             if result.returncode == 0:
                 devices = [line for line in result.stdout.strip().split('\n') if line]
                 return devices
+            else:
+                logger.warning(f"[SystemUtils] list_usb_other_devices: lsusb retornó código {result.returncode}")
             
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+        except subprocess.TimeoutExpired:
+            logger.error("[SystemUtils] list_usb_other_devices: timeout ejecutando lsusb")
+        except FileNotFoundError:
+            logger.error("[SystemUtils] list_usb_other_devices: lsusb no encontrado")
         
         return []
     
@@ -302,8 +284,9 @@ class SystemUtils:
         Returns:
             Tupla (success: bool, message: str)
         """
+        device_name = device.get('name', 'desconocido')
+        
         try:
-            # Desmontar todas las particiones montadas
             unmounted = []
             for partition in device.get('children', []):
                 if partition.get('mount'):
@@ -316,19 +299,26 @@ class SystemUtils:
                     
                     if result.returncode == 0:
                         unmounted.append(partition['name'])
+                        logger.info(f"[SystemUtils] Partición {partition['name']} desmontada correctamente")
                     else:
+                        logger.error(f"[SystemUtils] Error desmontando {partition['name']}: {result.stderr}")
                         return (False, f"Error desmontando {partition['name']}: {result.stderr}")
             
             if unmounted:
+                logger.info(f"[SystemUtils] Dispositivo '{device_name}' expulsado: {', '.join(unmounted)}")
                 return (True, f"Desmontado correctamente: {', '.join(unmounted)}")
             else:
+                logger.info(f"[SystemUtils] Dispositivo '{device_name}': no había particiones montadas")
                 return (True, "No había particiones montadas")
         
         except subprocess.TimeoutExpired:
+            logger.error(f"[SystemUtils] eject_usb_device: timeout desmontando '{device_name}'")
             return (False, "Timeout al desmontar el dispositivo")
         except FileNotFoundError:
+            logger.error("[SystemUtils] eject_usb_device: udisksctl no encontrado")
             return (False, "udisksctl no encontrado. Instala: sudo apt-get install udisks2")
         except Exception as e:
+            logger.error(f"[SystemUtils] eject_usb_device: error inesperado con '{device_name}': {e}")
             return (False, f"Error: {str(e)}")
     
     @staticmethod
@@ -351,15 +341,20 @@ class SystemUtils:
             )
             
             if result.returncode == 0:
-                return True, f"Script ejecutado exitosamente"
+                logger.info(f"[SystemUtils] Script ejecutado correctamente: {script_path}")
+                return True, "Script ejecutado exitosamente"
             else:
+                logger.error(f"[SystemUtils] Script falló ({script_path}): {result.stderr}")
                 return False, f"Error: {result.stderr}"
                 
         except subprocess.TimeoutExpired:
+            logger.error(f"[SystemUtils] run_script: timeout ejecutando {script_path}")
             return False, "Timeout: El script tardó demasiado"
         except FileNotFoundError:
+            logger.error(f"[SystemUtils] run_script: script no encontrado: {script_path}")
             return False, f"Script no encontrado: {script_path}"
         except Exception as e:
+            logger.error(f"[SystemUtils] run_script: error inesperado ({script_path}): {e}")
             return False, f"Error: {str(e)}"
     
     @staticmethod
@@ -369,19 +364,17 @@ class SystemUtils:
         
         Returns:
             Diccionario {interfaz: IP}
-            Ejemplo: {"eth0": "192.168.1.5", "tun0": "10.8.0.2"}
         """
         result = {}
         try:
             addrs = psutil.net_if_addrs()
             for iface, addr_list in addrs.items():
                 for addr in addr_list:
-                    # AF_INET = IPv4
                     if addr.family == socket.AF_INET:
                         result[iface] = addr.address
-                        break  # Solo la primera IPv4
-        except Exception:
-            pass
+                        break
+        except Exception as e:
+            logger.warning(f"[SystemUtils] get_interfaces_ips: {e}")
         
         return result
     
@@ -393,9 +386,8 @@ class SystemUtils:
         Returns:
             Temperatura en °C o 0.0 si no se puede leer
         """
+        # Método 1: smartctl
         try:
-            # Método 1: Usar smartctl (requiere smartmontools)
-            # sudo apt-get install smartmontools
             result = subprocess.run(
                 ["sudo", "smartctl", "-a", "/dev/nvme0"],
                 capture_output=True,
@@ -404,34 +396,35 @@ class SystemUtils:
             )
             
             if result.returncode == 0:
-                # Buscar línea con "Temperature:"
                 for line in result.stdout.split('\n'):
                     if 'Temperature:' in line or 'Temperature Sensor' in line:
-                        # Extraer número
-                        # Ejemplo: "Temperature:                        45 Celsius"
                         match = re.search(r'(\d+)\s*Celsius', line)
                         if match:
                             return float(match.group(1))
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            else:
+                logger.debug(f"[SystemUtils] get_nvme_temp: smartctl retornó código {result.returncode}")
+        except subprocess.TimeoutExpired:
+            logger.warning("[SystemUtils] get_nvme_temp: timeout ejecutando smartctl")
+        except (subprocess.CalledProcessError, FileNotFoundError):
             pass
-        
+
+        # Método 2: sysfs
         try:
-            # Método 2: Leer desde sysfs (si existe)
-            # Algunas Raspberry Pi exponen la temp del NVMe aquí
             temp_files = [
                 "/sys/class/hwmon/hwmon*/temp1_input",
                 "/sys/block/nvme0n1/device/hwmon/hwmon*/temp1_input"
             ]
             
-
             for pattern in temp_files:
                 for temp_file in glob.glob(pattern):
                     with open(temp_file, 'r') as f:
                         temp_millis = int(f.read().strip())
                         return temp_millis / 1000.0
-        except (FileNotFoundError, ValueError, PermissionError):
-            pass
+        except FileNotFoundError:
+            logger.debug("[SystemUtils] get_nvme_temp: archivos sysfs no encontrados")
+        except ValueError as e:
+            logger.warning(f"[SystemUtils] get_nvme_temp: error leyendo sysfs: {e}")
+        except PermissionError:
+            logger.warning("[SystemUtils] get_nvme_temp: sin permisos para leer sysfs")
         
-        # Si no se pudo leer, retornar 0
         return 0.0
-

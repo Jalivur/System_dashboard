@@ -162,7 +162,7 @@ def confirm_dialog(parent, text: str, title: str = "Confirmar",
     popup.lift()
     popup.focus_force()
     popup.grab_set()
-def terminal_dialog(parent, script_path, title="Consola de Sistema"):
+def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=None):
     popup = ctk.CTkToplevel(parent)
     popup.overrideredirect(True)
     popup.configure(fg_color=COLORS['bg_dark'])
@@ -177,11 +177,14 @@ def terminal_dialog(parent, script_path, title="Consola de Sistema"):
     frame.pack(fill="both", expand=True, padx=2, pady=2)
 
     ctk.CTkLabel(frame, text=title, font=(FONT_FAMILY, 18, "bold"), text_color=COLORS['secondary']).pack(pady=5)
-
+    def _on_close():
+        popup.destroy()
+        if on_close:
+            on_close()
     console = ctk.CTkTextbox(frame, fg_color="black", text_color="#00FF00", font=("Courier New", 12))
     console.pack(fill="both", expand=True, padx=10, pady=5)
 
-    btn_close = ctk.CTkButton(frame, text="Cerrar", command=popup.destroy, state="disabled")
+    btn_close = ctk.CTkButton(frame, text="Cerrar", command=_on_close, state="disabled")
     btn_close.pack(pady=10)
 
     def run_command():
