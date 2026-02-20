@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5.1
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos y gestión avanzada del sistema.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.5-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.5.1-orange.svg)]()
 
 ---
 
@@ -33,20 +33,18 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
 - **Búsqueda inteligente**: Por nombre o comando completo
 - **Filtros**: Todos / Usuario / Sistema
-- **Ordenación**: Por PID, Nombre, CPU%, RAM%
 - **Terminar procesos**: Con confirmación y feedback
 
-### 🔧 **Monitor de Servicios systemd** ⭐ NUEVO
+### 🔧 **Monitor de Servicios systemd**
 - **Gestión completa**: Start/Stop/Restart servicios
 - **Estado visual**: active, inactive, failed con iconos
 - **Autostart**: Enable/Disable con confirmación
 - **Logs en tiempo real**: Ver últimas 50 líneas
-- **Búsqueda y filtros**: Por nombre o estado
 
-### 📊 **Histórico de Datos** ⭐ NUEVO
+### 📊 **Histórico de Datos**
 - **Recolección automática**: Cada 5 minutos en background
 - **Base de datos SQLite**: Ligera y eficiente
-- **Visualización gráfica**: CPU, RAM, Temperatura en 3 gráficas
+- **Visualización gráfica**: CPU, RAM, Temperatura con matplotlib
 - **Periodos**: 24 horas, 7 días, 30 días
 - **Estadísticas**: Promedios, mínimos, máximos
 - **Detección de anomalías**: Alertas automáticas
@@ -56,30 +54,39 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Detección automática**: Dispositivos conectados
 - **Separación inteligente**: Mouse/teclado vs almacenamiento
 - **Expulsión segura**: Unmount + eject con confirmación
-- **Actualización en vivo**: Detecta conexiones/desconexiones
 
 ### 💾 **Monitor de Disco**
 - **Particiones**: Uso de espacio de todas las unidades
-- **Temperatura NVMe**: Monitoreo térmico del SSD
+- **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
 - **Velocidad I/O**: Lectura/escritura en MB/s
-- **Gráficas históricas**: Actividad del disco
 
 ### 🚀 **Lanzadores de Scripts**
-- **Ejecuta scripts personalizados**: Con confirmación previa
+- **Terminal integrada**: Visualiza la ejecución en tiempo real
 - **Layout en grid**: Organización visual en columnas
-- **Feedback visual**: Mensajes de éxito/error
+- **Confirmación previa**: Diálogo antes de ejecutar
+
+### 🔄 **Actualizaciones del Sistema**
+- **Verificación al arranque**: En background sin bloquear la UI
+- **Sistema de caché 12h**: No repite `apt update` innecesariamente
+- **Terminal integrada**: Instala viendo el output en vivo
+- **Botón Buscar**: Fuerza comprobación manual
 
 ### 🎨 **15 Temas Personalizables**
 - **Cambio con un clic**: Reinicio automático
 - **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
 - **Preview en vivo**: Ve los colores antes de aplicar
-- **Persistente**: Guarda tu elección
 
-### 🔄 **Reinicio Rápido** ⭐ NUEVO
-- **Botón de reinicio**: Reinicia el dashboard con un clic
-- **Aplica cambios**: Código, configuración, todo
-- **Con confirmación**: Evita reinicios accidentales
-- **Perfecto para desarrollo**: Cambios rápidos
+### 🔄 **Reinicio y Apagado**
+- **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
+- **Botón Salir**: Salir de la app o apagar el sistema
+- **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
+- **Con confirmación**: Evita acciones accidentales
+
+### 📋 **Sistema de Logging Completo**
+- **Cobertura total**: Todos los módulos core y UI
+- **Niveles diferenciados**: DEBUG, INFO, WARNING, ERROR
+- **Rotación automática**: 2MB máximo con backup
+- **Ubicación**: `data/logs/dashboard.log`
 
 ---
 
@@ -90,49 +97,61 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
 - **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
 - **Python**: 3.8 o superior
-- **Extras**: Ventiladores PWM (opcional), NVMe (opcional)
 
-### ⚡ **Instalación Rápida**
+### ⚡ **Instalación Recomendada**
+
+Usa el script de instalación directa (sin entorno virtual):
 
 ```bash
-# 1. Clonar repositorio
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
-
-# 2. Ejecutar instalador automático
-chmod +x install.sh
-./install.sh
-
-# 3. Ejecutar
+chmod +x install_system.sh
+sudo ./install_system.sh
 python3 main.py
 ```
+
+El script `install_system.sh` instala automáticamente:
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
+- Dependencias Python con `--break-system-packages`
+- Pregunta si instalar `speedtest-cli`
+- Ofrece configurar sensores de temperatura
 
 ### 🛠️ **Instalación Manual**
 
+Si prefieres instalar paso a paso:
+
 ```bash
-# 1. Instalar dependencias del sistema
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv lm-sensors speedtest-cli
+# 1. Dependencias del sistema
+sudo apt-get update
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools speedtest-cli
 
-# 2. Crear entorno virtual
-python3 -m venv venv
-source venv/bin/activate
-
-# 3. Instalar dependencias Python
-pip install -r requirements.txt
-
-# 4. Detectar sensores
+# 2. Detectar sensores
 sudo sensors-detect --auto
 
-# 5. Ejecutar
+# 3. Dependencias Python
+pip3 install --break-system-packages -r requirements.txt
+
+# 4. Ejecutar
 python3 main.py
 ```
 
+### 🔁 **Alternativa con Entorno Virtual**
+
+Si prefieres aislar las dependencias Python:
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> **Nota**: Con venv necesitas activar el entorno (`source venv/bin/activate`) cada vez antes de ejecutar.
+
 ---
 
-## 🎯 Uso
+## 🎯 Menú Principal (13 botones)
 
-### **Menú Principal (12 botones):**
 ```
 ┌─────────────────────────────────────┐
 │  Control         │  Monitor          │
@@ -147,33 +166,34 @@ python3 main.py
 │  Monitor         │  Monitor          │
 │  Procesos        │  Servicios        │
 ├──────────────────┼───────────────────┤
-│  Histórico       │  Cambiar          │
-│  Datos           │  Tema             │
+│  Histórico       │  Actualizaciones  │
+│  Datos           │                   │
 ├──────────────────┼───────────────────┤
-│  Reiniciar       │  Salir            │
+│  Cambiar Tema    │  Reiniciar        │
+├──────────────────┼───────────────────┤
+│  Salir           │                   │
 └──────────────────┴───────────────────┘
 ```
 
-### **Ventanas Disponibles:**
+### **Las 13 Ventanas:**
 
 1. **Control Ventiladores** - Configura modos y curvas PWM
 2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
-3. **Monitor Red** - Tráfico, speedtest, interfaces
+3. **Monitor Red** - Tráfico, speedtest, interfaces e IPs
 4. **Monitor USB** - Dispositivos y expulsión segura
 5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
-6. **Lanzadores** - Ejecuta scripts personalizados
-7. **Monitor Procesos** - Gestión avanzada de procesos ⭐
-8. **Monitor Servicios** - Control de servicios systemd ⭐
-9. **Histórico Datos** - Visualización de métricas históricas ⭐
-10. **Cambiar Tema** - Selecciona entre 15 temas
-11. **Reiniciar** - Reinicia el dashboard ⭐
-12. **Salir** - Cierra con confirmación
+6. **Lanzadores** - Ejecuta scripts con terminal en vivo
+7. **Monitor Procesos** - Gestión avanzada de procesos
+8. **Monitor Servicios** - Control de servicios systemd
+9. **Histórico Datos** - Visualización de métricas históricas
+10. **Actualizaciones** - Gestión de paquetes del sistema
+11. **Cambiar Tema** - Selecciona entre 15 temas
+12. **Reiniciar** - Reinicia el dashboard
+13. **Salir** - Cierra la app o apaga el sistema
 
 ---
 
 ## 🎨 Temas Disponibles
-
-El dashboard incluye **15 temas profesionales**:
 
 | Tema | Colores | Estilo |
 |------|---------|--------|
@@ -193,106 +213,93 @@ El dashboard incluye **15 temas profesionales**:
 | **Material** | Azul material | Google Design |
 | **Ayu Dark** | Azul cielo | Minimalista |
 
-**Cambiar tema**: Menú → "Cambiar Tema" → Seleccionar → "Aplicar y Reiniciar"
-
 ---
 
 ## 📊 Arquitectura del Proyecto
 
 ```
 system_dashboard/
-├── config/                      # Configuración
-│   ├── settings.py             # Constantes globales
-│   └── themes.py               # 15 temas pre-configurados
-├── core/                        # Lógica de negocio (11 archivos)
-│   ├── fan_controller.py       # Control PWM y curvas
-│   ├── fan_auto_service.py     # Servicio background
-│   ├── system_monitor.py       # CPU, RAM, temperatura
-│   ├── network_monitor.py      # Red, speedtest, interfaces
-│   ├── disk_monitor.py         # Disco, NVMe, I/O
-│   ├── process_monitor.py      # Gestión de procesos
-│   ├── service_monitor.py      # Servicios systemd ⭐
-│   ├── data_logger.py          # SQLite logging ⭐
-│   ├── data_analyzer.py        # Análisis histórico ⭐
-│   ├── data_collection_service.py  # Recolección auto ⭐
+├── config/
+│   ├── settings.py                 # Constantes globales y LAUNCHERS
+│   └── themes.py                   # 15 temas pre-configurados
+├── core/
+│   ├── fan_controller.py           # Control PWM y curvas
+│   ├── fan_auto_service.py         # Servicio background ventiladores
+│   ├── system_monitor.py           # CPU, RAM, temperatura
+│   ├── network_monitor.py          # Red, speedtest, interfaces
+│   ├── disk_monitor.py             # Disco, NVMe, I/O
+│   ├── process_monitor.py          # Gestión de procesos
+│   ├── service_monitor.py          # Servicios systemd
+│   ├── update_monitor.py           # Actualizaciones con caché 12h
+│   ├── data_logger.py              # SQLite logging
+│   ├── data_analyzer.py            # Análisis histórico
+│   ├── data_collection_service.py  # Recolección automática (singleton)
 │   └── __init__.py
-├── ui/                          # Interfaz gráfica
-│   ├── main_window.py          # Ventana principal
-│   ├── styles.py               # Estilos y botones
-│   ├── widgets/                # Componentes reutilizables
-│   │   ├── graphs.py           # Gráficas personalizadas
-│   │   └── dialogs.py          # Diálogos confirm/alert
-│   └── windows/                # Ventanas secundarias (11)
-│       ├── monitor.py          # Monitor de placa
-│       ├── network.py          # Monitor de red
-│       ├── usb.py              # Monitor USB
-│       ├── disk.py             # Monitor de disco
-│       ├── process_window.py   # Monitor de procesos
-│       ├── service.py          # Monitor de servicios ⭐
-│       ├── history.py          # Histórico de datos ⭐
-│       ├── fan_control.py      # Control ventiladores
-│       ├── launchers.py        # Lanzadores
-│       └── theme_selector.py   # Selector de temas
-├── utils/                       # Utilidades
-│   ├── file_manager.py         # Gestión de JSON
-│   └── system_utils.py         # Utilidades del sistema
-├── data/                        # Estados persistentes
-│   ├── fan_state.json          # Estado ventiladores
-│   ├── theme_config.json       # Tema seleccionado
-│   └── history.db              # Base de datos histórico ⭐
-├── scripts/                     # Scripts personalizados
-├── main.py                      # Punto de entrada
-└── requirements.txt             # Dependencias Python
+├── ui/
+│   ├── main_window.py              # Ventana principal (13 botones)
+│   ├── styles.py                   # Estilos y botones
+│   ├── widgets/
+│   │   ├── graphs.py               # Gráficas personalizadas
+│   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
+│   └── windows/
+│       ├── monitor.py, network.py, usb.py, disk.py
+│       ├── process_window.py, service.py, history.py
+│       ├── update.py, fan_control.py
+│       ├── launchers.py, theme_selector.py
+│       └── __init__.py
+├── utils/
+│   ├── file_manager.py             # Gestión de JSON (escritura atómica)
+│   ├── system_utils.py             # Utilidades del sistema
+│   └── logger.py                   # DashboardLogger (rotación 2MB)
+├── data/                            # Auto-generado al ejecutar
+│   ├── fan_state.json, fan_curve.json, theme_config.json
+│   ├── history.db                  # SQLite histórico
+│   └── logs/dashboard.log          # Log del sistema
+├── scripts/                         # Scripts personalizados del usuario
+├── install_system.sh               # Instalación directa (recomendada)
+├── install.sh                      # Instalación con venv (alternativa)
+├── test_logging.py                 # Prueba del sistema de logging
+├── main.py
+└── requirements.txt
 ```
-
-**Total: ~5,500 líneas de código Python en 35+ archivos**
 
 ---
 
 ## 🔧 Configuración
 
-### **Archivo Principal: `config/settings.py`**
+### **`config/settings.py`**
 
-#### **Pantalla DSI:**
 ```python
+# Posición en pantalla DSI
 DSI_WIDTH = 800
 DSI_HEIGHT = 480
-DSI_X = 0      # Posición X
-DSI_Y = 0      # Posición Y
-```
+DSI_X = 0
+DSI_Y = 0
 
-#### **Control de Ventiladores:**
-```python
-PWM_PIN = 18           # Pin GPIO para PWM
-PWM_FREQ = 25000       # Frecuencia 25kHz
-```
-
-#### **Histórico de Datos:**
-```python
-DATA_COLLECTION_INTERVAL = 5  # Minutos entre recolecciones
-DATA_RETENTION_DAYS = 90      # Días de retención
+# Scripts personalizados en Lanzadores
+LAUNCHERS = [
+    {"label": "Montar NAS",   "script": str(SCRIPTS_DIR / "montarnas.sh")},
+    {"label": "Conectar VPN", "script": str(SCRIPTS_DIR / "conectar_vpn.sh")},
+    # Añade tus scripts aquí
+]
 ```
 
 ---
 
-## 🆕 Novedades en v2.5
+## 📋 Sistema de Logging
 
-### **✨ Nuevas Características:**
-- ✅ **Monitor de Servicios** - Control completo de systemd
-- ✅ **Histórico de Datos** - Base de datos SQLite con gráficas
-- ✅ **Botón Reiniciar** - Reinicio rápido del dashboard
-- ✅ **Recolección automática** - Background service cada 5 min
-- ✅ **Exportación CSV** - Descarga datos históricos
-- ✅ **Detección de anomalías** - Alertas automáticas
-- ✅ **Logs de servicios** - Ver últimas 50 líneas
+```bash
+# Ver logs en tiempo real
+tail -f data/logs/dashboard.log
 
-### **🔧 Mejoras:**
-- ✅ Sliders y scrollbars usan colores de tema
-- ✅ Monitor de procesos con pausa inteligente
-- ✅ Speedtest corregido (Mbit/s → MB/s)
-- ✅ 11 temas con `secondary` corregido
-- ✅ FanAutoService singleton thread-safe
-- ✅ Layout grid configurable en lanzadores
+# Solo errores
+grep ERROR data/logs/dashboard.log
+
+# Eventos de hoy
+grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
+```
+
+**Niveles:** `DEBUG` (operaciones normales) · `INFO` (eventos importantes) · `WARNING` (degradación) · `ERROR` (fallos)
 
 ---
 
@@ -301,128 +308,83 @@ DATA_RETENTION_DAYS = 90      # Días de retención
 - **Uso CPU**: ~5-10% en idle
 - **Uso RAM**: ~100-150 MB
 - **Base de datos**: ~5 MB por 10,000 registros
-- **Actualización**: 2 segundos (configurable)
-- **Threads**: 3 (main + FanAuto + DataCollection)
-- **Tiempo inicio**: ~2-3 segundos
+- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`)
+- **Threads background**: 3 (main + FanAuto + DataCollection)
+- **Log**: máx. 2MB con rotación automática
 
 ---
 
 ## 🐛 Troubleshooting
 
-### **No arranca**
-```bash
-python3 --version  # Debe ser 3.8+
-pip install -r requirements.txt
-```
-
-### **No detecta temperatura**
-```bash
-sudo sensors-detect --auto
-sudo systemctl restart lm-sensors
-sensors  # Verificar
-```
-
-### **Ventiladores no responden**
-```bash
-gpio readall
-sudo python3 main.py  # Temporal
-```
-
-### **Speedtest no funciona**
-```bash
-sudo apt install speedtest-cli
-```
-
-### **Base de datos crece mucho**
-```bash
-# Limpiar datos >90 días desde Histórico Datos
-# O manualmente:
-sqlite3 data/history.db "DELETE FROM metrics WHERE timestamp < datetime('now', '-90 days');"
-```
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Ventiladores no responden | `sudo python3 main.py` |
+| Speedtest falla | `sudo apt install speedtest-cli` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 📚 Documentación Completa
+## 📚 Documentación
 
-### **Guías Disponibles:**
-- [README.md](README.md) - Este archivo
-- [QUICKSTART.md](QUICKSTART.md) - Inicio rápido 5 minutos
-- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) - Instalación detallada
-- [THEMES_GUIDE.md](THEMES_GUIDE.md) - Guía de temas
-- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Integración OLED
-- [INDEX.md](INDEX.md) - Índice completo
+- [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
+- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) — Instalación detallada
+- [THEMES_GUIDE.md](THEMES_GUIDE.md) — Guía de temas
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — Integración con OLED
+- [INDEX.md](INDEX.md) — Índice completo
 
 ---
 
 ## 📊 Estadísticas del Proyecto
 
-- **Versión**: 2.5
-- **Archivos Python**: 35+
-- **Líneas de código**: ~5,500
-- **Ventanas**: 11 ventanas funcionales
-- **Temas**: 15 temas pre-configurados
-- **Documentos**: 10+ guías
-
----
-
-## 🤝 Contribuir
-
-¿Quieres mejorar el dashboard?
-
-1. Fork del repositorio
-2. Crea una rama: `git checkout -b mi-mejora`
-3. Commit: `git commit -am 'Añade nueva función'`
-4. Push: `git push origin mi-mejora`
-5. Pull Request
+| Métrica | Valor |
+|---------|-------|
+| Versión | 2.5.1 |
+| Archivos Python | 41 |
+| Líneas de código | ~12,500 |
+| Ventanas | 13 |
+| Temas | 15 |
+| Servicios background | 2 (FanAuto + DataCollection) |
+| Cobertura logging | 100% módulos core y UI |
 
 ---
 
 ## 📝 Changelog
 
-### **v2.5** - 2026-02-17 ⭐ ACTUAL
-- ✅ **NUEVO**: Monitor de Servicios systemd completo
-- ✅ **NUEVO**: Histórico de Datos con SQLite
-- ✅ **NUEVO**: Botón Reiniciar en menú
-- ✅ **NUEVO**: Recolección automática background
-- ✅ **NUEVO**: Exportación CSV
-- ✅ **NUEVO**: Detección de anomalías
-- ✅ **MEJORA**: 12 botones en menú (vs 9)
+### **v2.5.1** - 2026-02-19 ⭐ ACTUAL
+- ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
+- ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
+- ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
+- ✅ **NUEVO**: `terminal_dialog` con callback `on_close`
+- ✅ **FIX**: Bug `atexit` en `DataCollectionService` (se detenía a los 3s del arranque)
+- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
+- ✅ **MEJORA**: `update_monitor` con caché 12h y parámetro `force`
+
+### **v2.5** - 2026-02-17
+- ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
+- ✅ Recolección automática background, Exportación CSV, Detección de anomalías
 
 ### **v2.0** - 2026-02-16
-- ✅ **NUEVO**: Monitor de Procesos completo
-- ✅ **NUEVO**: 15 temas profesionales
-- ✅ **MEJORA**: Reinicio automático al cambiar tema
-- ✅ **MEJORA**: Sliders y scrollbars temáticos
-- ✅ **FIX**: Speedtest conversión correcta
+- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
 
 ### **v1.0** - 2025-01
-- ✅ Release inicial modular
-- ✅ 8 ventanas funcionales
-- ✅ Control de ventiladores
-- ✅ Tema Cyberpunk
+- ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
 
 ---
 
 ## 📜 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
+MIT License
 
 ---
 
 ## 🙏 Agradecimientos
 
-- **CustomTkinter**: Framework de UI moderno
-- **psutil**: Utilidades del sistema
-- **matplotlib**: Visualización de gráficas
-- **Raspberry Pi Foundation**: Hardware increíble
+**CustomTkinter** · **psutil** · **matplotlib** · **Raspberry Pi Foundation**
 
 ---
 
-## 📧 Contacto
-
-¿Preguntas o sugerencias?  
-Abre un **Issue** en GitHub
-
----
-
-**¡Dashboard profesional v2.5 con todas las funciones!** 🚀✨
+**Dashboard v2.5.1: Profesional, Completo, Monitoreado** 🚀✨

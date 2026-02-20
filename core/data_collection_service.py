@@ -6,8 +6,10 @@ import time
 from datetime import datetime
 from core.data_logger import DataLogger
 from utils.file_manager import FileManager
-from utils.system_utils import SystemUtils
-from utils import DashboardLogger
+
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class DataCollectionService:
@@ -40,7 +42,7 @@ class DataCollectionService:
         self.logger = DataLogger()
         self.running = False
         self.thread = None
-        self.dashboard_logger = DashboardLogger()
+
 
         self._initialized = True
 
@@ -51,13 +53,13 @@ class DataCollectionService:
     def start(self):
         """Inicia el servicio de recolección"""
         if self.running:
-            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio ya está corriendo")
+            logger.info("[DataCollection] Servicio ya está corriendo")
             return
 
         self.running = True
         self.thread = threading.Thread(target=self._collection_loop, daemon=True)
         self.thread.start()
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
+        logger.info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
 
     def stop(self):
         """Detiene el servicio"""
@@ -67,7 +69,7 @@ class DataCollectionService:
         self.running = False
         if self.thread:
             self.thread.join(timeout=5)
-        self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
+        logger.info("[DataCollection] Servicio detenido")
 
     def _collection_loop(self):
         """Bucle principal de recolección"""
@@ -75,7 +77,7 @@ class DataCollectionService:
             try:
                 self._collect_and_save()
             except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[DataCollection] Error en recolección: {e}")
+                logger.error(f"[DataCollection] Error en recolección: {e}")
             time.sleep(self.interval_minutes * 60)
 
     def _collect_and_save(self):
@@ -117,7 +119,7 @@ class DataCollectionService:
                 {'cpu': metrics['cpu_percent']}
             )
 
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     def force_collection(self):
         """Fuerza una recolección inmediata (útil para testing)"""

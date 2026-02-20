@@ -6,7 +6,8 @@ from collections import deque
 from typing import Dict, Tuple
 from config.settings import HISTORY
 from utils.system_utils import SystemUtils
-
+from config.settings import UPDATE_MS
+from config.settings import COLORS
 
 class SystemMonitor:
     """Monitor centralizado de recursos del sistema"""
@@ -45,7 +46,7 @@ class SystemMonitor:
         self.last_disk_io = disk_io
         
         # Convertir a MB/s
-        from config.settings import UPDATE_MS
+
         seconds = UPDATE_MS / 1000.0
         disk_read_mb = (disk_read_bytes / (1024 * 1024)) / seconds
         disk_write_mb = (disk_write_bytes / (1024 * 1024)) / seconds
@@ -103,7 +104,6 @@ class SystemMonitor:
         Returns:
             Color en formato hex
         """
-        from config.settings import COLORS
         
         if value >= crit:
             return COLORS['danger']

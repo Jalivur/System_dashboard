@@ -241,7 +241,7 @@ class MainWindow:
         if self.update_window is None or not self.update_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Actualizaciones")
             from ui.windows.update import UpdatesWindow
-            self.update_window = UpdatesWindow(self.root)
+            self.update_window = UpdatesWindow(self.root, self.update_monitor)
         else:
             self.update_window.lift()
     

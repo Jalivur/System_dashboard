@@ -6,6 +6,7 @@ Punto de entrada principal
 import sys
 import os
 import atexit
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,7 +45,14 @@ def main():
     process_monitor = ProcessMonitor()
     service_monitor = ServiceMonitor()
     update_monitor = UpdateMonitor()
-    
+
+    # Comprobación inicial de actualizaciones en background
+    # No bloquea el arranque y llena el caché para toda la sesión
+    threading.Thread(
+        target=lambda: update_monitor.check_updates(force=True),
+        daemon=True,
+        name="UpdateCheck-Startup"
+    ).start()
 
     # Iniciar servicio de recolección de datos
     data_service = DataCollectionService(
@@ -84,8 +92,6 @@ def main():
 
     try:
         root.mainloop()
-        # Esto se ejecuta una vez al arrancar y llena el caché inicial
-        update_monitor.check_updates(force=True)
     finally:
         cleanup()
 

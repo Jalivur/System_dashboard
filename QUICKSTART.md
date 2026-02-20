@@ -1,25 +1,33 @@
-# 🚀 Inicio Rápido - Dashboard v2.5
-
-Guía ultra-rápida para tener el dashboard funcionando en 5 minutos.
+# 🚀 Inicio Rápido - Dashboard v2.5.1
 
 ---
 
-## ⚡ Instalación Express (3 Comandos)
+## ⚡ Instalación (2 Comandos)
 
 ```bash
-# 1. Clonar
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
-
-# 2. Instalar
-chmod +x install.sh
-./install.sh
-
-# 3. Ejecutar
+chmod +x install_system.sh
+sudo ./install_system.sh
 python3 main.py
 ```
 
-**¡Listo!** El dashboard debería abrirse en tu pantalla DSI.
+El script instala automáticamente las dependencias del sistema y Python, y pregunta si quieres configurar sensores y speedtest.
+
+---
+
+## 🔁 Alternativa con Entorno Virtual
+
+Si prefieres aislar las dependencias:
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
 
 ---
 
@@ -32,9 +40,7 @@ python3 main.py
 
 ---
 
-## 🎯 Primeros Pasos
-
-### **Menú Principal (12 botones):**
+## 🎯 Menú Principal (13 botones)
 
 ```
 ┌───────────────────────────────────┐
@@ -48,186 +54,107 @@ python3 main.py
 │  Disco          │                  │
 ├─────────────────┼──────────────────┤
 │  Monitor        │  Monitor         │
-│  Procesos       │  Servicios       │ ← NUEVO
+│  Procesos       │  Servicios       │
 ├─────────────────┼──────────────────┤
-│  Histórico      │  Cambiar         │
-│  Datos          │  Tema            │ ← NUEVO
+│  Histórico      │  Actualizaciones │
+│  Datos          │                  │
 ├─────────────────┼──────────────────┤
-│  Reiniciar      │  Salir           │ ← NUEVO
+│  Cambiar Tema   │  Reiniciar       │
+├─────────────────┼──────────────────┤
+│  Salir          │                  │
 └─────────────────┴──────────────────┘
 ```
 
-### **Explora las Ventanas:**
+---
 
-#### **1. Monitor Placa** - Ver CPU, RAM, Temperatura
-- CPU en tiempo real con gráfica
-- RAM usada/total
-- Temperatura del CPU
+## 🖥️ Las 13 Ventanas
 
-#### **2. Monitor Red** - Tráfico y Speedtest
-- Download/Upload en vivo
-- Speedtest de velocidad
-- Lista de interfaces e IPs
+**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real con gráficas
 
-#### **3. Monitor USB** - Dispositivos USB
-- Ver dispositivos conectados
-- Expulsar almacenamiento seguro
+**2. Monitor Red** — Download/Upload en vivo, speedtest, lista de IPs
 
-#### **4. Monitor Disco** - Espacio y temperatura
-- Espacio usado/disponible
-- Temperatura del NVMe
-- Velocidad I/O
+**3. Monitor USB** — Dispositivos conectados, expulsión segura
 
-#### **5. Monitor Procesos** ⭐ - Gestión de procesos
-- Ver procesos activos
-- CPU y RAM por proceso
-- Matar procesos
+**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O
 
-#### **6. Monitor Servicios** ⭐ NUEVO - Gestión systemd
-- Start/Stop/Restart servicios
-- Ver estado (active/inactive/failed)
-- Habilitar/deshabilitar autostart
-- Ver logs en tiempo real
+**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
 
-#### **7. Histórico Datos** ⭐ NUEVO - Métricas históricas
-- Gráficas de CPU, RAM, Temp
-- Periodos: 24h, 7d, 30d
-- Estadísticas y promedios
-- Exportar a CSV
+**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
 
-#### **8. Control Ventiladores** - Configurar PWM
-- Modo Auto (curva de temperatura)
-- Modo Manual (control directo)
-- Presets: Silent/Normal/Performance
+**7. Histórico Datos** — Gráficas CPU/RAM/Temp en 24h, 7d, 30d, exportar CSV
 
-#### **9. Lanzadores** - Scripts personalizados
-- Ejecutar scripts del sistema
-- Apagar, reiniciar, etc.
+**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
 
-#### **10. Cambiar Tema** 🎨 - 15 temas
-- Cyberpunk, Matrix, Dracula, Nord...
-- Reinicio automático
+**9. Lanzadores** — Scripts personalizados con terminal en vivo
 
-#### **11. Reiniciar** ⭐ NUEVO - Reinicio rápido
-- Reinicia el dashboard
-- Aplica cambios de código
-- Con confirmación
+**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
+
+**11. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
+
+**12. Reiniciar** — Reinicia el dashboard aplicando cambios de código
+
+**13. Salir** — Salir de la app o apagar el sistema
 
 ---
 
 ## 🔧 Configuración Básica
 
-### **Ajustar Posición en Pantalla DSI:**
-Edita `config/settings.py`:
+### Ajustar posición en pantalla DSI (`config/settings.py`):
 ```python
-DSI_X = 0     # Mover horizontalmente
-DSI_Y = 0     # Mover verticalmente
+DSI_X = 0     # Posición horizontal
+DSI_Y = 0     # Posición vertical
 ```
 
-### **Cambiar Pin PWM de Ventiladores:**
+### Añadir scripts en Lanzadores:
 ```python
-PWM_PIN = 18  # Cambiar al pin que uses
+LAUNCHERS = [
+    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
+]
 ```
 
-### **Configurar Histórico de Datos:**
-```python
-DATA_COLLECTION_INTERVAL = 5  # Minutos entre recolecciones
-DATA_RETENTION_DAYS = 90      # Días de retención
+---
+
+## 📋 Ver Logs del Sistema
+
+```bash
+# En tiempo real
+tail -f data/logs/dashboard.log
+
+# Solo errores
+grep ERROR data/logs/dashboard.log
 ```
 
 ---
 
 ## ❓ Problemas Comunes
 
-### **No arranca:**
-```bash
-python3 --version  # Debe ser 3.8+
-pip install -r requirements.txt
-```
-
-### **No detecta temperatura:**
-```bash
-sudo sensors-detect --auto
-sudo systemctl restart lm-sensors
-sensors  # Verificar
-```
-
-### **Ventiladores no responden:**
-```bash
-gpio readall
-sudo python3 main.py  # Temporal
-```
-
-### **Speedtest no funciona:**
-```bash
-sudo apt install speedtest-cli
-```
-
-### **Base de datos crece mucho:**
-- Menú → "Histórico Datos" → "Limpiar Antiguos"
-- Elimina datos >90 días
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | `sudo apt install speedtest-cli` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 📚 Siguiente Paso
+## 🆕 Novedades v2.5.1
 
-¿Quieres profundizar?  
-Lee el **[README.md](README.md)** completo para características avanzadas.
-
----
-
-## 🎯 Tips Rápidos
-
-### **Gestión de Servicios:**
-1. Abre "Monitor Servicios"
-2. Busca servicio (ej: "nginx")
-3. Start/Stop/Restart con un clic
-4. Ver logs en tiempo real
-
-### **Histórico de Datos:**
-1. Abre "Histórico Datos"
-2. Selecciona periodo (24h/7d/30d)
-3. Ve gráficas de CPU, RAM, Temp
-4. Exporta a CSV si necesitas
-
-### **Cambio Rápido de Código:**
-1. Edita archivo Python
-2. Clic en "Reiniciar"
-3. Confirma
-4. ¡Dashboard se reinicia con cambios!
-
-### **Temas Recomendados:**
-- **Cyberpunk**: Original cyan neón ⚡
-- **Matrix**: Verde Matrix 💚
-- **Dracula**: Colores pastel 🦇
-- **Tokyo Night**: Noche de Tokio 🌃
-- **Nord**: Minimalista nórdico ❄️
-
-### **Ventanas Más Útiles:**
-- **Monitor Procesos**: Encuentra qué consume CPU/RAM
-- **Monitor Servicios**: Gestiona systemd sin terminal ⭐
-- **Histórico Datos**: Analiza tendencias ⭐
-- **Control Ventiladores**: Mantén tu Pi fresco
+✅ **Logging completo** — Todos los módulos loguean eventos y errores  
+✅ **Ventana Actualizaciones** — Terminal integrada para instalar paquetes  
+✅ **Caché de actualizaciones** — `apt update` solo al arranque y al pedir  
+✅ **Fix arranque** — Servicio de datos ya no se detiene a los 3 segundos  
+✅ **Terminal de apagado** — Visualiza el proceso de shutdown  
 
 ---
 
-## 🆕 Novedades v2.5
+## 📚 Más Información
 
-✅ **Monitor de Servicios** - Control completo de systemd  
-✅ **Histórico de Datos** - SQLite + gráficas matplotlib  
-✅ **Botón Reiniciar** - Reinicio rápido con un clic  
-✅ **Recolección automática** - Background cada 5 min  
-✅ **Exportación CSV** - Descarga datos históricos  
+**[README.md](README.md)** — Documentación completa  
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
+**[INDEX.md](INDEX.md)** — Índice de toda la documentación
 
 ---
 
-## 🚀 ¡Ya Estás Listo!
-
-Explora las 11 ventanas, personaliza los colores, ajusta los ventiladores, analiza el histórico.
-
-**¿Necesitas ayuda?** → [README.md](README.md)  
-**¿Quieres más funciones?** → Abre un Issue en GitHub
-
----
-
-**Dashboard v2.5: Profesional, Completo, Potente** 🎉✨
+**Dashboard v2.5.1** 🚀✨
