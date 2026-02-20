@@ -8267,202 +8267,6 @@ from .logger import DashboardLogger
 __all__ = ['FileManager', 'SystemUtils', 'DashboardLogger']
 ````
 
-## File: IDEAS_EXPANSION.md
-````markdown
-# 💡 Ideas de Expansión - Dashboard v2.5.1
-
-Roadmap de funcionalidades y estado real de implementación.
-
----
-
-## ✅ Implementado
-
-### **1. Monitor de Procesos en Tiempo Real**
-**Implementado en v2.0**
-- ✅ Lista en tiempo real (Top 20) con PID, comando, usuario, CPU%, RAM%
-- ✅ Búsqueda por nombre o comando
-- ✅ Filtros: Todos / Usuario / Sistema
-- ✅ Ordenar por PID, Nombre, CPU%, RAM%
-- ✅ Matar procesos con confirmación
-- ✅ Colores dinámicos según uso
-- ✅ Pausa inteligente durante interacciones
-- ✅ Estadísticas: procesos totales, CPU, RAM, uptime
-
----
-
-### **2. Monitor de Servicios systemd**
-**Implementado en v2.5**
-- ✅ Lista completa de servicios systemd
-- ✅ Estados: active, inactive, failed con iconos
-- ✅ Start/Stop/Restart con confirmación
-- ✅ Ver logs en tiempo real (últimas 50 líneas)
-- ✅ Enable/Disable autostart
-- ✅ Búsqueda y filtros (Todos / Activos / Inactivos / Fallidos)
-- ✅ Estadísticas: total, activos, fallidos, enabled
-
----
-
-### **3. Histórico de Datos**
-**Implementado en v2.5 — ampliado en v2.5.1**
-- ✅ Base de datos SQLite (~5MB/10k registros)
-- ✅ Recolección automática cada 5 minutos en background
-- ✅ Métricas guardadas: CPU, RAM, Temp, Disco I/O, Red, PWM, actualizaciones
-- ✅ **8 gráficas**: CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM
-- ✅ Periodos: 24h, 7d, 30d
-- ✅ Estadísticas completas: promedios, mínimos, máximos de todas las métricas
-- ✅ Detección de anomalías automática
-- ✅ Exportación a CSV
-- ✅ Exportación de gráficas como imagen PNG
-- ✅ Limpieza de datos antiguos configurable
-- ✅ **Zoom, pan y navegación** sobre las gráficas (toolbar matplotlib)
-- ✅ Registro de eventos críticos en BD separada
-
----
-
-### **4. Sistema de Temas**
-**Implementado en v2.0**
-- ✅ 15 temas pre-configurados
-- ✅ Cambio con un clic y reinicio automático
-- ✅ Preview visual antes de aplicar
-- ✅ Persistencia entre reinicios
-- ✅ Todos los componentes usan colores del tema (sliders, scrollbars, radiobuttons)
-
----
-
-### **5. Reinicio y Apagado**
-**Implementado en v2.5**
-- ✅ Botón Reiniciar con confirmación (aplica cambios de código)
-- ✅ Botón Salir con opción de apagar el sistema
-- ✅ Terminal de apagado (visualiza apagado.sh en vivo)
-
----
-
-### **6. Actualizaciones del Sistema**
-**Implementado en v2.5.1**
-- ✅ Verificación al arranque en background (no bloquea la UI)
-- ✅ Sistema de caché 12h (no repite apt update innecesariamente)
-- ✅ Ventana dedicada con estado visual
-- ✅ Instalación con terminal integrada en vivo
-- ✅ Botón Buscar para forzar comprobación manual
-- ✅ Refresco automático del estado tras instalar
-
----
-
-### **7. Sistema de Logging Completo**
-**Implementado en v2.5.1**
-- ✅ Cobertura 100% en módulos core y UI
-- ✅ Niveles diferenciados: DEBUG, INFO, WARNING, ERROR
-- ✅ Rotación automática 2MB con backup
-- ✅ Archivo fijo `data/logs/dashboard.log`
-
----
-
-### **8. Lanzadores de Scripts**
-**Implementado desde v1.0 — mejorado en v2.5.1**
-- ✅ Scripts personalizados configurables en `settings.py`
-- ✅ Terminal integrada que muestra el output en vivo
-- ✅ Confirmación previa a ejecución
-- ✅ Layout en grid configurable
-
----
-
-## 🔄 En Evaluación
-
-### **Monitor de Contenedores Docker**
-**Prioridad**: Alta si usas Docker en la Pi  
-**Complejidad**: Media
-
-- Start/Stop/Restart contenedores
-- Ver logs en tiempo real
-- Estadísticas de uso por contenedor (CPU, RAM)
-- Ver puertos expuestos
-- Similar a `docker ps` y `docker stats` pero visual
-
----
-
-### **Notificaciones Visuales en el Menú**
-**Prioridad**: Media  
-**Complejidad**: Baja
-
-Badge o indicador en el botón del menú principal cuando:
-- Hay actualizaciones pendientes
-- Temperatura por encima del umbral crítico
-- Algún servicio en estado `failed`
-
-No requiere email ni Telegram, solo UI interna.
-
----
-
-### **Alertas Externas**
-**Prioridad**: Baja  
-**Complejidad**: Media
-
-- Notificaciones por Telegram o webhook
-- Alertas por temperatura alta sostenida, CPU, disco lleno, servicios caídos
-- Configurable por umbral y duración
-
----
-
-### **Monitor de GPU**
-**Prioridad**: Muy baja (Raspberry Pi sin GPU dedicada)  
-**Complejidad**: Media
-
----
-
-## 🚀 Ideas Futuras (Backlog)
-
-**Automatización**: cron visual, profiles de ventiladores por hora, auto-reinicio de servicios caídos
-
-**Red avanzada**: monitor de dispositivos en red (nmap), Pi-hole stats, VPN panel
-
-**Backup**: programar backups, estado con progreso, sincronización cloud
-
-**Seguridad**: intentos de login fallidos, logs de seguridad, firewall status
-
-**API REST**: endpoints para métricas, histórico y control de servicios
-
----
-
-## 🎯 Roadmap
-
-### **v2.5.1** ✅ ACTUAL — 2026-02-20
-- ✅ Logging completo en todos los módulos
-- ✅ Ventana Actualizaciones con caché y terminal
-- ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
-- ✅ Zoom y navegación en gráficas
-- ✅ Fix bug atexit en DataCollectionService
-- ✅ Paso correcto de dependencias (update_monitor inyectado)
-
-### **v2.6** (Próximo)
-- [ ] Notificaciones visuales en menú (badges)
-- [ ] Monitor Docker (si aplica)
-- [ ] Mejoras UI generales
-
-### **v3.0** (Futuro)
-- [ ] Alertas externas (Telegram/webhook)
-- [ ] API REST básica
-
----
-
-## 📈 Cobertura actual
-
-| Área | Estado |
-|------|--------|
-| Monitoreo básico (CPU, RAM, Temp, Disco, Red) | ✅ 100% |
-| Control avanzado (Ventiladores, Procesos, Servicios) | ✅ 100% |
-| Histórico y análisis | ✅ 100% |
-| Actualizaciones del sistema | ✅ 100% |
-| Logging y observabilidad | ✅ 100% |
-| Notificaciones visuales internas | ⏳ 0% |
-| Alertas externas | ⏳ 0% |
-| Docker | ⏳ 0% |
-| Automatización | ⏳ 0% |
-
----
-
-**Versión actual**: v2.5.1 — **Última actualización**: 2026-02-20
-````
-
 ## File: INDEX.md
 ````markdown
 # 📚 Índice de Documentación - System Dashboard v2.5
@@ -10390,6 +10194,202 @@ class SystemUtils:
         return 0.0
 ````
 
+## File: IDEAS_EXPANSION.md
+````markdown
+# 💡 Ideas de Expansión - Dashboard v2.5.1
+
+Roadmap de funcionalidades y estado real de implementación.
+
+---
+
+## ✅ Implementado
+
+### **1. Monitor de Procesos en Tiempo Real**
+**Implementado en v2.0**
+- ✅ Lista en tiempo real (Top 20) con PID, comando, usuario, CPU%, RAM%
+- ✅ Búsqueda por nombre o comando
+- ✅ Filtros: Todos / Usuario / Sistema
+- ✅ Ordenar por PID, Nombre, CPU%, RAM%
+- ✅ Matar procesos con confirmación
+- ✅ Colores dinámicos según uso
+- ✅ Pausa inteligente durante interacciones
+- ✅ Estadísticas: procesos totales, CPU, RAM, uptime
+
+---
+
+### **2. Monitor de Servicios systemd**
+**Implementado en v2.5**
+- ✅ Lista completa de servicios systemd
+- ✅ Estados: active, inactive, failed con iconos
+- ✅ Start/Stop/Restart con confirmación
+- ✅ Ver logs en tiempo real (últimas 50 líneas)
+- ✅ Enable/Disable autostart
+- ✅ Búsqueda y filtros (Todos / Activos / Inactivos / Fallidos)
+- ✅ Estadísticas: total, activos, fallidos, enabled
+
+---
+
+### **3. Histórico de Datos**
+**Implementado en v2.5 — ampliado en v2.5.1**
+- ✅ Base de datos SQLite (~5MB/10k registros)
+- ✅ Recolección automática cada 5 minutos en background
+- ✅ Métricas guardadas: CPU, RAM, Temp, Disco I/O, Red, PWM, actualizaciones
+- ✅ **8 gráficas**: CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM
+- ✅ Periodos: 24h, 7d, 30d
+- ✅ Estadísticas completas: promedios, mínimos, máximos de todas las métricas
+- ✅ Detección de anomalías automática
+- ✅ Exportación a CSV
+- ✅ Exportación de gráficas como imagen PNG
+- ✅ Limpieza de datos antiguos configurable
+- ✅ **Zoom, pan y navegación** sobre las gráficas (toolbar matplotlib)
+- ✅ Registro de eventos críticos en BD separada
+
+---
+
+### **4. Sistema de Temas**
+**Implementado en v2.0**
+- ✅ 15 temas pre-configurados
+- ✅ Cambio con un clic y reinicio automático
+- ✅ Preview visual antes de aplicar
+- ✅ Persistencia entre reinicios
+- ✅ Todos los componentes usan colores del tema (sliders, scrollbars, radiobuttons)
+
+---
+
+### **5. Reinicio y Apagado**
+**Implementado en v2.5**
+- ✅ Botón Reiniciar con confirmación (aplica cambios de código)
+- ✅ Botón Salir con opción de apagar el sistema
+- ✅ Terminal de apagado (visualiza apagado.sh en vivo)
+
+---
+
+### **6. Actualizaciones del Sistema**
+**Implementado en v2.5.1**
+- ✅ Verificación al arranque en background (no bloquea la UI)
+- ✅ Sistema de caché 12h (no repite apt update innecesariamente)
+- ✅ Ventana dedicada con estado visual
+- ✅ Instalación con terminal integrada en vivo
+- ✅ Botón Buscar para forzar comprobación manual
+- ✅ Refresco automático del estado tras instalar
+
+---
+
+### **7. Sistema de Logging Completo**
+**Implementado en v2.5.1**
+- ✅ Cobertura 100% en módulos core y UI
+- ✅ Niveles diferenciados: DEBUG, INFO, WARNING, ERROR
+- ✅ Rotación automática 2MB con backup
+- ✅ Archivo fijo `data/logs/dashboard.log`
+
+---
+
+### **8. Lanzadores de Scripts**
+**Implementado desde v1.0 — mejorado en v2.5.1**
+- ✅ Scripts personalizados configurables en `settings.py`
+- ✅ Terminal integrada que muestra el output en vivo
+- ✅ Confirmación previa a ejecución
+- ✅ Layout en grid configurable
+
+---
+
+## 🔄 En Evaluación
+
+### **Monitor de Contenedores Docker**
+**Prioridad**: Alta si usas Docker en la Pi  
+**Complejidad**: Media
+
+- Start/Stop/Restart contenedores
+- Ver logs en tiempo real
+- Estadísticas de uso por contenedor (CPU, RAM)
+- Ver puertos expuestos
+- Similar a `docker ps` y `docker stats` pero visual
+
+---
+
+### **Notificaciones Visuales en el Menú**
+**Prioridad**: Media  
+**Complejidad**: Baja
+
+Badge o indicador en el botón del menú principal cuando:
+- Hay actualizaciones pendientes
+- Temperatura por encima del umbral crítico
+- Algún servicio en estado `failed`
+
+No requiere email ni Telegram, solo UI interna.
+
+---
+
+### **Alertas Externas**
+**Prioridad**: Baja  
+**Complejidad**: Media
+
+- Notificaciones por Telegram o webhook
+- Alertas por temperatura alta sostenida, CPU, disco lleno, servicios caídos
+- Configurable por umbral y duración
+
+---
+
+### **Monitor de GPU**
+**Prioridad**: Muy baja (Raspberry Pi sin GPU dedicada)  
+**Complejidad**: Media
+
+---
+
+## 🚀 Ideas Futuras (Backlog)
+
+**Automatización**: cron visual, profiles de ventiladores por hora, auto-reinicio de servicios caídos
+
+**Red avanzada**: monitor de dispositivos en red (nmap), Pi-hole stats, VPN panel
+
+**Backup**: programar backups, estado con progreso, sincronización cloud
+
+**Seguridad**: intentos de login fallidos, logs de seguridad, firewall status
+
+**API REST**: endpoints para métricas, histórico y control de servicios
+
+---
+
+## 🎯 Roadmap
+
+### **v2.5.1** ✅ ACTUAL — 2026-02-20
+- ✅ Logging completo en todos los módulos
+- ✅ Ventana Actualizaciones con caché y terminal
+- ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
+- ✅ Zoom y navegación en gráficas
+- ✅ Fix bug atexit en DataCollectionService
+- ✅ Paso correcto de dependencias (update_monitor inyectado)
+
+### **v2.6** (Próximo)
+- [ ] Notificaciones visuales en menú (badges)
+- [ ] Monitor Docker (si aplica)
+- [ ] Mejoras UI generales
+
+### **v3.0** (Futuro)
+- [ ] Alertas externas (Telegram/webhook)
+- [ ] API REST básica
+
+---
+
+## 📈 Cobertura actual
+
+| Área | Estado |
+|------|--------|
+| Monitoreo básico (CPU, RAM, Temp, Disco, Red) | ✅ 100% |
+| Control avanzado (Ventiladores, Procesos, Servicios) | ✅ 100% |
+| Histórico y análisis | ✅ 100% |
+| Actualizaciones del sistema | ✅ 100% |
+| Logging y observabilidad | ✅ 100% |
+| Notificaciones visuales internas | ⏳ 0% |
+| Alertas externas | ⏳ 0% |
+| Docker | ⏳ 0% |
+| Automatización | ⏳ 0% |
+
+---
+
+**Versión actual**: v2.5.1 — **Última actualización**: 2026-02-20
+````
+
 ## File: QUICKSTART.md
 ````markdown
 # 🚀 Inicio Rápido - Dashboard v2.5.1
@@ -10582,6 +10582,183 @@ __all__ = [
 ]
 ````
 
+## File: ui/windows/launchers.py
+````python
+"""
+Ventana de lanzadores de scripts
+"""
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
+from ui.styles import make_futuristic_button, StyleManager
+from ui.widgets import custom_msgbox, confirm_dialog
+from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class LaunchersWindow(ctk.CTkToplevel):
+    """Ventana de lanzadores de scripts del sistema"""
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.system_utils = SystemUtils()
+        
+        self.title("Lanzadores")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        
+        self._create_ui()
+    
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        title = ctk.CTkLabel(
+            main,
+            text="LANZADORES",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(pady=(10, 20))
+        
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        self._create_launcher_buttons(inner)
+        
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+        close_btn = make_futuristic_button(
+            bottom,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        )
+        close_btn.pack(side="right", padx=5)
+    
+    def _create_launcher_buttons(self, parent):
+        """Crea los botones de lanzadores en layout grid"""
+        if not LAUNCHERS:
+            no_launchers = ctk.CTkLabel(
+                parent,
+                text="No hay lanzadores configurados\n\nEdita config/settings.py para añadir scripts",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+                justify="center"
+            )
+            no_launchers.pack(pady=50)
+            return
+        
+        columns = 2
+        
+        for i, launcher in enumerate(LAUNCHERS):
+            label = launcher.get("label", "Script")
+            script_path = launcher.get("script", "")
+            
+            row = i // columns
+            col = i % columns
+            
+            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+            launcher_frame.grid(row=row, column=col, sticky="nsew")
+            
+            btn = make_futuristic_button(
+                launcher_frame,
+                text=label,
+                command=lambda s=script_path, l=label: self._run_script(s, l),
+                width=40,
+                height=15,
+                font_size=FONT_SIZES['large']
+            )
+            btn.pack(pady=(10, 5), padx=10)
+            
+            path_label = ctk.CTkLabel(
+                launcher_frame,
+                text=script_path,
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small']),
+                wraplength=300
+            )
+            path_label.pack(pady=(0, 10), padx=10)
+        
+        for c in range(columns):
+            parent.grid_columnconfigure(c, weight=1)
+    
+    def _run_script(self, script_path: str, label: str):
+        """Ejecuta un script usando la terminal integrada tras confirmar"""
+        from ui.widgets.dialogs import terminal_dialog
+
+        def do_execute():
+            logger.info(f"[LaunchersWindow] Ejecutando script: '{label}' → {script_path}")
+            terminal_dialog(
+                parent=self,
+                script_path=script_path,
+                title=f"EJECUTANDO: {label.upper()}"
+            )
+
+        confirm_dialog(
+            parent=self,
+            text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
+            title="⚠️ Lanzador de Sistema",
+            on_confirm=do_execute
+        )
+````
+
+## File: core/__init__.py
+````python
+"""
+Paquete core con lógica de negocio
+"""
+from .fan_controller import FanController
+from .system_monitor import SystemMonitor
+from .network_monitor import NetworkMonitor
+from .fan_auto_service import FanAutoService
+from .disk_monitor import DiskMonitor
+from .process_monitor import ProcessMonitor
+from .service_monitor import ServiceMonitor
+from .update_monitor import UpdateMonitor
+
+__all__ = [
+    'FanController',
+    'SystemMonitor',
+    'NetworkMonitor',
+    'FanAutoService',
+    'DiskMonitor',
+    'ProcessMonitor',
+    'ServiceMonitor',
+    'UpdateMonitor',
+]
+````
+
 ## File: ui/windows/history.py
 ````python
 """
@@ -10597,8 +10774,9 @@ from core.data_logger import DataLogger
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
-from utils import DashboardLogger
+from utils.logger import get_logger
 
+logger=get_logger(__name__)
 
 class HistoryWindow(ctk.CTkToplevel):
     """Ventana de visualización de histórico"""
@@ -10609,7 +10787,6 @@ class HistoryWindow(ctk.CTkToplevel):
         # Referencias
         self.analyzer = DataAnalyzer()
         self.logger = DataLogger()
-        self.dashboard_logger = DashboardLogger()
 
         # Estado
         self.period_var = ctk.StringVar(value="24h")
@@ -10723,6 +10900,12 @@ class HistoryWindow(ctk.CTkToplevel):
             rb.pack(side="left", padx=10)
             from ui.styles import StyleManager
             StyleManager.style_radiobutton_ctk(rb)
+        self.date_start = ctk.CTkEntry(controls, placeholder_text="YYYY-MM-DD HH:MM", width=110)
+        self.date_start.pack(side="right", padx=10)
+        self.date_end   = ctk.CTkEntry(controls, placeholder_text="YYYY-MM-DD HH:MM", width=110)
+        self.date_end.pack(side="right", padx=10)
+        apply_btn = make_futuristic_button(self.toolbar_container, text="󰙹 Aplicar", command=None, height=6, width=12)
+        apply_btn.pack(side="right", padx=5)
 
     def _create_graphs_area(self, parent):
         """Crea área de gráficas"""
@@ -10757,6 +10940,7 @@ class HistoryWindow(ctk.CTkToplevel):
             text="🏠 Inicio",
             command=self.toolbar.home,
             height=6,
+            width=12
         )
         self.home_btn.pack(side="left", padx=5)
 
@@ -10765,6 +10949,7 @@ class HistoryWindow(ctk.CTkToplevel):
             text="🔍 Zoom",
             command=self.toolbar.zoom,
             height=6,
+            width=12
         )
         self.zoom_btn.pack(side="left", padx=5)
 
@@ -10773,6 +10958,7 @@ class HistoryWindow(ctk.CTkToplevel):
             text="🖐️ Mover",
             command=self.toolbar.pan,
             height=6,
+            width=12
         )
         self.pan_btn.pack(side="left", padx=5)
         self.save_btn = make_futuristic_button(
@@ -10780,6 +10966,7 @@ class HistoryWindow(ctk.CTkToplevel):
             text=" Guardar",
             command=self._export_figure_image,
             height=6,
+            width=12
         )
         self.save_btn.pack(side="left", padx=5)
 
@@ -11010,10 +11197,10 @@ class HistoryWindow(ctk.CTkToplevel):
             try:
                 self.logger.clean_old_data(days=self.days_to_clean)
                 custom_msgbox(self, f"Datos antiguos eliminados\n(mayores a {self.days_to_clean} días)", "✅ Limpiado")
-                self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Datos antiguos eliminados (mayores a {self.days_to_clean} días)")
+                logger.info(f"[HistoryWindow]Datos antiguos eliminados (mayores a {self.days_to_clean} días)")
                 self._update_data()
             except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al limpiar datos antiguos: {str(e)}")
+                logger.error(f"[HistoryWindow]Error al limpiar datos antiguos: {str(e)}")
                 custom_msgbox(self, f"Error al limpiar:\n{str(e)}", "❌ Error")
 
         confirm_dialog(
@@ -11027,7 +11214,7 @@ class HistoryWindow(ctk.CTkToplevel):
     def _on_click(self, event):
         """Maneja el evento de presión del botón del mouse"""
         if event.inaxes:
-            self.dashboard_logger.get_logger(__name__).info(f"Punto seleccionado: x={event.xdata}, y={event.ydata}")
+            logger.info(f"Punto seleccionado: x={event.xdata}, y={event.ydata}")
 
     def _on_release(self, event):
         
@@ -11064,7 +11251,7 @@ class HistoryWindow(ctk.CTkToplevel):
                 facecolor=self.fig.get_facecolor(),
                 bbox_inches='tight'
             )
-            self.dashboard_logger.get_logger(__name__).info(f"[HistoryWindow]Figura guardada: {filepath}")
+            logger.info(f"[HistoryWindow]Figura guardada: {filepath}")
             # 4. Mostrar confirmación con TU propio dialogo
             custom_msgbox(
                 self, 
@@ -11073,185 +11260,8 @@ class HistoryWindow(ctk.CTkToplevel):
             )
             
         except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[HistoryWindow]Error al guardar imagen: {str(e)}")
+            logger.error(f"[HistoryWindow]Error al guardar imagen: {str(e)}")
             custom_msgbox(self, f"Error al guardar la imagen: {str(e)}", "❌ Error")
-````
-
-## File: ui/windows/launchers.py
-````python
-"""
-Ventana de lanzadores de scripts
-"""
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
-from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox, confirm_dialog
-from utils.system_utils import SystemUtils
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class LaunchersWindow(ctk.CTkToplevel):
-    """Ventana de lanzadores de scripts del sistema"""
-    
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        self.system_utils = SystemUtils()
-        
-        self.title("Lanzadores")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        
-        self._create_ui()
-    
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        title = ctk.CTkLabel(
-            main,
-            text="LANZADORES",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=(10, 20))
-        
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        self._create_launcher_buttons(inner)
-        
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-    
-    def _create_launcher_buttons(self, parent):
-        """Crea los botones de lanzadores en layout grid"""
-        if not LAUNCHERS:
-            no_launchers = ctk.CTkLabel(
-                parent,
-                text="No hay lanzadores configurados\n\nEdita config/settings.py para añadir scripts",
-                text_color=COLORS['warning'],
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-                justify="center"
-            )
-            no_launchers.pack(pady=50)
-            return
-        
-        columns = 2
-        
-        for i, launcher in enumerate(LAUNCHERS):
-            label = launcher.get("label", "Script")
-            script_path = launcher.get("script", "")
-            
-            row = i // columns
-            col = i % columns
-            
-            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-            launcher_frame.grid(row=row, column=col, sticky="nsew")
-            
-            btn = make_futuristic_button(
-                launcher_frame,
-                text=label,
-                command=lambda s=script_path, l=label: self._run_script(s, l),
-                width=40,
-                height=15,
-                font_size=FONT_SIZES['large']
-            )
-            btn.pack(pady=(10, 5), padx=10)
-            
-            path_label = ctk.CTkLabel(
-                launcher_frame,
-                text=script_path,
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small']),
-                wraplength=300
-            )
-            path_label.pack(pady=(0, 10), padx=10)
-        
-        for c in range(columns):
-            parent.grid_columnconfigure(c, weight=1)
-    
-    def _run_script(self, script_path: str, label: str):
-        """Ejecuta un script usando la terminal integrada tras confirmar"""
-        from ui.widgets.dialogs import terminal_dialog
-
-        def do_execute():
-            logger.info(f"[LaunchersWindow] Ejecutando script: '{label}' → {script_path}")
-            terminal_dialog(
-                parent=self,
-                script_path=script_path,
-                title=f"EJECUTANDO: {label.upper()}"
-            )
-
-        confirm_dialog(
-            parent=self,
-            text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
-            title="⚠️ Lanzador de Sistema",
-            on_confirm=do_execute
-        )
-````
-
-## File: core/__init__.py
-````python
-"""
-Paquete core con lógica de negocio
-"""
-from .fan_controller import FanController
-from .system_monitor import SystemMonitor
-from .network_monitor import NetworkMonitor
-from .fan_auto_service import FanAutoService
-from .disk_monitor import DiskMonitor
-from .process_monitor import ProcessMonitor
-from .service_monitor import ServiceMonitor
-from .update_monitor import UpdateMonitor
-
-__all__ = [
-    'FanController',
-    'SystemMonitor',
-    'NetworkMonitor',
-    'FanAutoService',
-    'DiskMonitor',
-    'ProcessMonitor',
-    'ServiceMonitor',
-    'UpdateMonitor',
-]
 ````
 
 ## File: README.md

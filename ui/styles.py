@@ -153,7 +153,7 @@ class StyleManager:
 
 def make_futuristic_button(parent, text: str, command=None, 
                           width: int = None, height: int = None, 
-                          font_size: int = None) -> ctk.CTkButton:
+                          font_size: int = None, state: str = "normal") -> ctk.CTkButton:
     """
     Crea un botón con estilo futurista
     
@@ -183,7 +183,8 @@ def make_futuristic_button(parent, text: str, command=None,
         width=width * 8, 
         height=height * 8,
         font=(FONT_FAMILY, font_size, "bold"), 
-        corner_radius=10
+        corner_radius=10,
+        state=state
     )
     
     def on_enter(e): 
