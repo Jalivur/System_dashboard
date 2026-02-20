@@ -114,16 +114,16 @@ class MainWindow:
         buttons_config = [
             ("󰈐  Control Ventiladores", self.open_fan_control),
             ("󰚗  Monitor Placa",         self.open_monitor_window),
-            ("  Monitor Red",           self.open_network_window),
+            ("  Monitor Red",           self.open_network_window),
             ("󱇰 Monitor USB",            self.open_usb_window),
-            ("  Monitor Disco",         self.open_disk_window),
+            ("  Monitor Disco",         self.open_disk_window),
             ("󱓞  Lanzadores",            self.open_launchers),
             ("⚙️ Monitor Procesos",      self.open_process_window),
             ("⚙️ Monitor Servicios",     self.open_service_window),
             ("󱘿  Histórico Datos",       self.open_history_window),
             ("󰆧  Actualizaciones",       self.open_update_window),
             ("󰔎  Cambiar Tema",          self.open_theme_selector),
-            ("  Reiniciar",            self.restart_application),
+            ("  Reiniciar",            self.restart_application),
             ("󰿅  Salir",                self.exit_application),
         ]
         

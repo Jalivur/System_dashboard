@@ -35,7 +35,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Filtros**: Todos / Usuario / Sistema
 - **Terminar procesos**: Con confirmación y feedback
 
-### 🔧 **Monitor de Servicios systemd**
+### ⚙️ **Monitor de Servicios systemd**
 - **Gestión completa**: Start/Stop/Restart servicios
 - **Estado visual**: active, inactive, failed con iconos
 - **Autostart**: Enable/Disable con confirmación
@@ -50,33 +50,33 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Detección de anomalías**: Alertas automáticas
 - **Exportación CSV**: Para análisis externo
 
-### 🔌 **Monitor USB**
+### 󱇰 **Monitor USB**
 - **Detección automática**: Dispositivos conectados
 - **Separación inteligente**: Mouse/teclado vs almacenamiento
 - **Expulsión segura**: Unmount + eject con confirmación
 
-### 💾 **Monitor de Disco**
+###  **Monitor de Disco**
 - **Particiones**: Uso de espacio de todas las unidades
 - **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
 - **Velocidad I/O**: Lectura/escritura en MB/s
 
-### 🚀 **Lanzadores de Scripts**
+### 󱓞 **Lanzadores de Scripts**
 - **Terminal integrada**: Visualiza la ejecución en tiempo real
 - **Layout en grid**: Organización visual en columnas
 - **Confirmación previa**: Diálogo antes de ejecutar
 
-### 🔄 **Actualizaciones del Sistema**
+### 󰆧 **Actualizaciones del Sistema**
 - **Verificación al arranque**: En background sin bloquear la UI
 - **Sistema de caché 12h**: No repite `apt update` innecesariamente
 - **Terminal integrada**: Instala viendo el output en vivo
 - **Botón Buscar**: Fuerza comprobación manual
 
-### 🎨 **15 Temas Personalizables**
+### 󰆧 **15 Temas Personalizables**
 - **Cambio con un clic**: Reinicio automático
 - **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
 - **Preview en vivo**: Ve los colores antes de aplicar
 
-### 🔄 **Reinicio y Apagado**
+### /󰿅 **Reinicio y Apagado**
 - **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
 - **Botón Salir**: Salir de la app o apagar el sistema
 - **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
@@ -92,7 +92,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 
 ## 📦 Instalación
 
-### 🔧 **Requisitos del Sistema**
+###  **Requisitos del Sistema**
 - **Hardware**: Raspberry Pi 3/4/5
 - **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
 - **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
@@ -135,7 +135,7 @@ pip3 install --break-system-packages -r requirements.txt
 python3 main.py
 ```
 
-### 🔁 **Alternativa con Entorno Virtual**
+###  **Alternativa con Entorno Virtual**
 
 Si prefieres aislar las dependencias Python:
 
@@ -150,7 +150,7 @@ python3 main.py
 
 ---
 
-## 🎯 Menú Principal (13 botones)
+## 󰍜 Menú Principal (13 botones)
 
 ```
 ┌─────────────────────────────────────┐
@@ -193,7 +193,7 @@ python3 main.py
 
 ---
 
-## 🎨 Temas Disponibles
+## 󰔎 Temas Disponibles
 
 | Tema | Colores | Estilo |
 |------|---------|--------|
@@ -265,7 +265,7 @@ system_dashboard/
 
 ---
 
-## 🔧 Configuración
+##  Configuración
 
 ### **`config/settings.py`**
 
@@ -314,7 +314,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 | Problema | Solución |
 |----------|----------|
@@ -352,7 +352,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ---
 
-## 📝 Changelog
+## Changelog
 
 ### **v2.5.1** - 2026-02-19 ⭐ ACTUAL
 - ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
@@ -375,16 +375,16 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ---
 
-## 📜 Licencia
+## Licencia
 
 MIT License
 
 ---
 
-## 🙏 Agradecimientos
+## Agradecimientos
 
 **CustomTkinter** · **psutil** · **matplotlib** · **Raspberry Pi Foundation**
 
 ---
 
-**Dashboard v2.5.1: Profesional, Completo, Monitoreado** 🚀✨
+**Dashboard v2.5.1: Profesional, Completo, Monitoreado** 
