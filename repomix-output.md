@@ -1,9 +1,9 @@
-This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
 
 # File Summary
 
 ## Purpose
-This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+This file contains a packed representation of the entire repository's contents.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
 
@@ -28,7 +28,6 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching these patterns are excluded: system_dashboard/Sesission.md
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -100,328 +99,6 @@ THEMES_GUIDE.md
 ```
 
 # Files
-
-## File: test_logging.py
-````python
-#!/usr/bin/env python3
-"""
-Script de prueba manual del sistema de logging
-Ejecutar desde la raíz del proyecto: python3 test_logging.py
-Ver logs en tiempo real con: tail -f data/logs/dashboard.log
-"""
-import sys
-import os
-import json
-import time
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from utils.logger import get_logger
-
-logger = get_logger("test")
-
-def separador(titulo):
-    print(f"\n{'='*60}")
-    print(f"  {titulo}")
-    print(f"{'='*60}")
-
-def ok(msg):
-    print(f"  ✅ {msg}")
-
-def info(msg):
-    print(f"  ℹ️  {msg}")
-
-
-# ============================================================
-# TEST FILE_MANAGER
-# ============================================================
-def test_file_manager():
-    separador("FILE MANAGER")
-    from config.settings import STATE_FILE, CURVE_FILE
-    from utils.file_manager import FileManager
-
-    # --- Test 1: load_state cuando no existe el archivo ---
-    print("\n[1] load_state con archivo inexistente:")
-    backup = None
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE) as f:
-            backup = f.read()
-        os.remove(STATE_FILE)
-
-    state = FileManager.load_state()
-    ok(f"Retornó estado por defecto: {state}")
-    info("Debe aparecer en log: [DEBUG] load_state: no existe, usando estado por defecto")
-
-    # Restaurar
-    if backup:
-        with open(STATE_FILE, "w") as f:
-            f.write(backup)
-
-    # --- Test 2: load_state con JSON corrupto ---
-    print("\n[2] load_state con JSON corrupto:")
-    with open(STATE_FILE, "w") as f:
-        f.write("{ esto no es json válido !!!}")
-
-    state = FileManager.load_state()
-    ok(f"Retornó estado por defecto: {state}")
-    info("Debe aparecer en log: [ERROR] load_state: JSON corrupto")
-
-    # Restaurar estado válido
-    FileManager.write_state({"mode": "auto", "target_pwm": None})
-    ok("Estado restaurado correctamente")
-
-    # --- Test 3: load_curve con archivo inexistente ---
-    print("\n[3] load_curve con archivo inexistente:")
-    curve_backup = None
-    if os.path.exists(CURVE_FILE):
-        with open(CURVE_FILE) as f:
-            curve_backup = f.read()
-        os.remove(CURVE_FILE)
-
-    curve = FileManager.load_curve()
-    ok(f"Retornó curva por defecto con {len(curve)} puntos")
-    info("Debe aparecer en log: [DEBUG] load_curve: no existe, usando curva por defecto")
-
-    if curve_backup:
-        with open(CURVE_FILE, "w") as f:
-            f.write(curve_backup)
-
-    # --- Test 4: load_curve con JSON corrupto ---
-    print("\n[4] load_curve con JSON corrupto:")
-    with open(CURVE_FILE, "w") as f:
-        f.write("{ corrupto }")
-
-    curve = FileManager.load_curve()
-    ok(f"Retornó curva por defecto con {len(curve)} puntos")
-    info("Debe aparecer en log: [ERROR] load_curve: JSON corrupto")
-
-    # Restaurar curva válida
-    if curve_backup:
-        with open(CURVE_FILE, "w") as f:
-            f.write(curve_backup)
-    else:
-        FileManager.save_curve([{"temp": 50, "pwm": 128}])
-
-    ok("Curva restaurada correctamente")
-
-    # --- Test 5: write_state correcto ---
-    print("\n[5] write_state normal:")
-    FileManager.write_state({"mode": "auto", "target_pwm": 128})
-    ok("Estado guardado sin errores")
-
-    # --- Test 6: save_curve correcta ---
-    print("\n[6] save_curve normal:")
-    FileManager.save_curve([{"temp": 50, "pwm": 100}, {"temp": 70, "pwm": 200}])
-    ok("Curva guardada sin errores")
-    info("Debe aparecer en log: [INFO] save_curve: curva guardada (2 puntos)")
-
-
-# ============================================================
-# TEST SYSTEM_UTILS
-# ============================================================
-def test_system_utils():
-    separador("SYSTEM UTILS")
-    from utils.system_utils import SystemUtils
-
-    # --- Test 1: get_cpu_temp ---
-    print("\n[1] get_cpu_temp:")
-    temp = SystemUtils.get_cpu_temp()
-    ok(f"Temperatura obtenida: {temp}°C")
-    if temp == 0.0:
-        info("Retornó 0.0 — revisa el log para ver qué método falló")
-    else:
-        info("Temperatura real leída correctamente")
-
-    # --- Test 2: get_hostname ---
-    print("\n[2] get_hostname:")
-    hostname = SystemUtils.get_hostname()
-    ok(f"Hostname: {hostname}")
-
-    # --- Test 3: get_nvme_temp ---
-    print("\n[3] get_nvme_temp:")
-    nvme = SystemUtils.get_nvme_temp()
-    ok(f"Temperatura NVMe: {nvme}°C")
-    if nvme == 0.0:
-        info("Retornó 0.0 — puede que no haya NVMe o falten permisos (normal)")
-        info("Revisa el log: debe aparecer qué método falló (smartctl/sysfs)")
-
-    # --- Test 4: list_usb_storage_devices ---
-    print("\n[4] list_usb_storage_devices:")
-    usb = SystemUtils.list_usb_storage_devices()
-    ok(f"Dispositivos USB encontrados: {len(usb)}")
-    for d in usb:
-        info(f"  → {d.get('name')} ({d.get('dev')})")
-
-    # --- Test 5: list_usb_other_devices ---
-    print("\n[5] list_usb_other_devices:")
-    otros = SystemUtils.list_usb_other_devices()
-    ok(f"Otros dispositivos USB: {len(otros)}")
-
-    # --- Test 6: get_interfaces_ips ---
-    print("\n[6] get_interfaces_ips:")
-    ips = SystemUtils.get_interfaces_ips()
-    ok(f"Interfaces detectadas: {len(ips)}")
-    for iface, ip in ips.items():
-        info(f"  → {iface}: {ip}")
-
-    # --- Test 7: run_script con script inexistente ---
-    print("\n[7] run_script con script inexistente:")
-    success, msg = SystemUtils.run_script("/ruta/que/no/existe.sh")
-    ok(f"Retornó success={success}, msg='{msg}'")
-    info("Debe aparecer en log: [ERROR] run_script: script no encontrado")
-
-    # --- Test 8: run_script real (crea uno temporal) ---
-    print("\n[8] run_script con script válido:")
-    tmp_script = "/tmp/test_dashboard.sh"
-    with open(tmp_script, "w") as f:
-        f.write("#!/bin/bash\necho 'Script de prueba OK'\nexit 0\n")
-    os.chmod(tmp_script, 0o755)
-
-    success, msg = SystemUtils.run_script(tmp_script)
-    ok(f"Retornó success={success}, msg='{msg}'")
-    info("Debe aparecer en log: [INFO] Script ejecutado correctamente")
-    os.remove(tmp_script)
-
-
-# ============================================================
-# TEST NETWORK_MONITOR
-# ============================================================
-def test_network_monitor():
-    separador("NETWORK MONITOR (SPEEDTEST)")
-    from core.network_monitor import NetworkMonitor
-
-    monitor = NetworkMonitor()
-
-    # --- Test 1: get_current_stats ---
-    print("\n[1] get_current_stats:")
-    stats = monitor.get_current_stats()
-    ok(f"Interfaz: {stats['interface']}, ↓{stats['download_mb']:.3f} MB/s, ↑{stats['upload_mb']:.3f} MB/s")
-
-    # --- Test 2: speedtest completo ---
-    print("\n[2] Speedtest (puede tardar ~30-60s):")
-    info("Iniciando speedtest... espera")
-    monitor.run_speedtest()
-
-    # Esperar resultado con timeout
-    timeout = 90
-    start = time.time()
-    while time.time() - start < timeout:
-        result = monitor.get_speedtest_result()
-        status = result['status']
-
-        if status == 'running':
-            print(f"  ⏳ Ejecutando... ({int(time.time()-start)}s)", end='\r')
-            time.sleep(2)
-        elif status == 'done':
-            print()
-            ok(f"Ping: {result['ping']}ms | ↓{result['download']:.2f} MB/s | ↑{result['upload']:.2f} MB/s")
-            info("Debe aparecer en log: [INFO] Speedtest completado con las métricas")
-            break
-        elif status == 'timeout':
-            print()
-            ok(f"Speedtest timeout (esperado si la conexión es lenta)")
-            info("Debe aparecer en log: [WARNING] Speedtest timeout")
-            break
-        elif status == 'error':
-            print()
-            ok(f"Speedtest error (puede que speedtest-cli no esté instalado)")
-            info("Debe aparecer en log: [ERROR] con el motivo del fallo")
-            break
-    else:
-        print()
-        info("Timeout de espera alcanzado en el script de prueba")
-
-    # --- Test 3: speedtest con binario inexistente (simulado) ---
-    print("\n[3] Verificar log de speedtest-cli no encontrado:")
-    info("Para probar esto, renombra temporalmente speedtest-cli y ejecuta de nuevo")
-    info("Debe aparecer en log: [ERROR] speedtest-cli no encontrado")
-
-
-# ============================================================
-# MAIN
-# ============================================================
-if __name__ == "__main__":
-    print("\n" + "="*60)
-    print("  TEST DE LOGGING - Dashboard v2.5.1")
-    print("  Abre otra terminal y ejecuta:")
-    print("  tail -f data/logs/dashboard.log")
-    print("="*60)
-
-    # Preguntar si hacer el speedtest (tarda mucho)
-    hacer_speedtest = "--speedtest" in sys.argv or "-s" in sys.argv
-
-    try:
-        test_file_manager()
-    except Exception as e:
-        print(f"\n❌ Error en test_file_manager: {e}")
-
-    try:
-        test_system_utils()
-    except Exception as e:
-        print(f"\n❌ Error en test_system_utils: {e}")
-
-    if hacer_speedtest:
-        try:
-            test_network_monitor()
-        except Exception as e:
-            print(f"\n❌ Error en test_network_monitor: {e}")
-    else:
-        separador("NETWORK MONITOR (SPEEDTEST)")
-        print("\n  ⏭️  Saltado. Para incluir el speedtest ejecuta:")
-        print("     python3 test_logging.py --speedtest")
-
-    separador("RESULTADO FINAL")
-    print("\n  Revisa data/logs/dashboard.log para verificar los mensajes.")
-    print("  Todos los tests deberían mostrar ✅ sin excepciones no capturadas.\n")
-````
-
-## File: config/__init__.py
-````python
-"""
-Paquete de configuración
-"""
-from .settings import (
-    # Rutas
-    PROJECT_ROOT,
-    DATA_DIR,
-    SCRIPTS_DIR,
-    STATE_FILE,
-    CURVE_FILE,
-    # Pantalla
-    DSI_WIDTH,
-    DSI_HEIGHT,
-    DSI_X,
-    DSI_Y,
-    # Actualización y gráficas
-    UPDATE_MS,
-    HISTORY,
-    GRAPH_WIDTH,
-    GRAPH_HEIGHT,
-    # Umbrales
-    CPU_WARN,
-    CPU_CRIT,
-    TEMP_WARN,
-    TEMP_CRIT,
-    RAM_WARN,
-    RAM_CRIT,
-    # Red
-    NET_WARN,
-    NET_CRIT,
-    NET_INTERFACE,
-    NET_MAX_MB,
-    NET_MIN_SCALE,
-    NET_MAX_SCALE,
-    NET_IDLE_THRESHOLD,
-    NET_IDLE_RESET_TIME,
-    # Lanzadores
-    LAUNCHERS,
-    # Tema y estilos
-    SELECTED_THEME,
-    COLORS,
-    FONT_FAMILY,
-    FONT_SIZES,
-)
-````
 
 ## File: core/disk_monitor.py
 ````python
@@ -529,211 +206,6 @@ class DiskMonitor:
             return COLORS['warning']
         else:
             return COLORS['primary']
-````
-
-## File: core/fan_controller.py
-````python
-"""
-Controlador de ventiladores
-"""
-from typing import List, Dict
-from utils.file_manager import FileManager
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class FanController:
-    """Controlador para gestión de ventiladores"""
-    
-    def __init__(self):
-        self.file_manager = FileManager()
-    
-    def compute_pwm_from_curve(self, temp: float) -> int:
-        """
-        Calcula el PWM basado en la curva y la temperatura
-
-        Args:
-            temp: Temperatura actual en °C
-
-        Returns:
-            Valor PWM (0-255)
-        """
-        curve = self.file_manager.load_curve()
-        
-        if not curve:
-            logger.warning("[FanController] compute_pwm_from_curve: curva vacía, retornando PWM 0")
-            return 0
-        
-        if temp <= curve[0]["temp"]:
-            return int(curve[0]["pwm"])
-        
-        if temp >= curve[-1]["temp"]:
-            return int(curve[-1]["pwm"])
-        
-        for i in range(len(curve) - 1):
-            t1, pwm1 = curve[i]["temp"], curve[i]["pwm"]
-            t2, pwm2 = curve[i + 1]["temp"], curve[i + 1]["pwm"]
-            
-            if t1 <= temp <= t2:
-                ratio = (temp - t1) / (t2 - t1)
-                pwm = pwm1 + ratio * (pwm2 - pwm1)
-                return int(pwm)
-        
-        return int(curve[-1]["pwm"])
-    
-    def get_pwm_for_mode(self, mode: str, temp: float, manual_pwm: int = 128) -> int:
-        """
-        Obtiene el PWM según el modo seleccionado
-
-        Args:
-            mode: Modo de operación (auto, manual, silent, normal, performance)
-            temp: Temperatura actual
-            manual_pwm: Valor PWM manual si mode='manual'
-
-        Returns:
-            Valor PWM calculado (0-255)
-        """
-        if mode == "manual":
-            return max(0, min(255, manual_pwm))
-        elif mode == "auto":
-            return self.compute_pwm_from_curve(temp)
-        elif mode == "silent":
-            return 77
-        elif mode == "normal":
-            return 128
-        elif mode == "performance":
-            return 255
-        else:
-            logger.warning(f"[FanController] Modo desconocido '{mode}', usando curva auto")
-            return self.compute_pwm_from_curve(temp)
-    
-    def update_fan_state(self, mode: str, temp: float, current_target: int = None,
-                         manual_pwm: int = 128) -> Dict:
-        """
-        Actualiza el estado del ventilador
-
-        Args:
-            mode: Modo actual
-            temp: Temperatura actual
-            current_target: PWM objetivo actual
-            manual_pwm: PWM manual configurado
-
-        Returns:
-            Diccionario con el nuevo estado
-        """
-        desired = self.get_pwm_for_mode(mode, temp, manual_pwm)
-        desired = max(0, min(255, int(desired)))
-        
-        if desired != current_target:
-            new_state = {"mode": mode, "target_pwm": desired}
-            self.file_manager.write_state(new_state)
-            logger.debug(f"[FanController] PWM actualizado: {current_target} → {desired} (modo={mode}, temp={temp:.1f}°C)")
-            return new_state
-        
-        return {"mode": mode, "target_pwm": current_target}
-    
-    def add_curve_point(self, temp: int, pwm: int) -> List[Dict]:
-        """
-        Añade un punto a la curva
-
-        Args:
-            temp: Temperatura en °C
-            pwm: Valor PWM (0-255)
-
-        Returns:
-            Curva actualizada
-        """
-        curve = self.file_manager.load_curve()
-        pwm = max(0, min(255, pwm))
-        
-        found = False
-        for point in curve:
-            if point["temp"] == temp:
-                logger.debug(f"[FanController] Punto actualizado en curva: {temp}°C → PWM {point['pwm']} → {pwm}")
-                point["pwm"] = pwm
-                found = True
-                break
-        
-        if not found:
-            logger.debug(f"[FanController] Nuevo punto añadido a curva: {temp}°C → PWM {pwm}")
-            curve.append({"temp": temp, "pwm": pwm})
-        
-        curve = sorted(curve, key=lambda x: x["temp"])
-        self.file_manager.save_curve(curve)
-        
-        return curve
-    
-    def remove_curve_point(self, temp: int) -> List[Dict]:
-        """
-        Elimina un punto de la curva
-
-        Args:
-            temp: Temperatura del punto a eliminar
-
-        Returns:
-            Curva actualizada
-        """
-        curve = self.file_manager.load_curve()
-        original_len = len(curve)
-        curve = [p for p in curve if p["temp"] != temp]
-        
-        if len(curve) < original_len:
-            logger.debug(f"[FanController] Punto eliminado de curva: {temp}°C")
-        else:
-            logger.warning(f"[FanController] remove_curve_point: no se encontró punto en {temp}°C")
-        
-        if not curve:
-            curve = [{"temp": 40, "pwm": 100}]
-            logger.warning("[FanController] Curva quedó vacía, restaurado punto por defecto")
-        
-        self.file_manager.save_curve(curve)
-        return curve
-````
-
-## File: core/update_monitor.py
-````python
-import subprocess
-import time
-from typing import Dict
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-class UpdateMonitor:
-    def __init__(self):
-        self.last_check_time = 0
-        self.cached_result = {"pending": 0, "status": "Unknown", "message": "No comprobado"}
-        self.check_interval = 43200  # 12 horas en segundos
-
-    def check_updates(self, force=False) -> Dict:
-        """Verifica actualizaciones con sistema de caché"""
-        current_time = time.time()
-        
-        # Si no se fuerza y no ha pasado el tiempo, devolvemos el caché
-        if not force and (current_time - self.last_check_time) < self.check_interval:
-            return self.cached_result
-
-        try:
-            logger.info("[UpdateMonitor] Ejecutando búsqueda real de actualizaciones (apt update)...")
-            result = subprocess.run(["sudo", "apt", "update"], capture_output=True, timeout=20)
-            
-            # Contar paquetes
-            cmd = "apt-get -s upgrade | grep '^Inst ' | wc -l"
-            output = subprocess.check_output(cmd, shell=True).decode().strip()
-            count = int(output) if output else 0
-
-            self.cached_result = {
-                "pending": count,
-                "status": "Ready" if count > 0 else "Updated",
-                "message": f"{count} paquetes pendientes" if count > 0 else "Sistema al día"
-            }
-            self.last_check_time = current_time
-            return self.cached_result
-
-        except Exception as e:
-            logger.error(f"[UpdateMonitor] Error en check_updates: {e}")
-            return self.cached_result
 ````
 
 ## File: ui/widgets/__init__.py
@@ -888,340 +360,6 @@ def recolor_lines(canvas, lines: List, color: str) -> None:
     """
     for line in lines:
         canvas.itemconfig(line, fill=color)
-````
-
-## File: ui/windows/disk.py
-````python
-"""
-Ventana de monitoreo de disco
-"""
-import customtkinter as ctk
-from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
-from ui.styles import make_futuristic_button
-from ui.widgets import GraphWidget
-from core.disk_monitor import DiskMonitor
-
-
-class DiskWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo de disco"""
-    
-    def __init__(self, parent, disk_monitor: DiskMonitor):
-        super().__init__(parent)
-        
-        # Referencias
-        self.disk_monitor = disk_monitor
-        
-        # Widgets para actualización
-        self.widgets = {}
-        self.graphs = {}
-        
-        # Configurar ventana
-        self.title("Monitor de Disco")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        
-        # Crear interfaz
-        self._create_ui()
-        
-        # Iniciar actualización
-        self._update()
-    
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Título
-        title = ctk.CTkLabel(
-            main,
-            text="MONITOR DE DISCO",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=(10, 20))
-        
-        # Área de scroll
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Canvas y scrollbar
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        
-        from ui.styles import StyleManager
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        # Secciones (AQUÍ CREAS CADA SECCIÓN)
-        self._create_usage_section(inner)       # Uso de disco
-        self._create_disk_io_section(inner)
-        self._create_nvme_temp_section(inner)   # Temperatura NVMe (NUEVO)
-        
-        # Botón cerrar
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-        
-    def _create_metric_section(self, parent, title: str, metric_key: str,
-                               unit: str, max_val: float = 100):
-        """Crea una sección genérica para una métrica"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Label del título
-        label = ctk.CTkLabel(
-            frame,
-            text=title,
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-        
-        # Valor actual
-        value_label = ctk.CTkLabel(
-            frame,
-            text=f"0.0 {unit}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        # Gráfica
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
-        graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets[f"{metric_key}_label"] = label
-        self.widgets[f"{metric_key}_value"] = value_label
-        self.graphs[metric_key] = {
-            'widget': graph,
-            'max_val': max_val
-        }    
-    def _create_usage_section(self, parent):
-        """Crea la sección de uso de disco"""
-        # Frame con label, valor y gráfica
-        self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
-
-    def _create_disk_io_section(self, parent):
-        """Crea la sección de I/O de disco"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Título
-        title = ctk.CTkLabel(
-            frame,
-            text="I/O DE DISCO",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(5, 10), padx=10)
-        
-        # Escritura
-        write_label = ctk.CTkLabel(
-            frame,
-            text="ESCRITURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        write_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        write_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        write_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        write_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        write_graph.pack(pady=(0, 10))
-        
-        # Lectura
-        read_label = ctk.CTkLabel(
-            frame,
-            text="LECTURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        read_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        read_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        read_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        read_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        read_graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets['disk_write_label'] = write_label
-        self.widgets['disk_write_value'] = write_value
-        self.widgets['disk_read_label'] = read_label
-        self.widgets['disk_read_value'] = read_value
-        
-        self.graphs['disk_write'] = {
-            'widget': write_graph,
-            'max_val': 50
-        }
-        self.graphs['disk_read'] = {
-            'widget': read_graph,
-            'max_val': 50
-        }
-    
-    def _create_nvme_temp_section(self, parent):
-        """Crea la sección de temperatura NVMe"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-
-        # Label
-        label = ctk.CTkLabel(
-            frame,
-            text="TEMPERATURA NVMe",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-
-        # Valor
-        value_label = ctk.CTkLabel(
-            frame,
-            text="0.0 °C",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-
-        # Gráfica
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
-        graph.pack(pady=(0, 10))
-
-        # Guardar referencias
-        self.widgets['nvme_temp_label'] = label
-        self.widgets['nvme_temp_value'] = value_label
-        self.graphs['nvme_temp'] = {
-            'widget': graph,
-            'max_val': 85  # Temperatura máxima NVMe
-        }
-
-    def _update(self):
-        """Actualiza los datos del disco"""
-        if not self.winfo_exists():
-            return
-        
-        # Obtener estadísticas actuales
-        stats = self.disk_monitor.get_current_stats()
-        self.disk_monitor.update_history(stats)
-        history = self.disk_monitor.get_history()
-        
-        # Actualizar Disco (uso)
-        self._update_metric(
-            'disk',
-            stats['disk_usage'],
-            history['disk_usage'],
-            "%",
-            60,
-            80
-        )
-        
-        # Actualizar Disco I/O
-        self._update_disk_io(
-            'disk_write',
-            stats['disk_write_mb'],
-            history['disk_write']
-        )
-        
-        self._update_disk_io(
-            'disk_read',
-            stats['disk_read_mb'],
-            history['disk_read']
-        )
-        
-        # self._update_nvme_temp(stats, history)
-        # Temperatura NVMe (NUEVO)
-        self._update_metric(
-            'nvme_temp',
-            stats['nvme_temp'],
-            history['nvme_temp'],
-            "°C",
-            60,  # warning
-            70   # critical
-        )
-        
-        # Programar siguiente actualización
-        self.after(UPDATE_MS, self._update)
-    def _update_metric(self, key, value, history, unit, warn, crit):
-        """Actualiza una métrica genérica"""
-        # Determinar color
-        color = self.disk_monitor.level_color(value, warn, crit)
-        
-        # Actualizar valor
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
-            text=f"{value:.1f} {unit}",
-            text_color=color
-        )
-        
-        # Actualizar label
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
-        
-    def _update_disk_io(self, key: str, value: float, history: list):
-        """Actualiza métricas de I/O de disco"""
-        # Determinar color (10 MB/s = warning, 50 MB/s = critical)
-        color = self.disk_monitor.level_color(value, 10, 50)
-        
-        # Actualizar valor
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
-            text=f"{value:.1f} MB/s",
-            text_color=color
-        )
-        
-        # Actualizar label
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
 ````
 
 ## File: ui/windows/monitor.py
@@ -2100,581 +1238,9 @@ class ServiceWindow(ctk.CTkToplevel):
         self.update_paused = False
 ````
 
-## File: ui/windows/update.py
-````python
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
-from ui.styles import make_futuristic_button
-from ui.widgets.dialogs import terminal_dialog, confirm_dialog
-from core import UpdateMonitor
-from utils import SystemUtils
-
-class UpdatesWindow(ctk.CTkToplevel):
-    """Ventana de control de actualizaciones del sistema"""
-    
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.system_utils = SystemUtils()
-
-        
-        # Configuración de ventana (Estilo DSI)
-        self.title("Actualizaciones del Sistema")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        
-        # Creamos la interfaz primero
-        self._create_ui()
-        # Importante: Asegúrate de que UpdateMonitor esté bien inicializado
-        self.monitor = UpdateMonitor()
-        # Cargamos el estado inicial sin forzar apt update
-        self._refresh_status(force=False)
-
-    def _create_ui(self):
-        # Frame Principal
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        # Icono
-        self.status_icon = ctk.CTkLabel(main, text="󰚰", font=(FONT_FAMILY, 60))
-        self.status_icon.pack(pady=(10, 5))
-        
-        # Labels
-        self.status_label = ctk.CTkLabel(
-            main, text="Verificando...", 
-            font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
-        )
-        self.status_label.pack()
-        
-        self.info_label = ctk.CTkLabel(
-            main, text="Estado de los paquetes",
-            text_color=COLORS['text_dim'], font=(FONT_FAMILY, FONT_SIZES['medium'])
-        )
-        self.info_label.pack(pady=5)
-        
-        # Frame para botones
-        btn_frame = ctk.CTkFrame(main, fg_color="transparent")
-        btn_frame.pack(side="bottom", fill="x", pady=(10, 20))
-        
-        # 1. Botón Buscar (Manual)
-        self.search_btn = make_futuristic_button(
-            btn_frame, text="🔍 Buscar", 
-            command=lambda: self._refresh_status(force=True), width=12
-        )
-        self.search_btn.pack(side="left", padx=5, expand=True)
-
-        # 2. Botón Instalar (Aquí estaba el error de nombre)
-        self.update_btn = make_futuristic_button(
-            btn_frame, text="󰚰 Instalar", 
-            command=self._execute_update_script, width=12
-        )
-        self.update_btn.pack(side="left", padx=5, expand=True)
-        self.update_btn.configure(state="disabled")  # Deshabilitado por defecto
-        
-        # 3. Botón Cerrar
-        close_btn = make_futuristic_button(
-            btn_frame, text="Cerrar", 
-            command=self.destroy, width=12
-        )
-        close_btn.pack(side="left", padx=5, expand=True)
-
-    def _refresh_status(self, force=False):
-        """Consulta el estado de actualizaciones"""
-        if force:
-            self.status_label.configure(text="Buscando...", text_color=COLORS['warning'])
-            self.update_idletasks()
-
-        # Llamada al core
-        res = self.monitor.check_updates(force=force)
-        
-        color = COLORS['success'] if res['pending'] == 0 else COLORS['warning']
-        
-        self.status_label.configure(text=res['status'], text_color=color)
-        self.info_label.configure(text=res['message'])
-        self.status_icon.configure(text_color=color)
-        
-        if res['pending'] > 0:
-            self.update_btn.configure(state="normal")
-        else:
-            self.update_btn.configure(state="disabled")
-
-    def _execute_update_script(self):
-        """Lanza el script de terminal y refresca al terminar"""
-        script_path = str(SCRIPTS_DIR / "update.sh")
-        
-        # Definimos qué hacer cuando la terminal se cierre
-        def al_terminar_actualizacion():
-            # Forzamos una búsqueda real para confirmar que ya no hay paquetes
-            self._refresh_status(force=True)
-            # Opcional: podrías mostrar un mensaje de "Actualización completada"
-        
-        # Lanzamos el diálogo. 
-        # Si tu terminal_dialog permite un callback al cerrar, lo usamos:
-        terminal_dialog(
-            self, 
-            script_path, 
-            "CONSOLA DE ACTUALIZACIÓN",
-            on_close=al_terminar_actualizacion
-        )
-````
-
-## File: ui/windows/usb.py
-````python
-"""
-Ventana de monitoreo de dispositivos USB
-"""
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
-from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox
-from utils.system_utils import SystemUtils
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class USBWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo de dispositivos USB"""
-    
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        self.system_utils = SystemUtils()
-        self.device_widgets = []
-        
-        self.title("Monitor USB")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        
-        self._create_ui()
-        self._refresh_devices()
-    
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        header = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        header.pack(fill="x", pady=(10, 5), padx=10)
-        
-        title = ctk.CTkLabel(
-            header,
-            text="DISPOSITIVOS USB",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(side="left")
-        
-        refresh_btn = make_futuristic_button(
-            header,
-            text="Actualizar",
-            command=self._refresh_devices,
-            width=15,
-            height=5
-        )
-        refresh_btn.pack(side="right")
-        
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        self.canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
-        self.canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=self.canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-        
-        self.devices_frame = ctk.CTkFrame(self.canvas, fg_color=COLORS['bg_medium'])
-        self.canvas.create_window(
-            (0, 0),
-            window=self.devices_frame,
-            anchor="nw",
-            width=DSI_WIDTH-50
-        )
-        
-        self.devices_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
-        
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-    
-    def _refresh_devices(self):
-        """Refresca la lista de dispositivos USB"""
-        for widget in self.device_widgets:
-            widget.destroy()
-        self.device_widgets.clear()
-        
-        storage_devices = self.system_utils.list_usb_storage_devices()
-        other_devices = self.system_utils.list_usb_other_devices()
-        
-        logger.debug(f"[USBWindow] Dispositivos detectados: {len(storage_devices)} almacenamiento, {len(other_devices)} otros")
-        
-        if storage_devices:
-            self._create_storage_section(storage_devices)
-        
-        if other_devices:
-            self._create_other_devices_section(other_devices)
-        
-        if not storage_devices and not other_devices:
-            no_devices = ctk.CTkLabel(
-                self.devices_frame,
-                text="No se detectaron dispositivos USB",
-                text_color=COLORS['warning'],
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-                justify="center"
-            )
-            no_devices.pack(pady=50)
-            self.device_widgets.append(no_devices)
-    
-    def _create_storage_section(self, storage_devices: list):
-        """Crea la sección de almacenamiento USB"""
-        title = ctk.CTkLabel(
-            self.devices_frame,
-            text="ALMACENAMIENTO USB",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(10, 10), padx=10)
-        self.device_widgets.append(title)
-        
-        for idx, device in enumerate(storage_devices):
-            self._create_storage_device_widget(device, idx)
-    
-    def _create_storage_device_widget(self, device: dict, index: int):
-        """Crea widget para un dispositivo de almacenamiento"""
-        device_frame = ctk.CTkFrame(
-            self.devices_frame,
-            fg_color=COLORS['bg_dark'],
-            border_width=2,
-            border_color=COLORS['success']
-        )
-        device_frame.pack(fill="x", pady=5, padx=10)
-        self.device_widgets.append(device_frame)
-        
-        name = device.get('name', 'USB Disk')
-        size = device.get('size', '?')
-        dev_type = device.get('type', 'disk')
-        
-        header = ctk.CTkLabel(
-            device_frame,
-            text=f"💾 {name} ({dev_type}) - {size}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        header.pack(anchor="w", padx=10, pady=(10, 5))
-        
-        dev_path = device.get('dev', '?')
-        info = ctk.CTkLabel(
-            device_frame,
-            text=f"Dispositivo: {dev_path}",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        info.pack(anchor="w", padx=10, pady=(0, 5))
-        
-        eject_btn = make_futuristic_button(
-            device_frame,
-            text="Expulsar",
-            command=lambda d=device: self._eject_device(d),
-            width=15,
-            height=4
-        )
-        eject_btn.pack(anchor="w", padx=20, pady=(5, 10))
-        
-        children = device.get('children', [])
-        if children:
-            for child in children:
-                self._create_partition_widget(device_frame, child)
-    
-    def _create_partition_widget(self, parent, partition: dict):
-        """Crea widget para una partición"""
-        name = partition.get('name', '?')
-        mount = partition.get('mount')
-        size = partition.get('size', '?')
-        
-        part_text = f"  └─ Partición: {name} ({size})"
-        if mount:
-            part_text += f" | 📁 Montado en: {mount}"
-        else:
-            part_text += " | No montado"
-        
-        part_label = ctk.CTkLabel(
-            parent,
-            text=part_text,
-            text_color=COLORS['primary'] if mount else COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            wraplength=DSI_WIDTH - 80,
-            anchor="w",
-            justify="left"
-        )
-        part_label.pack(anchor="w", padx=30, pady=2)
-    
-    def _create_other_devices_section(self, other_devices: list):
-        """Crea la sección de otros dispositivos USB"""
-        title = ctk.CTkLabel(
-            self.devices_frame,
-            text="OTROS DISPOSITIVOS USB",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(20, 10), padx=10)
-        self.device_widgets.append(title)
-        
-        for idx, device_line in enumerate(other_devices):
-            self._create_other_device_widget(device_line, idx)
-    
-    def _create_other_device_widget(self, device_line: str, index: int):
-        """Crea widget para otro dispositivo USB"""
-        device_info = self._parse_lsusb_line(device_line)
-        
-        device_frame = ctk.CTkFrame(
-            self.devices_frame,
-            fg_color=COLORS['bg_dark'],
-            border_width=1,
-            border_color=COLORS['primary']
-        )
-        device_frame.pack(fill="x", pady=3, padx=10)
-        self.device_widgets.append(device_frame)
-        
-        inner = ctk.CTkFrame(device_frame, fg_color=COLORS['bg_dark'])
-        inner.pack(fill="x", padx=5, pady=5)
-        
-        ctk.CTkLabel(
-            inner,
-            text=f"#{index + 1}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-            width=30
-        ).pack(side="left", padx=5)
-        
-        ctk.CTkLabel(
-            inner,
-            text=device_info['bus'],
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            width=100
-        ).pack(side="left", padx=5)
-        
-        ctk.CTkLabel(
-            inner,
-            text=device_info['description'],
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            wraplength=DSI_WIDTH - 200,
-            anchor="w",
-            justify="left"
-        ).pack(side="left", padx=5, fill="x", expand=True)
-    
-    def _parse_lsusb_line(self, line: str) -> dict:
-        """Parsea una línea de lsusb"""
-        parts = line.split()
-        
-        try:
-            bus_idx = parts.index("Bus") + 1
-            bus = f"Bus {parts[bus_idx]}"
-            
-            dev_idx = parts.index("Device") + 1
-            device_num = parts[dev_idx].rstrip(':')
-            bus += f" Dev {device_num}"
-            
-            id_idx = parts.index("ID") + 2
-            description = " ".join(parts[id_idx:])
-            
-            if len(description) > 50:
-                description = description[:47] + "..."
-            
-        except (ValueError, IndexError):
-            bus = "Bus ?"
-            description = line
-        
-        return {'bus': bus, 'description': description}
-    
-    def _eject_device(self, device: dict):
-        """Expulsa un dispositivo USB"""
-        device_name = device.get('name', 'dispositivo')
-        
-        logger.info(f"[USBWindow] Intentando expulsar: '{device_name}' ({device.get('dev', '?')})")
-        
-        success, message = self.system_utils.eject_usb_device(device)
-        
-        if success:
-            logger.info(f"[USBWindow] Expulsión exitosa: '{device_name}'")
-            custom_msgbox(
-                self,
-                f"✅ {device_name}\n\n{message}\n\nAhora puedes desconectar el dispositivo de forma segura.",
-                "Expulsión Exitosa"
-            )
-            self._refresh_devices()
-        else:
-            logger.error(f"[USBWindow] Error expulsando '{device_name}': {message}")
-            custom_msgbox(
-                self,
-                f"❌ Error al expulsar {device_name}:\n\n{message}",
-                "Error"
-            )
-````
-
 ## File: ui/__init__.py
 ````python
 
-````
-
-## File: utils/file_manager.py
-````python
-"""
-Gestión de archivos JSON para estado y configuración
-"""
-import json
-import os
-from typing import Dict, List, Any, Optional
-from config.settings import STATE_FILE, CURVE_FILE
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class FileManager:
-    """Gestor centralizado de archivos JSON"""
-    
-    @staticmethod
-    def write_state(data: Dict[str, Any]) -> None:
-        """
-        Escribe el estado de forma atómica usando archivo temporal
-        
-        Args:
-            data: Diccionario con los datos a guardar
-        """
-        tmp = str(STATE_FILE) + ".tmp"
-        try:
-            with open(tmp, "w") as f:
-                json.dump(data, f, indent=2)
-            os.replace(tmp, STATE_FILE)
-        except OSError as e:
-            logger.error(f"[FileManager] write_state: error escribiendo estado: {e}")
-            raise
-    
-    @staticmethod
-    def load_state() -> Dict[str, Any]:
-        """
-        Carga el estado guardado
-        
-        Returns:
-            Diccionario con mode y target_pwm
-        """
-        default_state = {"mode": "auto", "target_pwm": None}
-        
-        try:
-            with open(STATE_FILE) as f:
-                data = json.load(f)
-                if not isinstance(data, dict):
-                    logger.warning("[FileManager] load_state: contenido inválido, usando estado por defecto")
-                    return default_state
-                return {
-                    "mode": data.get("mode", "auto"),
-                    "target_pwm": data.get("target_pwm")
-                }
-        except FileNotFoundError:
-            logger.debug(f"[FileManager] load_state: {STATE_FILE} no existe, usando estado por defecto")
-            return default_state
-        except json.JSONDecodeError as e:
-            logger.error(f"[FileManager] load_state: JSON corrupto en {STATE_FILE}: {e} — usando estado por defecto")
-            return default_state
-    
-    @staticmethod
-    def load_curve() -> List[Dict[str, int]]:
-        """
-        Carga la curva de ventiladores
-        
-        Returns:
-            Lista de puntos ordenados por temperatura
-        """
-        default_curve = [
-            {"temp": 40, "pwm": 100},
-            {"temp": 50, "pwm": 100},
-            {"temp": 60, "pwm": 100},
-            {"temp": 70, "pwm": 63},
-            {"temp": 80, "pwm": 81}
-        ]
-        
-        try:
-            with open(CURVE_FILE) as f:
-                data = json.load(f)
-                pts = data.get("points", [])
-                
-                if not isinstance(pts, list):
-                    logger.warning("[FileManager] load_curve: 'points' no es una lista, usando curva por defecto")
-                    return default_curve
-                
-                sanitized = []
-                for p in pts:
-                    try:
-                        temp = int(p.get("temp", 0))
-                    except (ValueError, TypeError):
-                        temp = 0
-                    
-                    try:
-                        pwm = int(p.get("pwm", 0))
-                    except (ValueError, TypeError):
-                        pwm = 0
-                    
-                    pwm = max(0, min(255, pwm))
-                    sanitized.append({"temp": temp, "pwm": pwm})
-                
-                if not sanitized:
-                    logger.warning("[FileManager] load_curve: curva vacía tras sanear, usando curva por defecto")
-                    return default_curve
-                
-                return sorted(sanitized, key=lambda x: x["temp"])
-                
-        except FileNotFoundError:
-            logger.debug(f"[FileManager] load_curve: {CURVE_FILE} no existe, usando curva por defecto")
-            return default_curve
-        except json.JSONDecodeError as e:
-            logger.error(f"[FileManager] load_curve: JSON corrupto en {CURVE_FILE}: {e} — usando curva por defecto")
-            return default_curve
-    
-    @staticmethod
-    def save_curve(points: List[Dict[str, int]]) -> None:
-        """
-        Guarda la curva de ventiladores
-        
-        Args:
-            points: Lista de puntos {temp, pwm}
-        """
-        data = {"points": points}
-        tmp = str(CURVE_FILE) + ".tmp"
-        try:
-            with open(tmp, "w") as f:
-                json.dump(data, f, indent=2)
-            os.replace(tmp, CURVE_FILE)
-            logger.info(f"[FileManager] save_curve: curva guardada ({len(points)} puntos)")
-        except OSError as e:
-            logger.error(f"[FileManager] save_curve: error guardando curva: {e}")
-            raise
 ````
 
 ## File: .gitignore
@@ -4642,59 +3208,6 @@ sudo dnf install lm-sensors usbutils udisks2
 **Tip:** En sistemas modernos (Ubuntu 23.04+), usa `--break-system-packages` para evitar errores de PEP 668.
 ````
 
-## File: requirements.txt
-````
-# ============================================
-# System Dashboard - Python Dependencies
-# ============================================
-#
-# Instalación rápida:
-#   pip3 install --break-system-packages -r requirements.txt
-#
-# O con entorno virtual:
-#   python3 -m venv venv
-#   source venv/bin/activate
-#   pip install -r requirements.txt
-#
-# Versión mínima de Python: 3.8+
-# ============================================
-
-# === Dependencias Obligatorias ===
-
-# Interfaz gráfica moderna con tema oscuro
-customtkinter>=5.2.0
-
-# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
-psutil>=5.9.0
-
-
-# === Dependencias Opcionales ===
-
-# Test de velocidad de internet (descomentar si lo usas)
-# speedtest-cli>=2.1.3
-
-
-# ============================================
-# NOTA: Dependencias del Sistema (NO Python)
-# ============================================
-#
-# Estas se instalan con apt-get/dnf/pacman:
-#
-# En Ubuntu/Debian/Raspberry Pi OS:
-#   sudo apt-get install lm-sensors usbutils udisks2
-#
-# Descripción:
-#   - lm-sensors:  Lectura de temperatura CPU
-#   - usbutils:    Comando lsusb (listar USB)
-#   - udisks2:     Expulsar dispositivos USB
-#   - util-linux:  Comando lsblk (suele venir instalado)
-#
-# Opcional para speedtest:
-#   sudo apt-get install speedtest-cli
-#
-# ============================================
-````
-
 ## File: setup.py
 ````python
 """
@@ -4741,6 +3254,328 @@ setup(
     package_data={
         "": ["*.md", "*.txt"],
     },
+)
+````
+
+## File: test_logging.py
+````python
+#!/usr/bin/env python3
+"""
+Script de prueba manual del sistema de logging
+Ejecutar desde la raíz del proyecto: python3 test_logging.py
+Ver logs en tiempo real con: tail -f data/logs/dashboard.log
+"""
+import sys
+import os
+import json
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from utils.logger import get_logger
+
+logger = get_logger("test")
+
+def separador(titulo):
+    print(f"\n{'='*60}")
+    print(f"  {titulo}")
+    print(f"{'='*60}")
+
+def ok(msg):
+    print(f"  ✅ {msg}")
+
+def info(msg):
+    print(f"  ℹ️  {msg}")
+
+
+# ============================================================
+# TEST FILE_MANAGER
+# ============================================================
+def test_file_manager():
+    separador("FILE MANAGER")
+    from config.settings import STATE_FILE, CURVE_FILE
+    from utils.file_manager import FileManager
+
+    # --- Test 1: load_state cuando no existe el archivo ---
+    print("\n[1] load_state con archivo inexistente:")
+    backup = None
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
+            backup = f.read()
+        os.remove(STATE_FILE)
+
+    state = FileManager.load_state()
+    ok(f"Retornó estado por defecto: {state}")
+    info("Debe aparecer en log: [DEBUG] load_state: no existe, usando estado por defecto")
+
+    # Restaurar
+    if backup:
+        with open(STATE_FILE, "w") as f:
+            f.write(backup)
+
+    # --- Test 2: load_state con JSON corrupto ---
+    print("\n[2] load_state con JSON corrupto:")
+    with open(STATE_FILE, "w") as f:
+        f.write("{ esto no es json válido !!!}")
+
+    state = FileManager.load_state()
+    ok(f"Retornó estado por defecto: {state}")
+    info("Debe aparecer en log: [ERROR] load_state: JSON corrupto")
+
+    # Restaurar estado válido
+    FileManager.write_state({"mode": "auto", "target_pwm": None})
+    ok("Estado restaurado correctamente")
+
+    # --- Test 3: load_curve con archivo inexistente ---
+    print("\n[3] load_curve con archivo inexistente:")
+    curve_backup = None
+    if os.path.exists(CURVE_FILE):
+        with open(CURVE_FILE) as f:
+            curve_backup = f.read()
+        os.remove(CURVE_FILE)
+
+    curve = FileManager.load_curve()
+    ok(f"Retornó curva por defecto con {len(curve)} puntos")
+    info("Debe aparecer en log: [DEBUG] load_curve: no existe, usando curva por defecto")
+
+    if curve_backup:
+        with open(CURVE_FILE, "w") as f:
+            f.write(curve_backup)
+
+    # --- Test 4: load_curve con JSON corrupto ---
+    print("\n[4] load_curve con JSON corrupto:")
+    with open(CURVE_FILE, "w") as f:
+        f.write("{ corrupto }")
+
+    curve = FileManager.load_curve()
+    ok(f"Retornó curva por defecto con {len(curve)} puntos")
+    info("Debe aparecer en log: [ERROR] load_curve: JSON corrupto")
+
+    # Restaurar curva válida
+    if curve_backup:
+        with open(CURVE_FILE, "w") as f:
+            f.write(curve_backup)
+    else:
+        FileManager.save_curve([{"temp": 50, "pwm": 128}])
+
+    ok("Curva restaurada correctamente")
+
+    # --- Test 5: write_state correcto ---
+    print("\n[5] write_state normal:")
+    FileManager.write_state({"mode": "auto", "target_pwm": 128})
+    ok("Estado guardado sin errores")
+
+    # --- Test 6: save_curve correcta ---
+    print("\n[6] save_curve normal:")
+    FileManager.save_curve([{"temp": 50, "pwm": 100}, {"temp": 70, "pwm": 200}])
+    ok("Curva guardada sin errores")
+    info("Debe aparecer en log: [INFO] save_curve: curva guardada (2 puntos)")
+
+
+# ============================================================
+# TEST SYSTEM_UTILS
+# ============================================================
+def test_system_utils():
+    separador("SYSTEM UTILS")
+    from utils.system_utils import SystemUtils
+
+    # --- Test 1: get_cpu_temp ---
+    print("\n[1] get_cpu_temp:")
+    temp = SystemUtils.get_cpu_temp()
+    ok(f"Temperatura obtenida: {temp}°C")
+    if temp == 0.0:
+        info("Retornó 0.0 — revisa el log para ver qué método falló")
+    else:
+        info("Temperatura real leída correctamente")
+
+    # --- Test 2: get_hostname ---
+    print("\n[2] get_hostname:")
+    hostname = SystemUtils.get_hostname()
+    ok(f"Hostname: {hostname}")
+
+    # --- Test 3: get_nvme_temp ---
+    print("\n[3] get_nvme_temp:")
+    nvme = SystemUtils.get_nvme_temp()
+    ok(f"Temperatura NVMe: {nvme}°C")
+    if nvme == 0.0:
+        info("Retornó 0.0 — puede que no haya NVMe o falten permisos (normal)")
+        info("Revisa el log: debe aparecer qué método falló (smartctl/sysfs)")
+
+    # --- Test 4: list_usb_storage_devices ---
+    print("\n[4] list_usb_storage_devices:")
+    usb = SystemUtils.list_usb_storage_devices()
+    ok(f"Dispositivos USB encontrados: {len(usb)}")
+    for d in usb:
+        info(f"  → {d.get('name')} ({d.get('dev')})")
+
+    # --- Test 5: list_usb_other_devices ---
+    print("\n[5] list_usb_other_devices:")
+    otros = SystemUtils.list_usb_other_devices()
+    ok(f"Otros dispositivos USB: {len(otros)}")
+
+    # --- Test 6: get_interfaces_ips ---
+    print("\n[6] get_interfaces_ips:")
+    ips = SystemUtils.get_interfaces_ips()
+    ok(f"Interfaces detectadas: {len(ips)}")
+    for iface, ip in ips.items():
+        info(f"  → {iface}: {ip}")
+
+    # --- Test 7: run_script con script inexistente ---
+    print("\n[7] run_script con script inexistente:")
+    success, msg = SystemUtils.run_script("/ruta/que/no/existe.sh")
+    ok(f"Retornó success={success}, msg='{msg}'")
+    info("Debe aparecer en log: [ERROR] run_script: script no encontrado")
+
+    # --- Test 8: run_script real (crea uno temporal) ---
+    print("\n[8] run_script con script válido:")
+    tmp_script = "/tmp/test_dashboard.sh"
+    with open(tmp_script, "w") as f:
+        f.write("#!/bin/bash\necho 'Script de prueba OK'\nexit 0\n")
+    os.chmod(tmp_script, 0o755)
+
+    success, msg = SystemUtils.run_script(tmp_script)
+    ok(f"Retornó success={success}, msg='{msg}'")
+    info("Debe aparecer en log: [INFO] Script ejecutado correctamente")
+    os.remove(tmp_script)
+
+
+# ============================================================
+# TEST NETWORK_MONITOR
+# ============================================================
+def test_network_monitor():
+    separador("NETWORK MONITOR (SPEEDTEST)")
+    from core.network_monitor import NetworkMonitor
+
+    monitor = NetworkMonitor()
+
+    # --- Test 1: get_current_stats ---
+    print("\n[1] get_current_stats:")
+    stats = monitor.get_current_stats()
+    ok(f"Interfaz: {stats['interface']}, ↓{stats['download_mb']:.3f} MB/s, ↑{stats['upload_mb']:.3f} MB/s")
+
+    # --- Test 2: speedtest completo ---
+    print("\n[2] Speedtest (puede tardar ~30-60s):")
+    info("Iniciando speedtest... espera")
+    monitor.run_speedtest()
+
+    # Esperar resultado con timeout
+    timeout = 90
+    start = time.time()
+    while time.time() - start < timeout:
+        result = monitor.get_speedtest_result()
+        status = result['status']
+
+        if status == 'running':
+            print(f"  ⏳ Ejecutando... ({int(time.time()-start)}s)", end='\r')
+            time.sleep(2)
+        elif status == 'done':
+            print()
+            ok(f"Ping: {result['ping']}ms | ↓{result['download']:.2f} MB/s | ↑{result['upload']:.2f} MB/s")
+            info("Debe aparecer en log: [INFO] Speedtest completado con las métricas")
+            break
+        elif status == 'timeout':
+            print()
+            ok(f"Speedtest timeout (esperado si la conexión es lenta)")
+            info("Debe aparecer en log: [WARNING] Speedtest timeout")
+            break
+        elif status == 'error':
+            print()
+            ok(f"Speedtest error (puede que speedtest-cli no esté instalado)")
+            info("Debe aparecer en log: [ERROR] con el motivo del fallo")
+            break
+    else:
+        print()
+        info("Timeout de espera alcanzado en el script de prueba")
+
+    # --- Test 3: speedtest con binario inexistente (simulado) ---
+    print("\n[3] Verificar log de speedtest-cli no encontrado:")
+    info("Para probar esto, renombra temporalmente speedtest-cli y ejecuta de nuevo")
+    info("Debe aparecer en log: [ERROR] speedtest-cli no encontrado")
+
+
+# ============================================================
+# MAIN
+# ============================================================
+if __name__ == "__main__":
+    print("\n" + "="*60)
+    print("  TEST DE LOGGING - Dashboard v2.5.1")
+    print("  Abre otra terminal y ejecuta:")
+    print("  tail -f data/logs/dashboard.log")
+    print("="*60)
+
+    # Preguntar si hacer el speedtest (tarda mucho)
+    hacer_speedtest = "--speedtest" in sys.argv or "-s" in sys.argv
+
+    try:
+        test_file_manager()
+    except Exception as e:
+        print(f"\n❌ Error en test_file_manager: {e}")
+
+    try:
+        test_system_utils()
+    except Exception as e:
+        print(f"\n❌ Error en test_system_utils: {e}")
+
+    if hacer_speedtest:
+        try:
+            test_network_monitor()
+        except Exception as e:
+            print(f"\n❌ Error en test_network_monitor: {e}")
+    else:
+        separador("NETWORK MONITOR (SPEEDTEST)")
+        print("\n  ⏭️  Saltado. Para incluir el speedtest ejecuta:")
+        print("     python3 test_logging.py --speedtest")
+
+    separador("RESULTADO FINAL")
+    print("\n  Revisa data/logs/dashboard.log para verificar los mensajes.")
+    print("  Todos los tests deberían mostrar ✅ sin excepciones no capturadas.\n")
+````
+
+## File: config/__init__.py
+````python
+"""
+Paquete de configuración
+"""
+from .settings import (
+    # Rutas
+    PROJECT_ROOT,
+    DATA_DIR,
+    SCRIPTS_DIR,
+    STATE_FILE,
+    CURVE_FILE,
+    # Pantalla
+    DSI_WIDTH,
+    DSI_HEIGHT,
+    DSI_X,
+    DSI_Y,
+    # Actualización y gráficas
+    UPDATE_MS,
+    HISTORY,
+    GRAPH_WIDTH,
+    GRAPH_HEIGHT,
+    # Umbrales
+    CPU_WARN,
+    CPU_CRIT,
+    TEMP_WARN,
+    TEMP_CRIT,
+    RAM_WARN,
+    RAM_CRIT,
+    # Red
+    NET_WARN,
+    NET_CRIT,
+    NET_INTERFACE,
+    NET_MAX_MB,
+    NET_MIN_SCALE,
+    NET_MAX_SCALE,
+    NET_IDLE_THRESHOLD,
+    NET_IDLE_RESET_TIME,
+    # Lanzadores
+    LAUNCHERS,
+    # Tema y estilos
+    SELECTED_THEME,
+    COLORS,
+    FONT_FAMILY,
+    FONT_SIZES,
 )
 ````
 
@@ -5157,460 +3992,164 @@ def load_selected_theme() -> str:
         return DEFAULT_THEME
 ````
 
-## File: core/network_monitor.py
+## File: core/fan_controller.py
 ````python
 """
-Monitor de red
+Controlador de ventiladores
 """
-import time
-import threading
-import subprocess
-from collections import deque
-from typing import Dict, Optional, Tuple
-from config.settings import (HISTORY, NET_MIN_SCALE, NET_MAX_SCALE, 
-                             NET_IDLE_THRESHOLD, NET_IDLE_RESET_TIME, NET_MAX_MB)
-from utils.system_utils import SystemUtils
+from typing import List, Dict
+from utils.file_manager import FileManager
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class NetworkMonitor:
-    """Monitor de red con gestión de estadísticas y speedtest"""
+class FanController:
+    """Controlador para gestión de ventiladores"""
     
     def __init__(self):
-        self.system_utils = SystemUtils()
-        
-        # Historiales
-        self.download_hist = deque(maxlen=HISTORY)
-        self.upload_hist = deque(maxlen=HISTORY)
-        
-        # Estado
-        self.last_net_io = {}
-        self.last_used_iface = None
-        self.dynamic_max = NET_MAX_MB
-        self.idle_counter = 0
-        
-        # Speedtest
-        self.speedtest_result = {
-            "status": "idle",
-            "ping": 0,
-            "download": 0.0,
-            "upload": 0.0
-        }
+        self.file_manager = FileManager()
     
-    def get_current_stats(self, interface: Optional[str] = None) -> Dict:
+    def compute_pwm_from_curve(self, temp: float) -> int:
         """
-        Obtiene estadísticas actuales de red
-        
+        Calcula el PWM basado en la curva y la temperatura
+
         Args:
-            interface: Interfaz de red específica o None para auto-detección
-            
+            temp: Temperatura actual en °C
+
         Returns:
-            Diccionario con estadísticas de red
+            Valor PWM (0-255)
         """
-        iface, stats = self.system_utils.get_net_io(interface)
+        curve = self.file_manager.load_curve()
         
-        prev = self.last_net_io.get(iface)
-        dl, ul = self.system_utils.safe_net_speed(stats, prev)
+        if not curve:
+            logger.warning("[FanController] compute_pwm_from_curve: curva vacía, retornando PWM 0")
+            return 0
         
-        self.last_net_io[iface] = stats
-        self.last_used_iface = iface
+        if temp <= curve[0]["temp"]:
+            return int(curve[0]["pwm"])
         
-        return {
-            'interface': iface,
-            'download_mb': dl,
-            'upload_mb': ul
-        }
-    
-    def update_history(self, stats: Dict) -> None:
-        """
-        Actualiza historiales de red
+        if temp >= curve[-1]["temp"]:
+            return int(curve[-1]["pwm"])
         
-        Args:
-            stats: Estadísticas actuales
-        """
-        self.download_hist.append(stats['download_mb'])
-        self.upload_hist.append(stats['upload_mb'])
-    
-    def adaptive_scale(self, current_max: float, recent_data: list) -> float:
-        """
-        Ajusta dinámicamente la escala del gráfico
-        
-        Args:
-            current_max: Máximo actual
-            recent_data: Datos recientes
+        for i in range(len(curve) - 1):
+            t1, pwm1 = curve[i]["temp"], curve[i]["pwm"]
+            t2, pwm2 = curve[i + 1]["temp"], curve[i + 1]["pwm"]
             
-        Returns:
-            Nuevo máximo escalado
+            if t1 <= temp <= t2:
+                ratio = (temp - t1) / (t2 - t1)
+                pwm = pwm1 + ratio * (pwm2 - pwm1)
+                return int(pwm)
+        
+        return int(curve[-1]["pwm"])
+    
+    def get_pwm_for_mode(self, mode: str, temp: float, manual_pwm: int = 128) -> int:
         """
-        if not recent_data:
-            return current_max
-        
-        peak = max(recent_data) if recent_data else 0
-        
-        if peak < NET_IDLE_THRESHOLD:
-            self.idle_counter += 1
-            if self.idle_counter >= NET_IDLE_RESET_TIME:
-                self.idle_counter = 0
-                return NET_MAX_MB
+        Obtiene el PWM según el modo seleccionado
+
+        Args:
+            mode: Modo de operación (auto, manual, silent, normal, performance)
+            temp: Temperatura actual
+            manual_pwm: Valor PWM manual si mode='manual'
+
+        Returns:
+            Valor PWM calculado (0-255)
+        """
+        if mode == "manual":
+            return max(0, min(255, manual_pwm))
+        elif mode == "auto":
+            return self.compute_pwm_from_curve(temp)
+        elif mode == "silent":
+            return 77
+        elif mode == "normal":
+            return 128
+        elif mode == "performance":
+            return 255
         else:
-            self.idle_counter = 0
+            logger.warning(f"[FanController] Modo desconocido '{mode}', usando curva auto")
+            return self.compute_pwm_from_curve(temp)
+    
+    def update_fan_state(self, mode: str, temp: float, current_target: int = None,
+                         manual_pwm: int = 128) -> Dict:
+        """
+        Actualiza el estado del ventilador
+
+        Args:
+            mode: Modo actual
+            temp: Temperatura actual
+            current_target: PWM objetivo actual
+            manual_pwm: PWM manual configurado
+
+        Returns:
+            Diccionario con el nuevo estado
+        """
+        desired = self.get_pwm_for_mode(mode, temp, manual_pwm)
+        desired = max(0, min(255, int(desired)))
         
-        if peak > current_max * 0.8:
-            new_max = peak * 1.2
-        elif peak < current_max * 0.3:
-            new_max = max(peak * 1.5, NET_MIN_SCALE)
+        if desired != current_target:
+            new_state = {"mode": mode, "target_pwm": desired}
+            self.file_manager.write_state(new_state)
+            logger.debug(f"[FanController] PWM actualizado: {current_target} → {desired} (modo={mode}, temp={temp:.1f}°C)")
+            return new_state
+        
+        return {"mode": mode, "target_pwm": current_target}
+    
+    def add_curve_point(self, temp: int, pwm: int) -> List[Dict]:
+        """
+        Añade un punto a la curva
+
+        Args:
+            temp: Temperatura en °C
+            pwm: Valor PWM (0-255)
+
+        Returns:
+            Curva actualizada
+        """
+        curve = self.file_manager.load_curve()
+        pwm = max(0, min(255, pwm))
+        
+        found = False
+        for point in curve:
+            if point["temp"] == temp:
+                logger.debug(f"[FanController] Punto actualizado en curva: {temp}°C → PWM {point['pwm']} → {pwm}")
+                point["pwm"] = pwm
+                found = True
+                break
+        
+        if not found:
+            logger.debug(f"[FanController] Nuevo punto añadido a curva: {temp}°C → PWM {pwm}")
+            curve.append({"temp": temp, "pwm": pwm})
+        
+        curve = sorted(curve, key=lambda x: x["temp"])
+        self.file_manager.save_curve(curve)
+        
+        return curve
+    
+    def remove_curve_point(self, temp: int) -> List[Dict]:
+        """
+        Elimina un punto de la curva
+
+        Args:
+            temp: Temperatura del punto a eliminar
+
+        Returns:
+            Curva actualizada
+        """
+        curve = self.file_manager.load_curve()
+        original_len = len(curve)
+        curve = [p for p in curve if p["temp"] != temp]
+        
+        if len(curve) < original_len:
+            logger.debug(f"[FanController] Punto eliminado de curva: {temp}°C")
         else:
-            new_max = current_max
+            logger.warning(f"[FanController] remove_curve_point: no se encontró punto en {temp}°C")
         
-        return max(NET_MIN_SCALE, min(NET_MAX_SCALE, new_max))
-    
-    def update_dynamic_scale(self) -> None:
-        """Actualiza la escala dinámica basada en el historial"""
-        all_data = list(self.download_hist) + list(self.upload_hist)
-        self.dynamic_max = self.adaptive_scale(self.dynamic_max, all_data)
-    
-    def get_history(self) -> Dict:
-        """
-        Obtiene historiales de red
+        if not curve:
+            curve = [{"temp": 40, "pwm": 100}]
+            logger.warning("[FanController] Curva quedó vacía, restaurado punto por defecto")
         
-        Returns:
-            Diccionario con historiales
-        """
-        return {
-            'download': list(self.download_hist),
-            'upload': list(self.upload_hist),
-            'dynamic_max': self.dynamic_max
-        }
-    
-    def run_speedtest(self) -> None:
-        """Ejecuta speedtest en un thread separado"""
-        def _run():
-            logger.info("[NetworkMonitor] Iniciando speedtest...")
-            self.speedtest_result["status"] = "running"
-            try:
-                result = subprocess.run(
-                    ["speedtest-cli", "--simple"],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                
-                if result.returncode == 0:
-                    lines = result.stdout.strip().split('\n')
-                    ping = download = upload = 0
-                    
-                    for line in lines:
-                        if line.startswith("Ping:"):
-                            ping = float(line.split()[1])
-                        elif line.startswith("Download:"):
-                            download = float(line.split()[1]) / 8
-                        elif line.startswith("Upload:"):
-                            upload = float(line.split()[1]) / 8
-                    
-                    self.speedtest_result.update({
-                        "status": "done",
-                        "ping": ping,
-                        "download": download,
-                        "upload": upload
-                    })
-                    logger.info(f"[NetworkMonitor] Speedtest completado — Ping: {ping}ms, ↓{download:.2f} MB/s, ↑{upload:.2f} MB/s")
-                else:
-                    logger.error(f"[NetworkMonitor] speedtest-cli retornó código {result.returncode}: {result.stderr}")
-                    self.speedtest_result["status"] = "error"
-                    
-            except subprocess.TimeoutExpired:
-                logger.warning("[NetworkMonitor] Speedtest timeout (>60s)")
-                self.speedtest_result["status"] = "timeout"
-            except FileNotFoundError:
-                logger.error("[NetworkMonitor] speedtest-cli no encontrado. Instala: sudo apt install speedtest-cli")
-                self.speedtest_result["status"] = "error"
-            except Exception as e:
-                logger.error(f"[NetworkMonitor] Error inesperado en speedtest: {e}")
-                self.speedtest_result["status"] = "error"
-        
-        thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
-    
-    def get_speedtest_result(self) -> Dict:
-        """
-        Obtiene el resultado del speedtest
-        
-        Returns:
-            Diccionario con resultados
-        """
-        return self.speedtest_result.copy()
-    
-    def reset_speedtest(self) -> None:
-        """Resetea el estado del speedtest"""
-        self.speedtest_result = {
-            "status": "idle",
-            "ping": 0,
-            "download": 0.0,
-            "upload": 0.0
-        }
-    
-    @staticmethod
-    def net_color(value: float) -> str:
-        """
-        Determina el color según el tráfico de red
-        
-        Args:
-            value: Velocidad en MB/s
-            
-        Returns:
-            Color en formato hex
-        """
-        from config.settings import COLORS, NET_WARN, NET_CRIT
-        
-        if value >= NET_CRIT:
-            return COLORS['danger']
-        elif value >= NET_WARN:
-            return COLORS['warning']
-        else:
-            return COLORS['primary']
-````
-
-## File: core/process_monitor.py
-````python
-"""
-Monitor de procesos del sistema
-"""
-import psutil
-from typing import List, Dict, Optional
-from datetime import datetime
-from utils import DashboardLogger
-
-
-class ProcessMonitor:
-    """Monitor de procesos en tiempo real"""
-    
-    def __init__(self):
-        """Inicializa el monitor de procesos"""
-        self.sort_by = "cpu"  # cpu, memory, name, pid
-        self.sort_reverse = True
-        self.filter_type = "all"  # all, user, system
-        self.dashboard_logger = DashboardLogger()
-    
-    def get_processes(self, limit: int = 20) -> List[Dict]:
-        """
-        Obtiene lista de procesos con su información
-        
-        Args:
-            limit: Número máximo de procesos a retornar
-            
-        Returns:
-            Lista de diccionarios con información de procesos
-        """
-        processes = []
-        
-        for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'cmdline', 'exe']):
-            try:
-                pinfo = proc.info
-                
-                # Aplicar filtro
-                if self.filter_type == "user":
-                    # Solo procesos del usuario actual
-                    if pinfo['username'] != psutil.Process().username():
-                        continue
-                elif self.filter_type == "system":
-                    # Solo procesos del sistema (root, etc)
-                    if pinfo['username'] == psutil.Process().username():
-                        continue
-                
-                # Obtener descripción más detallada
-                cmdline = pinfo['cmdline']
-                exe = pinfo['exe']
-                name = pinfo['name'] or 'N/A'
-                
-                # Crear descripción mejor
-                if cmdline:
-                    # Si hay cmdline, usar el primer argumento como descripción
-                    display_name = ' '.join(cmdline[:2])  # Primeros 2 argumentos
-                elif exe:
-                    # Si no hay cmdline pero hay exe, usar el path
-                    display_name = exe
-                else:
-                    display_name = name
-                
-                processes.append({
-                    'pid': pinfo['pid'],
-                    'name': name,
-                    'display_name': display_name,  # Nueva columna descriptiva
-                    'username': pinfo['username'] or 'N/A',
-                    'cpu': pinfo['cpu_percent'] or 0.0,
-                    'memory': pinfo['memory_percent'] or 0.0
-                })
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
-        
-        # Ordenar según criterio
-        if self.sort_by == "cpu":
-            processes.sort(key=lambda x: x['cpu'], reverse=self.sort_reverse)
-        elif self.sort_by == "memory":
-            processes.sort(key=lambda x: x['memory'], reverse=self.sort_reverse)
-        elif self.sort_by == "name":
-            processes.sort(key=lambda x: x['name'].lower(), reverse=self.sort_reverse)
-        elif self.sort_by == "pid":
-            processes.sort(key=lambda x: x['pid'], reverse=self.sort_reverse)
-        
-        return processes[:limit]
-    
-    def search_processes(self, query: str) -> List[Dict]:
-        """
-        Busca procesos por nombre o descripción
-        
-        Args:
-            query: Texto a buscar en nombre de proceso
-            
-        Returns:
-            Lista de procesos que coinciden
-        """
-        query = query.lower()
-        all_processes = self.get_processes(limit=1000)  # Obtener todos
-        
-        return [p for p in all_processes 
-                if query in p['name'].lower() or query in p.get('display_name', '').lower()]
-    
-
-
-
-    def kill_process(self, pid: int) -> tuple[bool, str]:
-        """
-        Mata un proceso por su PID
-        
-        Args:
-            pid: ID del proceso
-            
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            proc = psutil.Process(pid)
-            name = proc.name()
-
-            # Obtener display_name igual que en get_processes
-            try:
-                cmdline = proc.cmdline()
-                display_name = ' '.join(cmdline[:2]) if cmdline else name
-            except (psutil.AccessDenied, psutil.ZombieProcess):
-                display_name = name
-
-            proc.terminate()  # Intenta cerrar limpiamente
-            
-            # Esperar un poco
-            proc.wait(timeout=3)
-            self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) terminado correctamente")
-            return True, f"Proceso '{display_name}' (PID {pid}) terminado correctamente"
-        except psutil.NoSuchProcess:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Proceso con PID {pid} no existe")
-            return False, f"Proceso con PID {pid} no existe"
-        except psutil.AccessDenied:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Sin permisos para terminar proceso {pid}")
-            return False, f"Sin permisos para terminar proceso {pid}"
-        except psutil.TimeoutExpired:
-            # Si no se cierra, forzar
-            try:
-                proc.kill()
-                self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) forzado a cerrar")
-                return True, f"Proceso '{display_name}' (PID {pid}) forzado a cerrar"
-            except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error forzando cierre del proceso '{display_name}' (PID {pid}): {e}")
-                return False, f"Error: {str(e)}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error terminando proceso '{display_name}' (PID {pid}): {e}")
-            return False, f"Error: {str(e)}"
-    def get_system_stats(self) -> Dict:
-        """
-        Obtiene estadísticas generales del sistema
-        
-        Returns:
-            Diccionario con estadísticas
-        """
-        # CPU
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        
-        # RAM
-        mem = psutil.virtual_memory()
-        mem_used_gb = mem.used / (1024**3)
-        mem_total_gb = mem.total / (1024**3)
-        mem_percent = mem.percent
-        
-        # Procesos
-        total_processes = len(psutil.pids())
-        
-        # Uptime
-        boot_time = datetime.fromtimestamp(psutil.boot_time())
-        uptime = datetime.now() - boot_time
-        uptime_str = self._format_uptime(uptime.total_seconds())
-        
-        return {
-            'cpu_percent': cpu_percent,
-            'mem_used_gb': mem_used_gb,
-            'mem_total_gb': mem_total_gb,
-            'mem_percent': mem_percent,
-            'total_processes': total_processes,
-            'uptime': uptime_str
-        }
-    
-    def _format_uptime(self, seconds: float) -> str:
-        """
-        Formatea uptime en formato legible
-        
-        Args:
-            seconds: Segundos de uptime
-            
-        Returns:
-            String formateado
-        """
-        days = int(seconds // 86400)
-        hours = int((seconds % 86400) // 3600)
-        minutes = int((seconds % 3600) // 60)
-        
-        if days > 0:
-            return f"{days}d {hours}h {minutes}m"
-        elif hours > 0:
-            return f"{hours}h {minutes}m"
-        else:
-            return f"{minutes}m"
-    
-    def set_sort(self, column: str, reverse: bool = True):
-        """
-        Configura el orden de procesos
-        
-        Args:
-            column: Columna por la que ordenar (cpu, memory, name, pid)
-            reverse: Si ordenar de mayor a menor
-        """
-        self.sort_by = column
-        self.sort_reverse = reverse
-    
-    def set_filter(self, filter_type: str):
-        """
-        Configura el filtro de procesos
-        
-        Args:
-            filter_type: Tipo de filtro (all, user, system)
-        """
-        self.filter_type = filter_type
-    
-    def get_process_color(self, value: float) -> str:
-        """
-        Obtiene color según porcentaje de uso
-        
-        Args:
-            value: Porcentaje (0-100)
-            
-        Returns:
-            Nombre del color en COLORS
-        """
-        if value >= 70:
-            return "danger"
-        elif value >= 30:
-            return "warning"
-        else:
-            return "success"
+        self.file_manager.save_curve(curve)
+        return curve
 ````
 
 ## File: core/service_monitor.py
@@ -5984,121 +4523,338 @@ class ServiceMonitor:
             return "text_dim"
 ````
 
-## File: core/system_monitor.py
+## File: ui/windows/disk.py
 ````python
 """
-Monitor del sistema
+Ventana de monitoreo de disco
 """
-import psutil
-from collections import deque
-from typing import Dict, Tuple
-from config.settings import HISTORY
-from utils.system_utils import SystemUtils
+import customtkinter as ctk
+from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
+from ui.styles import make_futuristic_button
+from ui.widgets import GraphWidget
+from core.disk_monitor import DiskMonitor
 
 
-class SystemMonitor:
-    """Monitor centralizado de recursos del sistema"""
+class DiskWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo de disco"""
     
-    def __init__(self):
-        self.system_utils = SystemUtils()
+    def __init__(self, parent, disk_monitor: DiskMonitor):
+        super().__init__(parent)
         
-        # Historiales
-        self.cpu_hist = deque(maxlen=HISTORY)
-        self.ram_hist = deque(maxlen=HISTORY)
-        self.temp_hist = deque(maxlen=HISTORY)
-        self.disk_hist = deque(maxlen=HISTORY)
-        self.disk_write_hist = deque(maxlen=HISTORY)
-        self.disk_read_hist = deque(maxlen=HISTORY)
+        # Referencias
+        self.disk_monitor = disk_monitor
         
-        # Estado anterior para cálculos incrementales
-        self.last_disk_io = psutil.disk_io_counters()
+        # Widgets para actualización
+        self.widgets = {}
+        self.graphs = {}
+        
+        # Configurar ventana
+        self.title("Monitor de Disco")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        
+        # Crear interfaz
+        self._create_ui()
+        
+        # Iniciar actualización
+        self._update()
     
-    def get_current_stats(self) -> Dict:
-        """
-        Obtiene estadísticas actuales del sistema
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        # Frame principal
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        Returns:
-            Diccionario con todas las métricas actuales
-        """
-        cpu = psutil.cpu_percent()
-        ram = psutil.virtual_memory().percent
-        ram_used = psutil.virtual_memory().used
-        temp = self.system_utils.get_cpu_temp()
-        disk_usage = psutil.disk_usage('/').percent
+        # Título
+        title = ctk.CTkLabel(
+            main,
+            text="MONITOR DE DISCO",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(pady=(10, 20))
         
-        # Calcular I/O de disco
-        disk_io = psutil.disk_io_counters()
-        disk_read_bytes = max(0, disk_io.read_bytes - self.last_disk_io.read_bytes)
-        disk_write_bytes = max(0, disk_io.write_bytes - self.last_disk_io.write_bytes)
-        self.last_disk_io = disk_io
+        # Área de scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Convertir a MB/s
-        from config.settings import UPDATE_MS
-        seconds = UPDATE_MS / 1000.0
-        disk_read_mb = (disk_read_bytes / (1024 * 1024)) / seconds
-        disk_write_mb = (disk_write_bytes / (1024 * 1024)) / seconds
+        # Canvas y scrollbar
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0
+        )
+        canvas.pack(side="left", fill="both", expand=True)
         
-        return {
-            'cpu': cpu,
-            'ram': ram,
-            'ram_used': ram_used,
-            'temp': temp,
-            'disk_usage': disk_usage,
-            'disk_read_mb': disk_read_mb,
-            'disk_write_mb': disk_write_mb
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        
+        from ui.styles import StyleManager
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Frame interno
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        # Secciones (AQUÍ CREAS CADA SECCIÓN)
+        self._create_usage_section(inner)       # Uso de disco
+        self._create_disk_io_section(inner)
+        self._create_nvme_temp_section(inner)   # Temperatura NVMe (NUEVO)
+        
+        # Botón cerrar
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+        close_btn = make_futuristic_button(
+            bottom,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        )
+        close_btn.pack(side="right", padx=5)
+        
+    def _create_metric_section(self, parent, title: str, metric_key: str,
+                               unit: str, max_val: float = 100):
+        """Crea una sección genérica para una métrica"""
+        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        frame.pack(fill="x", pady=10, padx=10)
+        
+        # Label del título
+        label = ctk.CTkLabel(
+            frame,
+            text=title,
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        label.pack(anchor="w", pady=(5, 0), padx=10)
+        
+        # Valor actual
+        value_label = ctk.CTkLabel(
+            frame,
+            text=f"0.0 {unit}",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
+        )
+        value_label.pack(anchor="e", pady=(0, 5), padx=10)
+        
+        # Gráfica
+        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
+        graph.pack(pady=(0, 10))
+        
+        # Guardar referencias
+        self.widgets[f"{metric_key}_label"] = label
+        self.widgets[f"{metric_key}_value"] = value_label
+        self.graphs[metric_key] = {
+            'widget': graph,
+            'max_val': max_val
+        }    
+    def _create_usage_section(self, parent):
+        """Crea la sección de uso de disco"""
+        # Frame con label, valor y gráfica
+        self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
+
+    def _create_disk_io_section(self, parent):
+        """Crea la sección de I/O de disco"""
+        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        frame.pack(fill="x", pady=10, padx=10)
+        
+        # Título
+        title = ctk.CTkLabel(
+            frame,
+            text="I/O DE DISCO",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        title.pack(anchor="w", pady=(5, 10), padx=10)
+        
+        # Escritura
+        write_label = ctk.CTkLabel(
+            frame,
+            text="ESCRITURA",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        )
+        write_label.pack(anchor="w", pady=(0, 0), padx=10)
+        
+        write_value = ctk.CTkLabel(
+            frame,
+            text="0.0 MB/s",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'])
+        )
+        write_value.pack(anchor="e", pady=(0, 5), padx=10)
+        
+        write_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
+        write_graph.pack(pady=(0, 10))
+        
+        # Lectura
+        read_label = ctk.CTkLabel(
+            frame,
+            text="LECTURA",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        )
+        read_label.pack(anchor="w", pady=(0, 0), padx=10)
+        
+        read_value = ctk.CTkLabel(
+            frame,
+            text="0.0 MB/s",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'])
+        )
+        read_value.pack(anchor="e", pady=(0, 5), padx=10)
+        
+        read_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
+        read_graph.pack(pady=(0, 10))
+        
+        # Guardar referencias
+        self.widgets['disk_write_label'] = write_label
+        self.widgets['disk_write_value'] = write_value
+        self.widgets['disk_read_label'] = read_label
+        self.widgets['disk_read_value'] = read_value
+        
+        self.graphs['disk_write'] = {
+            'widget': write_graph,
+            'max_val': 50
+        }
+        self.graphs['disk_read'] = {
+            'widget': read_graph,
+            'max_val': 50
         }
     
-    def update_history(self, stats: Dict) -> None:
-        """
-        Actualiza los historiales con las estadísticas actuales
-        
-        Args:
-            stats: Diccionario con estadísticas actuales
-        """
-        self.cpu_hist.append(stats['cpu'])
-        self.ram_hist.append(stats['ram'])
-        self.temp_hist.append(stats['temp'])
-        self.disk_hist.append(stats['disk_usage'])
-        self.disk_read_hist.append(stats['disk_read_mb'])
-        self.disk_write_hist.append(stats['disk_write_mb'])
-    
-    def get_history(self) -> Dict:
-        """
-        Obtiene todos los historiales
-        
-        Returns:
-            Diccionario con todos los historiales
-        """
-        return {
-            'cpu': list(self.cpu_hist),
-            'ram': list(self.ram_hist),
-            'temp': list(self.temp_hist),
-            'disk': list(self.disk_hist),
-            'disk_read': list(self.disk_read_hist),
-            'disk_write': list(self.disk_write_hist)
+    def _create_nvme_temp_section(self, parent):
+        """Crea la sección de temperatura NVMe"""
+        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+        frame.pack(fill="x", pady=10, padx=10)
+
+        # Label
+        label = ctk.CTkLabel(
+            frame,
+            text="TEMPERATURA NVMe",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        label.pack(anchor="w", pady=(5, 0), padx=10)
+
+        # Valor
+        value_label = ctk.CTkLabel(
+            frame,
+            text="0.0 °C",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
+        )
+        value_label.pack(anchor="e", pady=(0, 5), padx=10)
+
+        # Gráfica
+        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
+        graph.pack(pady=(0, 10))
+
+        # Guardar referencias
+        self.widgets['nvme_temp_label'] = label
+        self.widgets['nvme_temp_value'] = value_label
+        self.graphs['nvme_temp'] = {
+            'widget': graph,
+            'max_val': 85  # Temperatura máxima NVMe
         }
-    
-    @staticmethod
-    def level_color(value: float, warn: float, crit: float) -> str:
-        """
-        Determina el color según el nivel de alerta
+
+    def _update(self):
+        """Actualiza los datos del disco"""
+        if not self.winfo_exists():
+            return
         
-        Args:
-            value: Valor actual
-            warn: Umbral de advertencia
-            crit: Umbral crítico
-            
-        Returns:
-            Color en formato hex
-        """
-        from config.settings import COLORS
+        # Obtener estadísticas actuales
+        stats = self.disk_monitor.get_current_stats()
+        self.disk_monitor.update_history(stats)
+        history = self.disk_monitor.get_history()
         
-        if value >= crit:
-            return COLORS['danger']
-        elif value >= warn:
-            return COLORS['warning']
-        else:
-            return COLORS['primary']
+        # Actualizar Disco (uso)
+        self._update_metric(
+            'disk',
+            stats['disk_usage'],
+            history['disk_usage'],
+            "%",
+            60,
+            80
+        )
+        
+        # Actualizar Disco I/O
+        self._update_disk_io(
+            'disk_write',
+            stats['disk_write_mb'],
+            history['disk_write']
+        )
+        
+        self._update_disk_io(
+            'disk_read',
+            stats['disk_read_mb'],
+            history['disk_read']
+        )
+        
+        # self._update_nvme_temp(stats, history)
+        # Temperatura NVMe (NUEVO)
+        self._update_metric(
+            'nvme_temp',
+            stats['nvme_temp'],
+            history['nvme_temp'],
+            "°C",
+            60,  # warning
+            70   # critical
+        )
+        
+        # Programar siguiente actualización
+        self.after(UPDATE_MS, self._update)
+    def _update_metric(self, key, value, history, unit, warn, crit):
+        """Actualiza una métrica genérica"""
+        # Determinar color
+        color = self.disk_monitor.level_color(value, warn, crit)
+        
+        # Actualizar valor
+        value_widget = self.widgets[f"{key}_value"]
+        value_widget.configure(
+            text=f"{value:.1f} {unit}",
+            text_color=color
+        )
+        
+        # Actualizar label
+        label_widget = self.widgets[f"{key}_label"]
+        label_widget.configure(text_color=color)
+        
+        # Actualizar gráfica
+        graph_info = self.graphs[key]
+        graph_info['widget'].update(history, graph_info['max_val'], color)
+        
+    def _update_disk_io(self, key: str, value: float, history: list):
+        """Actualiza métricas de I/O de disco"""
+        # Determinar color (10 MB/s = warning, 50 MB/s = critical)
+        color = self.disk_monitor.level_color(value, 10, 50)
+        
+        # Actualizar valor
+        value_widget = self.widgets[f"{key}_value"]
+        value_widget.configure(
+            text=f"{value:.1f} MB/s",
+            text_color=color
+        )
+        
+        # Actualizar label
+        label_widget = self.widgets[f"{key}_label"]
+        label_widget.configure(text_color=color)
+        
+        # Actualizar gráfica
+        graph_info = self.graphs[key]
+        graph_info['widget'].update(history, graph_info['max_val'], color)
 ````
 
 ## File: ui/windows/process_window.py
@@ -6811,6 +5567,326 @@ class ThemeSelector(ctk.CTkToplevel):
         )
 ````
 
+## File: ui/windows/usb.py
+````python
+"""
+Ventana de monitoreo de dispositivos USB
+"""
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
+from ui.styles import make_futuristic_button, StyleManager
+from ui.widgets import custom_msgbox
+from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class USBWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo de dispositivos USB"""
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.system_utils = SystemUtils()
+        self.device_widgets = []
+        
+        self.title("Monitor USB")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        
+        self._create_ui()
+        self._refresh_devices()
+    
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        header = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        header.pack(fill="x", pady=(10, 5), padx=10)
+        
+        title = ctk.CTkLabel(
+            header,
+            text="DISPOSITIVOS USB",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(side="left")
+        
+        refresh_btn = make_futuristic_button(
+            header,
+            text="Actualizar",
+            command=self._refresh_devices,
+            width=15,
+            height=5
+        )
+        refresh_btn.pack(side="right")
+        
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        self.canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0
+        )
+        self.canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=self.canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        
+        self.devices_frame = ctk.CTkFrame(self.canvas, fg_color=COLORS['bg_medium'])
+        self.canvas.create_window(
+            (0, 0),
+            window=self.devices_frame,
+            anchor="nw",
+            width=DSI_WIDTH-50
+        )
+        
+        self.devices_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+        close_btn = make_futuristic_button(
+            bottom,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        )
+        close_btn.pack(side="right", padx=5)
+    
+    def _refresh_devices(self):
+        """Refresca la lista de dispositivos USB"""
+        for widget in self.device_widgets:
+            widget.destroy()
+        self.device_widgets.clear()
+        
+        storage_devices = self.system_utils.list_usb_storage_devices()
+        other_devices = self.system_utils.list_usb_other_devices()
+        
+        logger.debug(f"[USBWindow] Dispositivos detectados: {len(storage_devices)} almacenamiento, {len(other_devices)} otros")
+        
+        if storage_devices:
+            self._create_storage_section(storage_devices)
+        
+        if other_devices:
+            self._create_other_devices_section(other_devices)
+        
+        if not storage_devices and not other_devices:
+            no_devices = ctk.CTkLabel(
+                self.devices_frame,
+                text="No se detectaron dispositivos USB",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+                justify="center"
+            )
+            no_devices.pack(pady=50)
+            self.device_widgets.append(no_devices)
+    
+    def _create_storage_section(self, storage_devices: list):
+        """Crea la sección de almacenamiento USB"""
+        title = ctk.CTkLabel(
+            self.devices_frame,
+            text="ALMACENAMIENTO USB",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        title.pack(anchor="w", pady=(10, 10), padx=10)
+        self.device_widgets.append(title)
+        
+        for idx, device in enumerate(storage_devices):
+            self._create_storage_device_widget(device, idx)
+    
+    def _create_storage_device_widget(self, device: dict, index: int):
+        """Crea widget para un dispositivo de almacenamiento"""
+        device_frame = ctk.CTkFrame(
+            self.devices_frame,
+            fg_color=COLORS['bg_dark'],
+            border_width=2,
+            border_color=COLORS['success']
+        )
+        device_frame.pack(fill="x", pady=5, padx=10)
+        self.device_widgets.append(device_frame)
+        
+        name = device.get('name', 'USB Disk')
+        size = device.get('size', '?')
+        dev_type = device.get('type', 'disk')
+        
+        header = ctk.CTkLabel(
+            device_frame,
+            text=f"💾 {name} ({dev_type}) - {size}",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        )
+        header.pack(anchor="w", padx=10, pady=(10, 5))
+        
+        dev_path = device.get('dev', '?')
+        info = ctk.CTkLabel(
+            device_frame,
+            text=f"Dispositivo: {dev_path}",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        )
+        info.pack(anchor="w", padx=10, pady=(0, 5))
+        
+        eject_btn = make_futuristic_button(
+            device_frame,
+            text="Expulsar",
+            command=lambda d=device: self._eject_device(d),
+            width=15,
+            height=4
+        )
+        eject_btn.pack(anchor="w", padx=20, pady=(5, 10))
+        
+        children = device.get('children', [])
+        if children:
+            for child in children:
+                self._create_partition_widget(device_frame, child)
+    
+    def _create_partition_widget(self, parent, partition: dict):
+        """Crea widget para una partición"""
+        name = partition.get('name', '?')
+        mount = partition.get('mount')
+        size = partition.get('size', '?')
+        
+        part_text = f"  └─ Partición: {name} ({size})"
+        if mount:
+            part_text += f" | 📁 Montado en: {mount}"
+        else:
+            part_text += " | No montado"
+        
+        part_label = ctk.CTkLabel(
+            parent,
+            text=part_text,
+            text_color=COLORS['primary'] if mount else COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            wraplength=DSI_WIDTH - 80,
+            anchor="w",
+            justify="left"
+        )
+        part_label.pack(anchor="w", padx=30, pady=2)
+    
+    def _create_other_devices_section(self, other_devices: list):
+        """Crea la sección de otros dispositivos USB"""
+        title = ctk.CTkLabel(
+            self.devices_frame,
+            text="OTROS DISPOSITIVOS USB",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+        )
+        title.pack(anchor="w", pady=(20, 10), padx=10)
+        self.device_widgets.append(title)
+        
+        for idx, device_line in enumerate(other_devices):
+            self._create_other_device_widget(device_line, idx)
+    
+    def _create_other_device_widget(self, device_line: str, index: int):
+        """Crea widget para otro dispositivo USB"""
+        device_info = self._parse_lsusb_line(device_line)
+        
+        device_frame = ctk.CTkFrame(
+            self.devices_frame,
+            fg_color=COLORS['bg_dark'],
+            border_width=1,
+            border_color=COLORS['primary']
+        )
+        device_frame.pack(fill="x", pady=3, padx=10)
+        self.device_widgets.append(device_frame)
+        
+        inner = ctk.CTkFrame(device_frame, fg_color=COLORS['bg_dark'])
+        inner.pack(fill="x", padx=5, pady=5)
+        
+        ctk.CTkLabel(
+            inner,
+            text=f"#{index + 1}",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
+            width=30
+        ).pack(side="left", padx=5)
+        
+        ctk.CTkLabel(
+            inner,
+            text=device_info['bus'],
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            width=100
+        ).pack(side="left", padx=5)
+        
+        ctk.CTkLabel(
+            inner,
+            text=device_info['description'],
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            wraplength=DSI_WIDTH - 200,
+            anchor="w",
+            justify="left"
+        ).pack(side="left", padx=5, fill="x", expand=True)
+    
+    def _parse_lsusb_line(self, line: str) -> dict:
+        """Parsea una línea de lsusb"""
+        parts = line.split()
+        
+        try:
+            bus_idx = parts.index("Bus") + 1
+            bus = f"Bus {parts[bus_idx]}"
+            
+            dev_idx = parts.index("Device") + 1
+            device_num = parts[dev_idx].rstrip(':')
+            bus += f" Dev {device_num}"
+            
+            id_idx = parts.index("ID") + 2
+            description = " ".join(parts[id_idx:])
+            
+            if len(description) > 50:
+                description = description[:47] + "..."
+            
+        except (ValueError, IndexError):
+            bus = "Bus ?"
+            description = line
+        
+        return {'bus': bus, 'description': description}
+    
+    def _eject_device(self, device: dict):
+        """Expulsa un dispositivo USB"""
+        device_name = device.get('name', 'dispositivo')
+        
+        logger.info(f"[USBWindow] Intentando expulsar: '{device_name}' ({device.get('dev', '?')})")
+        
+        success, message = self.system_utils.eject_usb_device(device)
+        
+        if success:
+            logger.info(f"[USBWindow] Expulsión exitosa: '{device_name}'")
+            custom_msgbox(
+                self,
+                f"✅ {device_name}\n\n{message}\n\nAhora puedes desconectar el dispositivo de forma segura.",
+                "Expulsión Exitosa"
+            )
+            self._refresh_devices()
+        else:
+            logger.error(f"[USBWindow] Error expulsando '{device_name}': {message}")
+            custom_msgbox(
+                self,
+                f"❌ Error al expulsar {device_name}:\n\n{message}",
+                "Error"
+            )
+````
+
 ## File: ui/styles.py
 ````python
 """
@@ -7013,6 +6089,140 @@ def make_futuristic_button(parent, text: str, command=None,
     return btn
 ````
 
+## File: utils/file_manager.py
+````python
+"""
+Gestión de archivos JSON para estado y configuración
+"""
+import json
+import os
+from typing import Dict, List, Any, Optional
+from config.settings import STATE_FILE, CURVE_FILE
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class FileManager:
+    """Gestor centralizado de archivos JSON"""
+    
+    @staticmethod
+    def write_state(data: Dict[str, Any]) -> None:
+        """
+        Escribe el estado de forma atómica usando archivo temporal
+        
+        Args:
+            data: Diccionario con los datos a guardar
+        """
+        tmp = str(STATE_FILE) + ".tmp"
+        try:
+            with open(tmp, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, STATE_FILE)
+        except OSError as e:
+            logger.error(f"[FileManager] write_state: error escribiendo estado: {e}")
+            raise
+    
+    @staticmethod
+    def load_state() -> Dict[str, Any]:
+        """
+        Carga el estado guardado
+        
+        Returns:
+            Diccionario con mode y target_pwm
+        """
+        default_state = {"mode": "auto", "target_pwm": None}
+        
+        try:
+            with open(STATE_FILE) as f:
+                data = json.load(f)
+                if not isinstance(data, dict):
+                    logger.warning("[FileManager] load_state: contenido inválido, usando estado por defecto")
+                    return default_state
+                return {
+                    "mode": data.get("mode", "auto"),
+                    "target_pwm": data.get("target_pwm")
+                }
+        except FileNotFoundError:
+            logger.debug(f"[FileManager] load_state: {STATE_FILE} no existe, usando estado por defecto")
+            return default_state
+        except json.JSONDecodeError as e:
+            logger.error(f"[FileManager] load_state: JSON corrupto en {STATE_FILE}: {e} — usando estado por defecto")
+            return default_state
+    
+    @staticmethod
+    def load_curve() -> List[Dict[str, int]]:
+        """
+        Carga la curva de ventiladores
+        
+        Returns:
+            Lista de puntos ordenados por temperatura
+        """
+        default_curve = [
+            {"temp": 40, "pwm": 100},
+            {"temp": 50, "pwm": 100},
+            {"temp": 60, "pwm": 100},
+            {"temp": 70, "pwm": 63},
+            {"temp": 80, "pwm": 81}
+        ]
+        
+        try:
+            with open(CURVE_FILE) as f:
+                data = json.load(f)
+                pts = data.get("points", [])
+                
+                if not isinstance(pts, list):
+                    logger.warning("[FileManager] load_curve: 'points' no es una lista, usando curva por defecto")
+                    return default_curve
+                
+                sanitized = []
+                for p in pts:
+                    try:
+                        temp = int(p.get("temp", 0))
+                    except (ValueError, TypeError):
+                        temp = 0
+                    
+                    try:
+                        pwm = int(p.get("pwm", 0))
+                    except (ValueError, TypeError):
+                        pwm = 0
+                    
+                    pwm = max(0, min(255, pwm))
+                    sanitized.append({"temp": temp, "pwm": pwm})
+                
+                if not sanitized:
+                    logger.warning("[FileManager] load_curve: curva vacía tras sanear, usando curva por defecto")
+                    return default_curve
+                
+                return sorted(sanitized, key=lambda x: x["temp"])
+                
+        except FileNotFoundError:
+            logger.debug(f"[FileManager] load_curve: {CURVE_FILE} no existe, usando curva por defecto")
+            return default_curve
+        except json.JSONDecodeError as e:
+            logger.error(f"[FileManager] load_curve: JSON corrupto en {CURVE_FILE}: {e} — usando curva por defecto")
+            return default_curve
+    
+    @staticmethod
+    def save_curve(points: List[Dict[str, int]]) -> None:
+        """
+        Guarda la curva de ventiladores
+        
+        Args:
+            points: Lista de puntos {temp, pwm}
+        """
+        data = {"points": points}
+        tmp = str(CURVE_FILE) + ".tmp"
+        try:
+            with open(tmp, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, CURVE_FILE)
+            logger.info(f"[FileManager] save_curve: curva guardada ({len(points)} puntos)")
+        except OSError as e:
+            logger.error(f"[FileManager] save_curve: error guardando curva: {e}")
+            raise
+````
+
 ## File: utils/logger.py
 ````python
 """
@@ -7150,6 +6360,62 @@ def log_startup_info():
     
     if display == 'not set':
         logger.warning("DISPLAY no configurado - posible problema de GUI")
+````
+
+## File: requirements.txt
+````
+# ============================================
+# System Dashboard - Python Dependencies
+# ============================================
+#
+# Instalación rápida (recomendada):
+#   sudo ./install_system.sh
+#
+# O manualmente:
+#   pip3 install --break-system-packages -r requirements.txt
+#
+# Versión mínima de Python: 3.8+
+# ============================================
+
+# === Dependencias Obligatorias ===
+
+# Interfaz gráfica moderna con tema oscuro
+customtkinter>=5.2.0
+
+# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
+psutil>=5.9.0
+
+# Gráficas históricas (ventana Histórico Datos)
+matplotlib>=3.5.0
+
+
+# === Dependencias Opcionales ===
+
+# Test de velocidad de internet (Monitor Red → Speedtest)
+# Instalar también en sistema: sudo apt install speedtest-cli
+# speedtest-cli>=2.1.3
+
+
+# ============================================
+# NOTA: Dependencias del Sistema (NO Python)
+# ============================================
+#
+# El script install_system.sh las instala automáticamente.
+# O manualmente con apt-get:
+#
+#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
+#
+# Descripción:
+#   - lm-sensors:     Lectura de temperatura CPU (sensors)
+#   - usbutils:       Comando lsusb (listar USB)
+#   - udisks2:        Expulsar dispositivos USB de forma segura
+#   - util-linux:     Comando lsblk (suele venir instalado)
+#   - smartmontools:  Temperatura NVMe (smartctl)
+#
+# Opcional para speedtest (el script pregunta al instalarlo):
+#   sudo apt-get install speedtest-cli
+#
+# ============================================
 ````
 
 ## File: THEMES_GUIDE.md
@@ -7590,254 +6856,6 @@ data/theme_config.json
 **¡Personaliza tu dashboard!** 🎨✨
 ````
 
-## File: core/data_analyzer.py
-````python
-"""
-Análisis de datos históricos
-"""
-import sqlite3
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
-from config.settings import DATA_DIR
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class DataAnalyzer:
-    """Analiza datos históricos de la base de datos"""
-
-    def __init__(self, db_path: str = f"{DATA_DIR}/history.db"):
-        self.db_path = db_path
-
-    def get_data_range(self, hours: int = 24) -> List[Dict]:
-        """
-        Obtiene datos de las últimas X horas
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Lista de diccionarios con los datos
-        """
-        try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            cutoff_time = datetime.now() - timedelta(hours=hours)
-
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ?
-                ORDER BY timestamp ASC
-            ''', (cutoff_time,))
-
-            rows = cursor.fetchall()
-            conn.close()
-
-            logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros obtenidos (últimas {hours}h)")
-            return [dict(row) for row in rows]
-
-        except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error de base de datos: {e}")
-            return []
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error inesperado: {e}")
-            return []
-
-    def get_stats(self, hours: int = 24) -> Dict:
-        """
-        Obtiene estadísticas de las últimas X horas
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Diccionario con estadísticas
-        """
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-            cutoff_time = datetime.now() - timedelta(hours=hours)
-
-            cursor.execute('''
-                SELECT 
-                    AVG(cpu_percent) as cpu_avg,
-                    MAX(cpu_percent) as cpu_max,
-                    MIN(cpu_percent) as cpu_min,
-                    AVG(ram_percent) as ram_avg,
-                    MAX(ram_percent) as ram_max,
-                    MIN(ram_percent) as ram_min,
-                    AVG(temperature) as temp_avg,
-                    MAX(temperature) as temp_max,
-                    MIN(temperature) as temp_min,
-                    AVG(net_download_mb) as down_avg,
-                    MAX(net_download_mb) as down_max,
-                    MIN(net_download_mb) as down_min,
-                    AVG(net_upload_mb) as up_avg,
-                    MAX(net_upload_mb) as up_max,
-                    MIN(net_upload_mb) as up_min,
-                    AVG(disk_read_mb) as disk_read_avg,
-                    MAX(disk_read_mb) as disk_read_max,
-                    MIN(disk_read_mb) as disk_read_min,
-                    AVG(disk_write_mb) as disk_write_avg,
-                    MAX(disk_write_mb) as disk_write_max,
-                    MIN(disk_write_mb) as disk_write_min,
-                    AVG(fan_pwm) as pwm_avg,
-                    MAX(fan_pwm) as pwm_max,
-                    MIN(fan_pwm) as pwm_min,
-                    COUNT(*) as total_samples
-                FROM metrics
-                WHERE timestamp >= ?
-            ''', (cutoff_time,))
-
-            row = cursor.fetchone()
-            conn.close()
-
-            if row and row[24]:
-                logger.debug(f"[DataAnalyzer] get_stats: {row[24]} muestras en las últimas {hours}h")
-                return {
-                    'cpu_avg': round(row[0], 1) if row[0] else 0,
-                    'cpu_max': round(row[1], 1) if row[1] else 0,
-                    'cpu_min': round(row[2], 1) if row[2] else 0,
-                    'ram_avg': round(row[3], 1) if row[3] else 0,
-                    'ram_max': round(row[4], 1) if row[4] else 0,
-                    'ram_min': round(row[5], 1) if row[5] else 0,
-                    'temp_avg': round(row[6], 1) if row[6] else 0,
-                    'temp_max': round(row[7], 1) if row[7] else 0,
-                    'temp_min': round(row[8], 1) if row[8] else 0,
-                    'down_avg': round(row[9], 2) if row[9] else 0,
-                    'down_max': round(row[10], 2) if row[10] else 0,
-                    'down_min': round(row[11], 2) if row[11] else 0,
-                    'up_avg': round(row[12], 2) if row[12] else 0,
-                    'up_max': round(row[13], 2) if row[13] else 0,
-                    'up_min': round(row[14], 2) if row[14] else 0,
-                    'disk_read_avg': round(row[15], 2) if row[15] else 0,
-                    'disk_read_max': round(row[16], 2) if row[16] else 0,
-                    'disk_read_min': round(row[17], 2) if row[17] else 0,
-                    'disk_write_avg': round(row[18], 2) if row[18] else 0,
-                    'disk_write_max': round(row[19], 2) if row[19] else 0,
-                    'disk_write_min': round(row[20], 2) if row[20] else 0,
-                    'pwm_avg': round(row[21], 0) if row[21] else 0,
-                    'pwm_max': round(row[22], 0) if row[22] else 0,
-                    'pwm_min': round(row[23], 0) if row[23] else 0,
-                    'total_samples': row[24]
-                }
-
-            logger.debug(f"[DataAnalyzer] get_stats: sin datos en las últimas {hours}h")
-            return {}
-
-        except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_stats: error de base de datos: {e}")
-            return {}
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_stats: error inesperado: {e}")
-            return {}
-
-    def detect_anomalies(self, hours: int = 24) -> List[Dict]:
-        """
-        Detecta anomalías en los datos
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Lista de anomalías detectadas
-        """
-        anomalies = []
-        stats = self.get_stats(hours)
-
-        if not stats:
-            return anomalies
-
-        if stats.get('cpu_avg', 0) > 80:
-            anomalies.append({
-                'type': 'cpu_high',
-                'severity': 'warning',
-                'message': f"CPU promedio alta: {stats['cpu_avg']:.1f}%"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: CPU promedio {stats['cpu_avg']:.1f}%")
-
-        if stats.get('temp_max', 0) > 80:
-            anomalies.append({
-                'type': 'temp_high',
-                'severity': 'critical',
-                'message': f"Temperatura máxima: {stats['temp_max']:.1f}°C"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: temperatura máxima {stats['temp_max']:.1f}°C")
-
-        if stats.get('ram_avg', 0) > 85:
-            anomalies.append({
-                'type': 'ram_high',
-                'severity': 'warning',
-                'message': f"RAM promedio alta: {stats['ram_avg']:.1f}%"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: RAM promedio {stats['ram_avg']:.1f}%")
-
-        return anomalies
-
-    def get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]:
-        """
-        Obtiene datos para gráficas
-
-        Args:
-            metric: Métrica a obtener (cpu_percent, ram_percent, temperature, etc)
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Tupla (timestamps, values)
-        """
-        try:
-            data = self.get_data_range(hours)
-
-            timestamps = []
-            values = []
-
-            for entry in data:
-                ts = datetime.fromisoformat(entry['timestamp'])
-                timestamps.append(ts)
-                values.append(entry.get(metric, 0))
-
-            return timestamps, values
-
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_graph_data: error obteniendo datos de '{metric}': {e}")
-            return [], []
-
-    def export_to_csv(self, output_path: str, hours: int = 24):
-        """
-        Exporta datos a CSV
-
-        Args:
-            output_path: Ruta del archivo CSV a crear
-            hours: Número de horas a exportar
-        """
-        import csv
-
-        try:
-            data = self.get_data_range(hours)
-
-            if not data:
-                logger.warning(f"[DataAnalyzer] export_to_csv: sin datos para exportar (últimas {hours}h)")
-                return
-
-            with open(output_path, 'w', newline='') as csvfile:
-                fieldnames = data[0].keys()
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in data:
-                    writer.writerow(row)
-
-            logger.info(f"[DataAnalyzer] export_to_csv: {len(data)} registros exportados a {output_path}")
-
-        except OSError as e:
-            logger.error(f"[DataAnalyzer] export_to_csv: error escribiendo {output_path}: {e}")
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] export_to_csv: error inesperado: {e}")
-````
-
 ## File: core/data_logger.py
 ````python
 """
@@ -8044,380 +7062,659 @@ class DataLogger:
             self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Limpieza completada. Nuevo tamaño de la base de datos: {self.get_db_size_mb():.2f} MB")
 ````
 
-## File: core/fan_auto_service.py
+## File: core/network_monitor.py
 ````python
 """
-Servicio en segundo plano para modo AUTO de ventiladores
+Monitor de red
 """
-import threading
 import time
-from typing import Optional
-from core.fan_controller import FanController
-from core.system_monitor import SystemMonitor
-from utils import FileManager, DashboardLogger
+import threading
+import subprocess
+from collections import deque
+from typing import Dict, Optional, Tuple
+from config.settings import (HISTORY, NET_MIN_SCALE, NET_MAX_SCALE, 
+                             NET_IDLE_THRESHOLD, NET_IDLE_RESET_TIME, NET_MAX_MB)
+from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
-class FanAutoService:
-    """
-    Servicio que actualiza automáticamente el PWM en modo AUTO
-    Se ejecuta en segundo plano independiente de la UI
+class NetworkMonitor:
+    """Monitor de red con gestión de estadísticas y speedtest"""
     
-    Características:
-    - Singleton: Solo una instancia en toda la aplicación
-    - Thread-safe: Seguro para concurrencia
-    - Daemon: Se cierra automáticamente con el programa
-    - Independiente de UI: Funciona con o sin ventanas abiertas
-    """
+    def __init__(self):
+        self.system_utils = SystemUtils()
+        
+        # Historiales
+        self.download_hist = deque(maxlen=HISTORY)
+        self.upload_hist = deque(maxlen=HISTORY)
+        
+        # Estado
+        self.last_net_io = {}
+        self.last_used_iface = None
+        self.dynamic_max = NET_MAX_MB
+        self.idle_counter = 0
+        
+        # Speedtest
+        self.speedtest_result = {
+            "status": "idle",
+            "ping": 0,
+            "download": 0.0,
+            "upload": 0.0
+        }
     
-    _instance: Optional['FanAutoService'] = None
-    _lock = threading.Lock()
-    
-    def __new__(cls, *args, **kwargs):
-        """Singleton: solo una instancia"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
-    
-    def __init__(self, fan_controller: FanController, 
-                 system_monitor: SystemMonitor):
+    def get_current_stats(self, interface: Optional[str] = None) -> Dict:
         """
-        Inicializa el servicio (solo la primera vez)
+        Obtiene estadísticas actuales de red
         
         Args:
-            fan_controller: Instancia del controlador de ventiladores
-            system_monitor: Instancia del monitor del sistema
+            interface: Interfaz de red específica o None para auto-detección
+            
+        Returns:
+            Diccionario con estadísticas de red
         """
-        # Solo inicializar una vez (patrón singleton)
-        if hasattr(self, '_initialized'):
-            return
+        iface, stats = self.system_utils.get_net_io(interface)
         
-        self.fan_controller = fan_controller
-        self.system_monitor = system_monitor
-        self.file_manager = FileManager()
+        prev = self.last_net_io.get(iface)
+        dl, ul = self.system_utils.safe_net_speed(stats, prev)
         
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
-        self._update_interval = 2.0  # segundos
-        self.dashboard_logger = DashboardLogger()
-        self._initialized = True
-        self.start_cycle = 0
-    def start(self):
-        """Inicia el servicio en segundo plano"""
-        if self._running:
-            self.dashboard_logger.get_logger(__name__).info("[FanAutoService] ya está corriendo")
-            return
+        self.last_net_io[iface] = stats
+        self.last_used_iface = iface
         
-        self._running = True
-        self._thread = threading.Thread(
-            target=self._run,
-            daemon=True,  # Se cierra con el programa
-            name="FanAutoService"
-        )
-        self._thread.start()
+        return {
+            'interface': iface,
+            'download_mb': dl,
+            'upload_mb': ul
+        }
     
-    def stop(self):
-        """Detiene el servicio"""
-        if not self._running:
-            self.dashboard_logger.get_logger(__name__).warning("[FanAutoService] no está corriendo")
-            return
-        
-        self._running = False
-        
-        if self._thread:
-            self._thread.join(timeout=5)
-    
-    def _run(self):
-        """Bucle principal del servicio (ejecuta en thread separado)"""
-        while self._running:
-            try:
-                self._update_auto_mode()
-                #self.dashboard_logger.get_logger(__name__).debug("[FanAutoService] Actualización automática ejecutada")
-            except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error en actualización automática: {e}")
-            
-            # Dormir en intervalos pequeños para poder detener rápido
-            for _ in range(int(self._update_interval * 10)):
-                if not self._running:
-                    break
-                time.sleep(0.1)
-    
-    def _update_auto_mode(self):
-        """Actualiza el PWM si está en modo auto"""
-        
-        try:
-            state = self.file_manager.load_state()
-            #self.dashboard_logger.get_logger(__name__).debug(f"[FanAutoService] Estado actual cargado: {state}")
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error cargando estado: {e}")
-            return
-        
-        # Solo actuar si está en modo auto
-        if state.get("mode") != "auto":
-            
-            if self.start_cycle == 0:
-                self.dashboard_logger.get_logger(__name__).info("[FanAutoService] Modo no es auto, esperando para iniciar actualizaciones automáticas...")
-                self.start_cycle += 1
-            return
-        
-        try:
-            # Obtener temperatura actual
-            stats = self.system_monitor.get_current_stats()
-            temp = stats.get('temp', 50)
-            
-            # Calcular PWM según curva
-            target_pwm = self.fan_controller.get_pwm_for_mode(
-                mode="auto",
-                temp=temp,
-                manual_pwm=128  # No importa en auto
-            )
-            
-            # Solo guardar si cambió (evitar writes innecesarios)
-            current_pwm = state.get("target_pwm")
-            if target_pwm != current_pwm:
-                self.file_manager.write_state({
-                    "mode": "auto",
-                    "target_pwm": target_pwm
-                })
-        
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] Error calculando o guardando PWM: {e}")
-    
-    def set_update_interval(self, seconds: float):
+    def update_history(self, stats: Dict) -> None:
         """
-        Cambia el intervalo de actualización
+        Actualiza historiales de red
         
         Args:
-            seconds: Segundos entre actualizaciones (mínimo 1.0)
+            stats: Estadísticas actuales
         """
-        self._update_interval = max(1.0, seconds)
+        self.download_hist.append(stats['download_mb'])
+        self.upload_hist.append(stats['upload_mb'])
     
-    def is_running(self) -> bool:
+    def adaptive_scale(self, current_max: float, recent_data: list) -> float:
         """
-        Verifica si el servicio está corriendo
+        Ajusta dinámicamente la escala del gráfico
+        
+        Args:
+            current_max: Máximo actual
+            recent_data: Datos recientes
+            
+        Returns:
+            Nuevo máximo escalado
+        """
+        if not recent_data:
+            return current_max
+        
+        peak = max(recent_data) if recent_data else 0
+        
+        if peak < NET_IDLE_THRESHOLD:
+            self.idle_counter += 1
+            if self.idle_counter >= NET_IDLE_RESET_TIME:
+                self.idle_counter = 0
+                return NET_MAX_MB
+        else:
+            self.idle_counter = 0
+        
+        if peak > current_max * 0.8:
+            new_max = peak * 1.2
+        elif peak < current_max * 0.3:
+            new_max = max(peak * 1.5, NET_MIN_SCALE)
+        else:
+            new_max = current_max
+        
+        return max(NET_MIN_SCALE, min(NET_MAX_SCALE, new_max))
+    
+    def update_dynamic_scale(self) -> None:
+        """Actualiza la escala dinámica basada en el historial"""
+        all_data = list(self.download_hist) + list(self.upload_hist)
+        self.dynamic_max = self.adaptive_scale(self.dynamic_max, all_data)
+    
+    def get_history(self) -> Dict:
+        """
+        Obtiene historiales de red
         
         Returns:
-            True si está activo, False si no
-        """
-        self.dashboard_logger.get_logger(__name__).error(f"[FanAutoService] is_running: {self._running}")
-        return self._running
-    
-    def get_status(self) -> dict:
-        """
-        Obtiene el estado del servicio
-        
-        Returns:
-            Diccionario con información del servicio
+            Diccionario con historiales
         """
         return {
-            'running': self._running,
-            'interval': self._update_interval,
-            'thread_alive': self._thread.is_alive() if self._thread else False
+            'download': list(self.download_hist),
+            'upload': list(self.upload_hist),
+            'dynamic_max': self.dynamic_max
         }
+    
+    def run_speedtest(self) -> None:
+        """Ejecuta speedtest en un thread separado"""
+        def _run():
+            logger.info("[NetworkMonitor] Iniciando speedtest...")
+            self.speedtest_result["status"] = "running"
+            try:
+                result = subprocess.run(
+                    ["speedtest-cli", "--simple"],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    ping = download = upload = 0
+                    
+                    for line in lines:
+                        if line.startswith("Ping:"):
+                            ping = float(line.split()[1])
+                        elif line.startswith("Download:"):
+                            download = float(line.split()[1]) / 8
+                        elif line.startswith("Upload:"):
+                            upload = float(line.split()[1]) / 8
+                    
+                    self.speedtest_result.update({
+                        "status": "done",
+                        "ping": ping,
+                        "download": download,
+                        "upload": upload
+                    })
+                    logger.info(f"[NetworkMonitor] Speedtest completado — Ping: {ping}ms, ↓{download:.2f} MB/s, ↑{upload:.2f} MB/s")
+                else:
+                    logger.error(f"[NetworkMonitor] speedtest-cli retornó código {result.returncode}: {result.stderr}")
+                    self.speedtest_result["status"] = "error"
+                    
+            except subprocess.TimeoutExpired:
+                logger.warning("[NetworkMonitor] Speedtest timeout (>60s)")
+                self.speedtest_result["status"] = "timeout"
+            except FileNotFoundError:
+                logger.error("[NetworkMonitor] speedtest-cli no encontrado. Instala: sudo apt install speedtest-cli")
+                self.speedtest_result["status"] = "error"
+            except Exception as e:
+                logger.error(f"[NetworkMonitor] Error inesperado en speedtest: {e}")
+                self.speedtest_result["status"] = "error"
+        
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
+    
+    def get_speedtest_result(self) -> Dict:
+        """
+        Obtiene el resultado del speedtest
+        
+        Returns:
+            Diccionario con resultados
+        """
+        return self.speedtest_result.copy()
+    
+    def reset_speedtest(self) -> None:
+        """Resetea el estado del speedtest"""
+        self.speedtest_result = {
+            "status": "idle",
+            "ping": 0,
+            "download": 0.0,
+            "upload": 0.0
+        }
+    
+    @staticmethod
+    def net_color(value: float) -> str:
+        """
+        Determina el color según el tráfico de red
+        
+        Args:
+            value: Velocidad en MB/s
+            
+        Returns:
+            Color en formato hex
+        """
+        from config.settings import COLORS, NET_WARN, NET_CRIT
+        
+        if value >= NET_CRIT:
+            return COLORS['danger']
+        elif value >= NET_WARN:
+            return COLORS['warning']
+        else:
+            return COLORS['primary']
 ````
 
-## File: ui/widgets/dialogs.py
+## File: core/process_monitor.py
 ````python
 """
-Diálogos y ventanas modales personalizadas
+Monitor de procesos del sistema
 """
-import customtkinter as ctk
-from ui.styles import make_futuristic_button
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
+import psutil
+from typing import List, Dict, Optional
+from datetime import datetime
+from utils import DashboardLogger
+
+
+class ProcessMonitor:
+    """Monitor de procesos en tiempo real"""
+    
+    def __init__(self):
+        """Inicializa el monitor de procesos"""
+        self.sort_by = "cpu"  # cpu, memory, name, pid
+        self.sort_reverse = True
+        self.filter_type = "all"  # all, user, system
+        self.dashboard_logger = DashboardLogger()
+    
+    def get_processes(self, limit: int = 20) -> List[Dict]:
+        """
+        Obtiene lista de procesos con su información
+        
+        Args:
+            limit: Número máximo de procesos a retornar
+            
+        Returns:
+            Lista de diccionarios con información de procesos
+        """
+        processes = []
+        
+        for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'cmdline', 'exe']):
+            try:
+                pinfo = proc.info
+                
+                # Aplicar filtro
+                if self.filter_type == "user":
+                    # Solo procesos del usuario actual
+                    if pinfo['username'] != psutil.Process().username():
+                        continue
+                elif self.filter_type == "system":
+                    # Solo procesos del sistema (root, etc)
+                    if pinfo['username'] == psutil.Process().username():
+                        continue
+                
+                # Obtener descripción más detallada
+                cmdline = pinfo['cmdline']
+                exe = pinfo['exe']
+                name = pinfo['name'] or 'N/A'
+                
+                # Crear descripción mejor
+                if cmdline:
+                    # Si hay cmdline, usar el primer argumento como descripción
+                    display_name = ' '.join(cmdline[:2])  # Primeros 2 argumentos
+                elif exe:
+                    # Si no hay cmdline pero hay exe, usar el path
+                    display_name = exe
+                else:
+                    display_name = name
+                
+                processes.append({
+                    'pid': pinfo['pid'],
+                    'name': name,
+                    'display_name': display_name,  # Nueva columna descriptiva
+                    'username': pinfo['username'] or 'N/A',
+                    'cpu': pinfo['cpu_percent'] or 0.0,
+                    'memory': pinfo['memory_percent'] or 0.0
+                })
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        
+        # Ordenar según criterio
+        if self.sort_by == "cpu":
+            processes.sort(key=lambda x: x['cpu'], reverse=self.sort_reverse)
+        elif self.sort_by == "memory":
+            processes.sort(key=lambda x: x['memory'], reverse=self.sort_reverse)
+        elif self.sort_by == "name":
+            processes.sort(key=lambda x: x['name'].lower(), reverse=self.sort_reverse)
+        elif self.sort_by == "pid":
+            processes.sort(key=lambda x: x['pid'], reverse=self.sort_reverse)
+        
+        return processes[:limit]
+    
+    def search_processes(self, query: str) -> List[Dict]:
+        """
+        Busca procesos por nombre o descripción
+        
+        Args:
+            query: Texto a buscar en nombre de proceso
+            
+        Returns:
+            Lista de procesos que coinciden
+        """
+        query = query.lower()
+        all_processes = self.get_processes(limit=1000)  # Obtener todos
+        
+        return [p for p in all_processes 
+                if query in p['name'].lower() or query in p.get('display_name', '').lower()]
+    
+
+
+
+    def kill_process(self, pid: int) -> tuple[bool, str]:
+        """
+        Mata un proceso por su PID
+        
+        Args:
+            pid: ID del proceso
+            
+        Returns:
+            Tupla (éxito, mensaje)
+        """
+        try:
+            proc = psutil.Process(pid)
+            name = proc.name()
+
+            # Obtener display_name igual que en get_processes
+            try:
+                cmdline = proc.cmdline()
+                display_name = ' '.join(cmdline[:2]) if cmdline else name
+            except (psutil.AccessDenied, psutil.ZombieProcess):
+                display_name = name
+
+            proc.terminate()  # Intenta cerrar limpiamente
+            
+            # Esperar un poco
+            proc.wait(timeout=3)
+            self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) terminado correctamente")
+            return True, f"Proceso '{display_name}' (PID {pid}) terminado correctamente"
+        except psutil.NoSuchProcess:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Proceso con PID {pid} no existe")
+            return False, f"Proceso con PID {pid} no existe"
+        except psutil.AccessDenied:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Sin permisos para terminar proceso {pid}")
+            return False, f"Sin permisos para terminar proceso {pid}"
+        except psutil.TimeoutExpired:
+            # Si no se cierra, forzar
+            try:
+                proc.kill()
+                self.dashboard_logger.get_logger(__name__).info(f"[ProcessMonitor] Proceso '{display_name}' (PID {pid}) forzado a cerrar")
+                return True, f"Proceso '{display_name}' (PID {pid}) forzado a cerrar"
+            except Exception as e:
+                self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error forzando cierre del proceso '{display_name}' (PID {pid}): {e}")
+                return False, f"Error: {str(e)}"
+        except Exception as e:
+            self.dashboard_logger.get_logger(__name__).error(f"[ProcessMonitor] Error terminando proceso '{display_name}' (PID {pid}): {e}")
+            return False, f"Error: {str(e)}"
+    def get_system_stats(self) -> Dict:
+        """
+        Obtiene estadísticas generales del sistema
+        
+        Returns:
+            Diccionario con estadísticas
+        """
+        # CPU
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        
+        # RAM
+        mem = psutil.virtual_memory()
+        mem_used_gb = mem.used / (1024**3)
+        mem_total_gb = mem.total / (1024**3)
+        mem_percent = mem.percent
+        
+        # Procesos
+        total_processes = len(psutil.pids())
+        
+        # Uptime
+        boot_time = datetime.fromtimestamp(psutil.boot_time())
+        uptime = datetime.now() - boot_time
+        uptime_str = self._format_uptime(uptime.total_seconds())
+        
+        return {
+            'cpu_percent': cpu_percent,
+            'mem_used_gb': mem_used_gb,
+            'mem_total_gb': mem_total_gb,
+            'mem_percent': mem_percent,
+            'total_processes': total_processes,
+            'uptime': uptime_str
+        }
+    
+    def _format_uptime(self, seconds: float) -> str:
+        """
+        Formatea uptime en formato legible
+        
+        Args:
+            seconds: Segundos de uptime
+            
+        Returns:
+            String formateado
+        """
+        days = int(seconds // 86400)
+        hours = int((seconds % 86400) // 3600)
+        minutes = int((seconds % 3600) // 60)
+        
+        if days > 0:
+            return f"{days}d {hours}h {minutes}m"
+        elif hours > 0:
+            return f"{hours}h {minutes}m"
+        else:
+            return f"{minutes}m"
+    
+    def set_sort(self, column: str, reverse: bool = True):
+        """
+        Configura el orden de procesos
+        
+        Args:
+            column: Columna por la que ordenar (cpu, memory, name, pid)
+            reverse: Si ordenar de mayor a menor
+        """
+        self.sort_by = column
+        self.sort_reverse = reverse
+    
+    def set_filter(self, filter_type: str):
+        """
+        Configura el filtro de procesos
+        
+        Args:
+            filter_type: Tipo de filtro (all, user, system)
+        """
+        self.filter_type = filter_type
+    
+    def get_process_color(self, value: float) -> str:
+        """
+        Obtiene color según porcentaje de uso
+        
+        Args:
+            value: Porcentaje (0-100)
+            
+        Returns:
+            Nombre del color en COLORS
+        """
+        if value >= 70:
+            return "danger"
+        elif value >= 30:
+            return "warning"
+        else:
+            return "success"
+````
+
+## File: core/system_monitor.py
+````python
+"""
+Monitor del sistema
+"""
+import psutil
+from collections import deque
+from typing import Dict, Tuple
+from config.settings import HISTORY
+from utils.system_utils import SystemUtils
+from config.settings import UPDATE_MS
+from config.settings import COLORS
+
+class SystemMonitor:
+    """Monitor centralizado de recursos del sistema"""
+    
+    def __init__(self):
+        self.system_utils = SystemUtils()
+        
+        # Historiales
+        self.cpu_hist = deque(maxlen=HISTORY)
+        self.ram_hist = deque(maxlen=HISTORY)
+        self.temp_hist = deque(maxlen=HISTORY)
+        self.disk_hist = deque(maxlen=HISTORY)
+        self.disk_write_hist = deque(maxlen=HISTORY)
+        self.disk_read_hist = deque(maxlen=HISTORY)
+        
+        # Estado anterior para cálculos incrementales
+        self.last_disk_io = psutil.disk_io_counters()
+    
+    def get_current_stats(self) -> Dict:
+        """
+        Obtiene estadísticas actuales del sistema
+        
+        Returns:
+            Diccionario con todas las métricas actuales
+        """
+        cpu = psutil.cpu_percent()
+        ram = psutil.virtual_memory().percent
+        ram_used = psutil.virtual_memory().used
+        temp = self.system_utils.get_cpu_temp()
+        disk_usage = psutil.disk_usage('/').percent
+        
+        # Calcular I/O de disco
+        disk_io = psutil.disk_io_counters()
+        disk_read_bytes = max(0, disk_io.read_bytes - self.last_disk_io.read_bytes)
+        disk_write_bytes = max(0, disk_io.write_bytes - self.last_disk_io.write_bytes)
+        self.last_disk_io = disk_io
+        
+        # Convertir a MB/s
+
+        seconds = UPDATE_MS / 1000.0
+        disk_read_mb = (disk_read_bytes / (1024 * 1024)) / seconds
+        disk_write_mb = (disk_write_bytes / (1024 * 1024)) / seconds
+        
+        return {
+            'cpu': cpu,
+            'ram': ram,
+            'ram_used': ram_used,
+            'temp': temp,
+            'disk_usage': disk_usage,
+            'disk_read_mb': disk_read_mb,
+            'disk_write_mb': disk_write_mb
+        }
+    
+    def update_history(self, stats: Dict) -> None:
+        """
+        Actualiza los historiales con las estadísticas actuales
+        
+        Args:
+            stats: Diccionario con estadísticas actuales
+        """
+        self.cpu_hist.append(stats['cpu'])
+        self.ram_hist.append(stats['ram'])
+        self.temp_hist.append(stats['temp'])
+        self.disk_hist.append(stats['disk_usage'])
+        self.disk_read_hist.append(stats['disk_read_mb'])
+        self.disk_write_hist.append(stats['disk_write_mb'])
+    
+    def get_history(self) -> Dict:
+        """
+        Obtiene todos los historiales
+        
+        Returns:
+            Diccionario con todos los historiales
+        """
+        return {
+            'cpu': list(self.cpu_hist),
+            'ram': list(self.ram_hist),
+            'temp': list(self.temp_hist),
+            'disk': list(self.disk_hist),
+            'disk_read': list(self.disk_read_hist),
+            'disk_write': list(self.disk_write_hist)
+        }
+    
+    @staticmethod
+    def level_color(value: float, warn: float, crit: float) -> str:
+        """
+        Determina el color según el nivel de alerta
+        
+        Args:
+            value: Valor actual
+            warn: Umbral de advertencia
+            crit: Umbral crítico
+            
+        Returns:
+            Color en formato hex
+        """
+        
+        if value >= crit:
+            return COLORS['danger']
+        elif value >= warn:
+            return COLORS['warning']
+        else:
+            return COLORS['primary']
+````
+
+## File: core/update_monitor.py
+````python
+"""
+Monitor de actualizaciones del sistema
+"""
 import subprocess
-import threading
+import time
+from typing import Dict
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
-def custom_msgbox(parent, text: str, title: str = "Info") -> None:
-    """
-    Muestra un cuadro de mensaje personalizado
-    
-    Args:
-        parent: Ventana padre
-        text: Texto del mensaje
-        title: Título del diálogo
-    """
-    popup = ctk.CTkToplevel(parent)
-    popup.overrideredirect(True)
-    
-    # Contenedor
-    frame = ctk.CTkFrame(popup)
-    frame.pack(fill="both", expand=True)
-    
-    # Título
-    title_lbl = ctk.CTkLabel(
-        frame, 
-        text=title,
-        text_color=COLORS['primary'],
-        font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-    )
-    title_lbl.pack(anchor="center", pady=(0, 10))
-    
-    # Texto
-    text_lbl = ctk.CTkLabel(
-        frame, 
-        text=text,
-        text_color=COLORS['text'],
-        font=(FONT_FAMILY, FONT_SIZES['medium']),
-        compound="left",
-        wraplength=800
-    )
-    text_lbl.pack(anchor="center", pady=(0, 15))
-    
-    # Botón OK
-    btn = make_futuristic_button(
-        frame, 
-        text="OK",
-        command=popup.destroy,
-        width=15, 
-        height=6, 
-        font_size=16
-    )
-    btn.pack()
-    
-    # Calcular tamaño
-    popup.update_idletasks()
-    
-    w = popup.winfo_reqwidth()
-    h = popup.winfo_reqheight()
-    
-    max_w = parent.winfo_screenwidth() - 40
-    max_h = parent.winfo_screenheight() - 40
-    
-    w = min(w, max_w)
-    h = min(h, max_h)
-    
-    # Centrar
-    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
-    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
-    
-    popup.geometry(f"{w}x{h}+{x}+{y}")
-    
-    popup.lift()
-    popup.focus_force()
-    popup.grab_set()
+class UpdateMonitor:
+    """Lógica para verificar actualizaciones del sistema con caché"""
 
+    def __init__(self):
+        # Inicializar con tiempo actual para que la caché sea válida desde el inicio
+        # Solo ejecuta apt update real cuando: arranque (main.py) o usuario pulsa "Buscar"
+        self.last_check_time = time.time()
+        self.cached_result = {"pending": 0, "status": "Unknown", "message": "No comprobado"}
+        self.check_interval = 43200  # 12 horas en segundos
 
-def confirm_dialog(parent, text: str, title: str = "Confirmar", 
-                   on_confirm=None, on_cancel=None) -> None:
-    """
-    Muestra un diálogo de confirmación
-    
-    Args:
-        parent: Ventana padre
-        text: Texto del mensaje
-        title: Título del diálogo
-        on_confirm: Callback al confirmar
-        on_cancel: Callback al cancelar
-    """
-    popup = ctk.CTkToplevel(parent)
-    popup.overrideredirect(True)
-    
-    frame = ctk.CTkFrame(popup)
-    frame.pack(fill="both", expand=True, padx=20, pady=20)
-    
-    # Título
-    title_lbl = ctk.CTkLabel(
-        frame, 
-        text=title,
-        text_color=COLORS['primary'],
-        font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-    )
-    title_lbl.pack(anchor="center", pady=(0, 10))
-    
-    # Texto
-    text_lbl = ctk.CTkLabel(
-        frame, 
-        text=text,
-        text_color=COLORS['text'],
-        font=(FONT_FAMILY, FONT_SIZES['medium']),
-        wraplength=600
-    )
-    text_lbl.pack(anchor="center", pady=(0, 20))
-    
-    # Botones
-    btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
-    btn_frame.pack()
-    
-    def _on_confirm():
-        popup.destroy()
-        if on_confirm:
-            on_confirm()
-    
-    def _on_cancel():
-        popup.destroy()
-        if on_cancel:
-            on_cancel()
-    
-    btn_confirm = make_futuristic_button(
-        btn_frame,
-        text="Confirmar",
-        command=_on_confirm,
-        width=15,
-        height=8,
-        font_size=16
-    )
-    btn_confirm.pack(side="left", padx=5)
-    
-    btn_cancel = make_futuristic_button(
-        btn_frame,
-        text="Cancelar",
-        command=_on_cancel,
-        width=20,
-        height=10,
-        font_size=16
-    )
-    btn_cancel.pack(side="left", padx=5)
-    
-    # Centrar
-    popup.update_idletasks()
-    w = popup.winfo_reqwidth()
-    h = popup.winfo_reqheight()
-    
-    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
-    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
-    
-    popup.geometry(f"{w}x{h}+{x}+{y}")
-    
-    popup.lift()
-    popup.focus_force()
-    popup.grab_set()
-def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=None):
-    popup = ctk.CTkToplevel(parent)
-    popup.overrideredirect(True)
-    popup.configure(fg_color=COLORS['bg_dark'])
-    
-    # Tamaño para pantalla 800x480
-    w, h = 720, 400
-    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
-    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
-    popup.geometry(f"{w}x{h}+{x}+{y}")
+    def check_updates(self, force=False) -> Dict:
+        """
+        Verifica actualizaciones pendientes con sistema de caché.
 
-    frame = ctk.CTkFrame(popup, fg_color=COLORS['bg_dark'], border_width=2, border_color=COLORS['primary'])
-    frame.pack(fill="both", expand=True, padx=2, pady=2)
+        Args:
+            force: Si True, ignora el caché y ejecuta apt update real
 
-    ctk.CTkLabel(frame, text=title, font=(FONT_FAMILY, 18, "bold"), text_color=COLORS['secondary']).pack(pady=5)
-    def _on_close():
-        popup.destroy()
-        if on_close:
-            on_close()
-    console = ctk.CTkTextbox(frame, fg_color="black", text_color="#00FF00", font=("Courier New", 12))
-    console.pack(fill="both", expand=True, padx=10, pady=5)
+        Returns:
+            Diccionario con pending, status y message
+        """
+        current_time = time.time()
 
-    btn_close = ctk.CTkButton(frame, text="Cerrar", command=_on_close, state="disabled")
-    btn_close.pack(pady=10)
+        # Devolver caché si no ha pasado el intervalo y no se fuerza
+        if not force and (current_time - self.last_check_time) < self.check_interval:
+            logger.debug("[UpdateMonitor] Devolviendo resultado en caché")
+            return self.cached_result
 
-    def run_command():
-        process = subprocess.Popen(["bash", script_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in process.stdout:
-            popup.after(0, lambda l=line: console.insert("end", l))
-            popup.after(0, lambda: console.see("end"))
-        process.wait()
-        popup.after(0, lambda: btn_close.configure(state="normal"))
+        try:
+            logger.info("[UpdateMonitor] Ejecutando búsqueda real de actualizaciones (apt update)...")
 
-    threading.Thread(target=run_command, daemon=True).start()
-    popup.grab_set()
+            result = subprocess.run(
+                ["sudo", "apt", "update"],
+                capture_output=True,
+                timeout=20
+            )
+            if result.returncode != 0:
+                logger.warning(f"[UpdateMonitor] apt update retornó código {result.returncode}")
+
+            cmd = "apt-get -s upgrade | grep '^Inst ' | wc -l"
+            output = subprocess.check_output(cmd, shell=True).decode().strip()
+            count = int(output) if output else 0
+
+            if count > 0:
+                logger.info(f"[UpdateMonitor] {count} paquetes pendientes de actualización")
+            else:
+                logger.debug("[UpdateMonitor] Sistema al día, sin actualizaciones pendientes")
+
+            self.cached_result = {
+                "pending": count,
+                "status": "Ready" if count > 0 else "Updated",
+                "message": f"{count} paquetes pendientes" if count > 0 else "Sistema al día"
+            }
+            self.last_check_time = current_time
+            return self.cached_result
+
+        except subprocess.TimeoutExpired:
+            logger.error("[UpdateMonitor] check_updates: timeout ejecutando apt update (>20s)")
+            return {"pending": 0, "status": "Error", "message": "Timeout ejecutando apt update"}
+        except FileNotFoundError:
+            logger.error("[UpdateMonitor] check_updates: apt no encontrado en el sistema")
+            return {"pending": 0, "status": "Error", "message": "apt no encontrado"}
+        except ValueError as e:
+            logger.error(f"[UpdateMonitor] check_updates: error parseando resultado: {e}")
+            return {"pending": 0, "status": "Error", "message": str(e)}
+        except Exception as e:
+            logger.error(f"[UpdateMonitor] check_updates: error inesperado: {e}")
+            return {"pending": 0, "status": "Error", "message": str(e)}
 ````
 
 ## File: ui/windows/network.py
@@ -8824,6 +8121,140 @@ class NetworkWindow(ctk.CTkToplevel):
             self.speedtest_btn.configure(state="normal")
 ````
 
+## File: ui/windows/update.py
+````python
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
+from ui.styles import make_futuristic_button
+from ui.widgets.dialogs import terminal_dialog, confirm_dialog
+from utils import SystemUtils
+
+
+class UpdatesWindow(ctk.CTkToplevel):
+    """Ventana de control de actualizaciones del sistema"""
+    
+    def __init__(self, parent, update_monitor):
+        super().__init__(parent)
+        self.system_utils = SystemUtils()
+        self.monitor = update_monitor
+        self._polling = False
+
+        # Configuración de ventana (Estilo DSI)
+        self.title("Actualizaciones del Sistema")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        
+        self._create_ui()
+        self._refresh_status(force=False)
+
+    def _create_ui(self):
+        # Frame Principal
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Icono
+        self.status_icon = ctk.CTkLabel(main, text="󰚰", font=(FONT_FAMILY, 60))
+        self.status_icon.pack(pady=(10, 5))
+        
+        # Labels
+        self.status_label = ctk.CTkLabel(
+            main, text="Verificando...", 
+            font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
+        )
+        self.status_label.pack()
+        
+        self.info_label = ctk.CTkLabel(
+            main, text="Estado de los paquetes",
+            text_color=COLORS['text_dim'], font=(FONT_FAMILY, FONT_SIZES['medium'])
+        )
+        self.info_label.pack(pady=5)
+        
+        # Frame para botones
+        btn_frame = ctk.CTkFrame(main, fg_color="transparent")
+        btn_frame.pack(side="bottom", fill="x", pady=(10, 20))
+        
+        # 1. Botón Buscar (Manual)
+        self.search_btn = make_futuristic_button(
+            btn_frame, text="🔍 Buscar", 
+            command=lambda: self._refresh_status(force=True), width=12
+        )
+        self.search_btn.pack(side="left", padx=5, expand=True)
+
+        # 2. Botón Instalar
+        self.update_btn = make_futuristic_button(
+            btn_frame, text="󰚰 Instalar", 
+            command=self._execute_update_script, width=12
+        )
+        self.update_btn.pack(side="left", padx=5, expand=True)
+        self.update_btn.configure(state="disabled")
+        
+        # 3. Botón Cerrar
+        close_btn = make_futuristic_button(
+            btn_frame, text="Cerrar", 
+            command=self.destroy, width=12
+        )
+        close_btn.pack(side="left", padx=5, expand=True)
+
+    def _refresh_status(self, force=False):
+        """Consulta el estado de actualizaciones"""
+        if force:
+            self._polling = False  # Cancelar polling si el usuario busca manualmente
+            self.status_label.configure(text="Buscando...", text_color=COLORS['warning'])
+            self.update_idletasks()
+
+        res = self.monitor.check_updates(force=force)
+
+        # Si el thread de arranque aún no ha terminado, mostrar estado de espera
+        if res['status'] == "Unknown":
+            self.status_label.configure(text="Comprobando...", text_color=COLORS['text_dim'])
+            self.info_label.configure(text="Verificación inicial en curso")
+            self.status_icon.configure(text_color=COLORS['text_dim'])
+            self.update_btn.configure(state="disabled")
+            # Reintentar cada 2 segundos hasta tener resultado real
+            if not self._polling:
+                self._polling = True
+                self._poll_until_ready()
+            return
+
+        self._polling = False
+        color = COLORS['success'] if res['pending'] == 0 else COLORS['warning']
+        self.status_label.configure(text=res['status'], text_color=color)
+        self.info_label.configure(text=res['message'])
+        self.status_icon.configure(text_color=color)
+        self.update_btn.configure(state="normal" if res['pending'] > 0 else "disabled")
+
+    def _poll_until_ready(self):
+        """Reintenta _refresh_status cada 2s mientras el resultado sea Unknown"""
+        if not self._polling:
+            return
+        try:
+            if not self.winfo_exists():
+                return
+        except Exception:
+            return
+
+        res = self.monitor.check_updates(force=False)
+        if res['status'] != "Unknown":
+            self._refresh_status(force=False)
+        else:
+            self.after(2000, self._poll_until_ready)
+
+    def _execute_update_script(self):
+        """Lanza el script de terminal y refresca al terminar"""
+        script_path = str(SCRIPTS_DIR / "update.sh")
+        
+        def al_terminar_actualizacion():
+            self._refresh_status(force=True)
+        
+        terminal_dialog(
+            self, 
+            script_path, 
+            "CONSOLA DE ACTUALIZACIÓN",
+            on_close=al_terminar_actualizacion
+        )
+````
+
 ## File: utils/__init__.py
 ````python
 """
@@ -8836,798 +8267,200 @@ from .logger import DashboardLogger
 __all__ = ['FileManager', 'SystemUtils', 'DashboardLogger']
 ````
 
-## File: utils/system_utils.py
-````python
-"""
-Utilidades para obtener información del sistema
-"""
-import re
-import socket
-import psutil
-import subprocess
-import glob
-from typing import Tuple, Dict, Optional, Any
-from collections import namedtuple
-from config.settings import UPDATE_MS
-import json
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class SystemUtils:
-    """Utilidades para interactuar con el sistema"""
-    
-    # Variable de clase para mantener estado de red entre llamadas
-    _last_net_io = {}
-    
-    @staticmethod
-    def get_cpu_temp() -> float:
-        """
-        Obtiene la temperatura de la CPU
-        
-        Returns:
-            Temperatura en grados Celsius
-        """
-        # Método 1: vcgencmd (Raspberry Pi - método oficial)
-        try:
-            out = subprocess.check_output(
-                ["vcgencmd", "measure_temp"],
-                universal_newlines=True,
-                timeout=2
-            )
-            temp_str = out.replace("temp=", "").replace("'C", "").strip()
-            return float(temp_str)
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
-            pass
-        except ValueError as e:
-            logger.warning(f"[SystemUtils] get_cpu_temp: formato inesperado de vcgencmd: {e}")
-        
-        # Método 2: sensors (Linux genérico)
-        try:
-            out = subprocess.check_output(["sensors"], universal_newlines=True, timeout=2)
-            for line in out.split('\n'):
-                if 'Package id 0:' in line or 'Tdie:' in line or 'CPU:' in line:
-                    m = re.search(r'[\+\-](\d+\.\d+).C', line)
-                    if m:
-                        return float(m.group(1))
-                        
-            for line in out.split('\n'):
-                if 'temp' in line.lower():
-                    m = re.search(r'[\+\-](\d+\.\d+).C', line)
-                    if m:
-                        return float(m.group(1))
-        except subprocess.TimeoutExpired:
-            logger.warning("[SystemUtils] get_cpu_temp: timeout leyendo sensors")
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
-        
-        # Método 3: Fallback - leer de thermal_zone
-        try:
-            with open("/sys/class/thermal/thermal_zone0/temp") as f:
-                val = f.read().strip()
-                return float(val) / 1000.0
-        except FileNotFoundError:
-            logger.warning("[SystemUtils] get_cpu_temp: no se encontró thermal_zone0, retornando 0.0")
-        except ValueError as e:
-            logger.error(f"[SystemUtils] get_cpu_temp: error leyendo thermal_zone0: {e}")
-        
-        return 0.0
-    
-    @staticmethod
-    def get_hostname() -> str:
-        """
-        Obtiene el nombre del host
-        
-        Returns:
-            Nombre del host o "unknown"
-        """
-        try:
-            return socket.gethostname()
-        except Exception as e:
-            logger.warning(f"[SystemUtils] get_hostname: {e}")
-            return "unknown"
-    
-    @staticmethod
-    def get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]:
-        """
-        Obtiene estadísticas de red con auto-detección de interfaz activa
-        
-        Args:
-            interface: Nombre de la interfaz o None para auto-detección
-            
-        Returns:
-            Tupla (nombre_interfaz, estadísticas)
-        """
-        if not SystemUtils._last_net_io:
-            SystemUtils._last_net_io = psutil.net_io_counters(pernic=True)
-        
-        stats = psutil.net_io_counters(pernic=True)
-        
-        if interface and interface in stats:
-            SystemUtils._last_net_io = stats
-            return interface, stats[interface]
-        
-        best_name = None
-        best_speed = -1
-        
-        for name in stats:
-            if name not in SystemUtils._last_net_io:
-                continue
-            
-            curr = stats[name]
-            prev = SystemUtils._last_net_io[name]
-            
-            speed = (
-                (curr.bytes_recv - prev.bytes_recv) +
-                (curr.bytes_sent - prev.bytes_sent)
-            )
-            
-            if speed < 0 or speed > 500 * 1024 * 1024:
-                continue
-            
-            if speed > best_speed:
-                best_speed = speed
-                best_name = name
-        
-        SystemUtils._last_net_io = stats
-        
-        if best_name:
-            return best_name, stats[best_name]
-        
-        for iface, s in stats.items():
-            if iface.startswith(('eth', 'enp', 'wlan', 'wlp', 'tun')):
-                if s.bytes_sent > 0 or s.bytes_recv > 0:
-                    return iface, s
-        
-        if stats:
-            first = list(stats.items())[0]
-            return first[0], first[1]
-        
-        EmptyStats = namedtuple('EmptyStats', 
-            ['bytes_sent', 'bytes_recv', 'packets_sent', 'packets_recv',
-             'errin', 'errout', 'dropin', 'dropout'])
-        return "none", EmptyStats(0, 0, 0, 0, 0, 0, 0, 0)
-    
-    @staticmethod
-    def safe_net_speed(current: Any, previous: Optional[Any]) -> Tuple[float, float]:
-        """
-        Calcula velocidad de red de forma segura
-        
-        Args:
-            current: Estadísticas actuales
-            previous: Estadísticas anteriores
-            
-        Returns:
-            Tupla (download_mb, upload_mb)
-        """
-        if previous is None:
-            return 0.0, 0.0
-        
-        try:
-            dl_bytes = max(0, current.bytes_recv - previous.bytes_recv)
-            ul_bytes = max(0, current.bytes_sent - previous.bytes_sent)
-            
-            seconds = UPDATE_MS / 1000.0
-            
-            dl_mb = (dl_bytes / (1024 * 1024)) / seconds
-            ul_mb = (ul_bytes / (1024 * 1024)) / seconds
-            
-            return dl_mb, ul_mb
-        except (AttributeError, TypeError) as e:
-            logger.warning(f"[SystemUtils] safe_net_speed: error calculando velocidad de red: {e}")
-            return 0.0, 0.0
-    
-    @staticmethod
-    def list_usb_storage_devices() -> list:
-        """
-        Lista dispositivos USB de almacenamiento (discos)
-        
-        Returns:
-            Lista de diccionarios con información de almacenamiento USB
-        """
-        storage_devices = []
-        
-        try:
-            result = subprocess.run(
-                ['lsblk', '-o', 'NAME,MODEL,TRAN,MOUNTPOINT,SIZE,TYPE', '-J'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
-                
-                for block in data.get('blockdevices', []):
-                    if block.get('tran') == 'usb':
-                        dev = {
-                            'name': block.get('model', 'USB Disk').strip(),
-                            'type': block.get('type', 'disk'),
-                            'mount': block.get('mountpoint'),
-                            'dev': '/dev/' + block.get('name', ''),
-                            'size': block.get('size', ''),
-                            'children': []
-                        }
-                        
-                        for child in block.get('children', []):
-                            child_dev = {
-                                'name': child.get('name', ''),
-                                'type': child.get('type', 'part'),
-                                'mount': child.get('mountpoint'),
-                                'dev': '/dev/' + child.get('name', ''),
-                                'size': child.get('size', '')
-                            }
-                            dev['children'].append(child_dev)
-                        
-                        storage_devices.append(dev)
-            else:
-                logger.warning(f"[SystemUtils] list_usb_storage_devices: lsblk retornó código {result.returncode}")
-        
-        except subprocess.TimeoutExpired:
-            logger.error("[SystemUtils] list_usb_storage_devices: timeout ejecutando lsblk")
-        except FileNotFoundError:
-            logger.error("[SystemUtils] list_usb_storage_devices: lsblk no encontrado")
-        except json.JSONDecodeError as e:
-            logger.error(f"[SystemUtils] list_usb_storage_devices: error parseando JSON de lsblk: {e}")
-        
-        return storage_devices
-    
-    @staticmethod
-    def list_usb_other_devices() -> list:
-        """
-        Lista otros dispositivos USB (no almacenamiento)
-        
-        Returns:
-            Lista de strings con información de dispositivos USB
-        """
-        try:
-            result = subprocess.run(
-                ['lsusb'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            
-            if result.returncode == 0:
-                devices = [line for line in result.stdout.strip().split('\n') if line]
-                return devices
-            else:
-                logger.warning(f"[SystemUtils] list_usb_other_devices: lsusb retornó código {result.returncode}")
-            
-        except subprocess.TimeoutExpired:
-            logger.error("[SystemUtils] list_usb_other_devices: timeout ejecutando lsusb")
-        except FileNotFoundError:
-            logger.error("[SystemUtils] list_usb_other_devices: lsusb no encontrado")
-        
-        return []
-    
-    @staticmethod
-    def list_usb_devices() -> list:
-        """
-        Lista TODOS los dispositivos USB (mantener para compatibilidad)
-        
-        Returns:
-            Lista de strings con lsusb
-        """
-        return SystemUtils.list_usb_other_devices()
-    
-    @staticmethod
-    def eject_usb_device(device: dict) -> Tuple[bool, str]:
-        """
-        Expulsa un dispositivo USB de forma segura
-        
-        Args:
-            device: Diccionario con información del dispositivo
-                   (debe tener 'children' con particiones)
-        
-        Returns:
-            Tupla (success: bool, message: str)
-        """
-        device_name = device.get('name', 'desconocido')
-        
-        try:
-            unmounted = []
-            for partition in device.get('children', []):
-                if partition.get('mount'):
-                    result = subprocess.run(
-                        ['udisksctl', 'unmount', '-b', partition['dev']],
-                        capture_output=True,
-                        text=True,
-                        timeout=10
-                    )
-                    
-                    if result.returncode == 0:
-                        unmounted.append(partition['name'])
-                        logger.info(f"[SystemUtils] Partición {partition['name']} desmontada correctamente")
-                    else:
-                        logger.error(f"[SystemUtils] Error desmontando {partition['name']}: {result.stderr}")
-                        return (False, f"Error desmontando {partition['name']}: {result.stderr}")
-            
-            if unmounted:
-                logger.info(f"[SystemUtils] Dispositivo '{device_name}' expulsado: {', '.join(unmounted)}")
-                return (True, f"Desmontado correctamente: {', '.join(unmounted)}")
-            else:
-                logger.info(f"[SystemUtils] Dispositivo '{device_name}': no había particiones montadas")
-                return (True, "No había particiones montadas")
-        
-        except subprocess.TimeoutExpired:
-            logger.error(f"[SystemUtils] eject_usb_device: timeout desmontando '{device_name}'")
-            return (False, "Timeout al desmontar el dispositivo")
-        except FileNotFoundError:
-            logger.error("[SystemUtils] eject_usb_device: udisksctl no encontrado")
-            return (False, "udisksctl no encontrado. Instala: sudo apt-get install udisks2")
-        except Exception as e:
-            logger.error(f"[SystemUtils] eject_usb_device: error inesperado con '{device_name}': {e}")
-            return (False, f"Error: {str(e)}")
-    
-    @staticmethod
-    def run_script(script_path: str) -> Tuple[bool, str]:
-        """
-        Ejecuta un script de sistema
-        
-        Args:
-            script_path: Ruta al script
-            
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["bash", script_path],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.returncode == 0:
-                logger.info(f"[SystemUtils] Script ejecutado correctamente: {script_path}")
-                return True, "Script ejecutado exitosamente"
-            else:
-                logger.error(f"[SystemUtils] Script falló ({script_path}): {result.stderr}")
-                return False, f"Error: {result.stderr}"
-                
-        except subprocess.TimeoutExpired:
-            logger.error(f"[SystemUtils] run_script: timeout ejecutando {script_path}")
-            return False, "Timeout: El script tardó demasiado"
-        except FileNotFoundError:
-            logger.error(f"[SystemUtils] run_script: script no encontrado: {script_path}")
-            return False, f"Script no encontrado: {script_path}"
-        except Exception as e:
-            logger.error(f"[SystemUtils] run_script: error inesperado ({script_path}): {e}")
-            return False, f"Error: {str(e)}"
-    
-    @staticmethod
-    def get_interfaces_ips() -> Dict[str, str]:
-        """
-        Obtiene las IPs de todas las interfaces de red
-        
-        Returns:
-            Diccionario {interfaz: IP}
-        """
-        result = {}
-        try:
-            addrs = psutil.net_if_addrs()
-            for iface, addr_list in addrs.items():
-                for addr in addr_list:
-                    if addr.family == socket.AF_INET:
-                        result[iface] = addr.address
-                        break
-        except Exception as e:
-            logger.warning(f"[SystemUtils] get_interfaces_ips: {e}")
-        
-        return result
-    
-    @staticmethod
-    def get_nvme_temp() -> float:
-        """
-        Obtiene la temperatura del disco NVMe
-        
-        Returns:
-            Temperatura en °C o 0.0 si no se puede leer
-        """
-        # Método 1: smartctl
-        try:
-            result = subprocess.run(
-                ["sudo", "smartctl", "-a", "/dev/nvme0"],
-                capture_output=True,
-                text=True,
-                timeout=2
-            )
-            
-            if result.returncode == 0:
-                for line in result.stdout.split('\n'):
-                    if 'Temperature:' in line or 'Temperature Sensor' in line:
-                        match = re.search(r'(\d+)\s*Celsius', line)
-                        if match:
-                            return float(match.group(1))
-            else:
-                logger.debug(f"[SystemUtils] get_nvme_temp: smartctl retornó código {result.returncode}")
-        except subprocess.TimeoutExpired:
-            logger.warning("[SystemUtils] get_nvme_temp: timeout ejecutando smartctl")
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
-
-        # Método 2: sysfs
-        try:
-            temp_files = [
-                "/sys/class/hwmon/hwmon*/temp1_input",
-                "/sys/block/nvme0n1/device/hwmon/hwmon*/temp1_input"
-            ]
-            
-            for pattern in temp_files:
-                for temp_file in glob.glob(pattern):
-                    with open(temp_file, 'r') as f:
-                        temp_millis = int(f.read().strip())
-                        return temp_millis / 1000.0
-        except FileNotFoundError:
-            logger.debug("[SystemUtils] get_nvme_temp: archivos sysfs no encontrados")
-        except ValueError as e:
-            logger.warning(f"[SystemUtils] get_nvme_temp: error leyendo sysfs: {e}")
-        except PermissionError:
-            logger.warning("[SystemUtils] get_nvme_temp: sin permisos para leer sysfs")
-        
-        return 0.0
-````
-
 ## File: IDEAS_EXPANSION.md
 ````markdown
-# 💡 Ideas de Expansión - Dashboard v2.5
+# 💡 Ideas de Expansión - Dashboard v2.5.1
 
-Este documento contiene el roadmap de funcionalidades futuras y el estado de implementación actualizado.
+Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
-## ✅ Implementado en v2.5
+## ✅ Implementado
 
-### **✅ 1. Monitor de Procesos en Tiempo Real** ⭐
-**Estado**: IMPLEMENTADO en v2.0
-
-**Funcionalidades actuales:**
-- ✅ Lista de procesos en tiempo real (Top 20)
-- ✅ Información: PID, Comando completo, Usuario, CPU%, RAM%
+### **1. Monitor de Procesos en Tiempo Real**
+**Implementado en v2.0**
+- ✅ Lista en tiempo real (Top 20) con PID, comando, usuario, CPU%, RAM%
 - ✅ Búsqueda por nombre o comando
 - ✅ Filtros: Todos / Usuario / Sistema
-- ✅ Ordenar por: PID, Nombre, CPU%, RAM%
+- ✅ Ordenar por PID, Nombre, CPU%, RAM%
 - ✅ Matar procesos con confirmación
 - ✅ Colores dinámicos según uso
-- ✅ Actualización inteligente (pausa durante interacciones)
-- ✅ Estadísticas del sistema: procesos totales, CPU, RAM, uptime
-
-**Ver**: [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md)
+- ✅ Pausa inteligente durante interacciones
+- ✅ Estadísticas: procesos totales, CPU, RAM, uptime
 
 ---
 
-### **✅ 2. Monitor de Servicios systemd** ⭐
-**Estado**: IMPLEMENTADO en v2.5
-
-**Funcionalidades actuales:**
+### **2. Monitor de Servicios systemd**
+**Implementado en v2.5**
 - ✅ Lista completa de servicios systemd
 - ✅ Estados: active, inactive, failed con iconos
-- ✅ Start/Stop/Restart servicios con confirmación
+- ✅ Start/Stop/Restart con confirmación
 - ✅ Ver logs en tiempo real (últimas 50 líneas)
 - ✅ Enable/Disable autostart
-- ✅ Búsqueda por nombre o descripción
-- ✅ Filtros: Todos / Activos / Inactivos / Fallidos
-- ✅ Ordenación por nombre o estado
+- ✅ Búsqueda y filtros (Todos / Activos / Inactivos / Fallidos)
 - ✅ Estadísticas: total, activos, fallidos, enabled
 
-**Ver**: [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)
-
 ---
 
-### **✅ 3. Histórico de Datos** ⭐
-**Estado**: IMPLEMENTADO en v2.5
-
-**Funcionalidades actuales:**
-- ✅ Base de datos SQLite ligera (~5MB/10k registros)
-- ✅ Recolección automática cada 5 minutos (background)
-- ✅ Métricas guardadas: CPU, RAM, Temp, Disco, Red, PWM
-- ✅ Visualización gráfica con matplotlib (3 gráficas)
-- ✅ Periodos: 24 horas, 7 días, 30 días
-- ✅ Estadísticas: promedios, mínimos, máximos
+### **3. Histórico de Datos**
+**Implementado en v2.5 — ampliado en v2.5.1**
+- ✅ Base de datos SQLite (~5MB/10k registros)
+- ✅ Recolección automática cada 5 minutos en background
+- ✅ Métricas guardadas: CPU, RAM, Temp, Disco I/O, Red, PWM, actualizaciones
+- ✅ **8 gráficas**: CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM
+- ✅ Periodos: 24h, 7d, 30d
+- ✅ Estadísticas completas: promedios, mínimos, máximos de todas las métricas
 - ✅ Detección de anomalías automática
 - ✅ Exportación a CSV
-- ✅ Limpieza de datos antiguos (>90 días)
-- ✅ Registro de eventos críticos
-
-**Ver**: [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)
+- ✅ Exportación de gráficas como imagen PNG
+- ✅ Limpieza de datos antiguos configurable
+- ✅ **Zoom, pan y navegación** sobre las gráficas (toolbar matplotlib)
+- ✅ Registro de eventos críticos en BD separada
 
 ---
 
-### **✅ 4. Sistema de Temas Personalizable** 🎨
-**Estado**: IMPLEMENTADO en v2.0
-
-**Funcionalidades actuales:**
+### **4. Sistema de Temas**
+**Implementado en v2.0**
 - ✅ 15 temas pre-configurados
-- ✅ Cambio con un clic
-- ✅ Reinicio automático al aplicar
+- ✅ Cambio con un clic y reinicio automático
 - ✅ Preview visual antes de aplicar
 - ✅ Persistencia entre reinicios
-- ✅ Todos los componentes usan colores del tema
-- ✅ Sliders, scrollbars, botones temáticos
-
-**Ver**: [THEMES_GUIDE.md](THEMES_GUIDE.md)
+- ✅ Todos los componentes usan colores del tema (sliders, scrollbars, radiobuttons)
 
 ---
 
-### **✅ 5. Botón de Reinicio Rápido** 🔄
-**Estado**: IMPLEMENTADO en v2.5
-
-**Funcionalidades actuales:**
-- ✅ Botón "Reiniciar" en menú principal
-- ✅ Reinicia el dashboard con un clic
-- ✅ Aplica cambios de código y configuración
-- ✅ Confirmación antes de reiniciar
-- ✅ Perfecto para desarrollo
+### **5. Reinicio y Apagado**
+**Implementado en v2.5**
+- ✅ Botón Reiniciar con confirmación (aplica cambios de código)
+- ✅ Botón Salir con opción de apagar el sistema
+- ✅ Terminal de apagado (visualiza apagado.sh en vivo)
 
 ---
 
-## 📊 En Evaluación (Próximas Versiones)
+### **6. Actualizaciones del Sistema**
+**Implementado en v2.5.1**
+- ✅ Verificación al arranque en background (no bloquea la UI)
+- ✅ Sistema de caché 12h (no repite apt update innecesariamente)
+- ✅ Ventana dedicada con estado visual
+- ✅ Instalación con terminal integrada en vivo
+- ✅ Botón Buscar para forzar comprobación manual
+- ✅ Refresco automático del estado tras instalar
 
-### **🔄 1. Monitor de Contenedores Docker**
-**Prioridad**: Alta  
-**Complejidad**: Media  
-**Versión estimada**: v3.0
+---
 
-**Concepto:**
-Dashboard específico para gestionar contenedores Docker desde la interfaz.
+### **7. Sistema de Logging Completo**
+**Implementado en v2.5.1**
+- ✅ Cobertura 100% en módulos core y UI
+- ✅ Niveles diferenciados: DEBUG, INFO, WARNING, ERROR
+- ✅ Rotación automática 2MB con backup
+- ✅ Archivo fijo `data/logs/dashboard.log`
 
-**Funcionalidades propuestas:**
-```
-┌──────────────────────────────────────────┐
-│ CONTENEDORES (3 corriendo, 2 parados)   │
-├──────────────┬────────┬──────┬───────────┤
-│ Nombre       │ Estado │ CPU  │ Acciones  │
-├──────────────┼────────┼──────┼───────────┤
-│ 🟢 pihole    │ Up 5d  │ 2%   │ [⏸][🔄][🗑] │
-│ 🟢 nextcloud │ Up 2h  │ 15%  │ [⏸][🔄][🗑] │
-│ 🟢 postgres  │ Up 5d  │ 3%   │ [⏸][🔄][🗑] │
-└──────────────┴────────┴──────┴───────────┘
-```
+---
 
-**Características:**
+### **8. Lanzadores de Scripts**
+**Implementado desde v1.0 — mejorado en v2.5.1**
+- ✅ Scripts personalizados configurables en `settings.py`
+- ✅ Terminal integrada que muestra el output en vivo
+- ✅ Confirmación previa a ejecución
+- ✅ Layout en grid configurable
+
+---
+
+## 🔄 En Evaluación
+
+### **Monitor de Contenedores Docker**
+**Prioridad**: Alta si usas Docker en la Pi  
+**Complejidad**: Media
+
 - Start/Stop/Restart contenedores
 - Ver logs en tiempo real
-- Estadísticas de uso por contenedor
-- Gestión de volúmenes
+- Estadísticas de uso por contenedor (CPU, RAM)
 - Ver puertos expuestos
-- Ejecutar comandos dentro del contenedor
-
-**Implementación:**
-- Usar `docker` Python SDK
-- Comunicación con Docker daemon
-- Similar a `docker ps`, `docker stats`
+- Similar a `docker ps` y `docker stats` pero visual
 
 ---
 
-### **🔄 2. Monitor de GPU**
+### **Notificaciones Visuales en el Menú**
+**Prioridad**: Media  
+**Complejidad**: Baja
+
+Badge o indicador en el botón del menú principal cuando:
+- Hay actualizaciones pendientes
+- Temperatura por encima del umbral crítico
+- Algún servicio en estado `failed`
+
+No requiere email ni Telegram, solo UI interna.
+
+---
+
+### **Alertas Externas**
 **Prioridad**: Baja  
-**Complejidad**: Media  
-**Versión estimada**: v3.0+
+**Complejidad**: Media
 
-**Concepto:**
-Monitoreo específico de GPU (NVIDIA/AMD).
-
-**Funcionalidades propuestas:**
-- Temperatura de GPU
-- Uso de GPU (%)
-- Uso de VRAM
-- Frecuencia actual
-- Power consumption
-- Gráficas históricas
-
-**Requisitos:**
-- GPU compatible (NVIDIA/AMD)
-- Drivers instalados
-- nvidia-smi o radeontop
-
-**Notas:**
-- Baja prioridad (Raspberry Pi sin GPU dedicada)
-- Útil para otros SBCs con GPU
+- Notificaciones por Telegram o webhook
+- Alertas por temperatura alta sostenida, CPU, disco lleno, servicios caídos
+- Configurable por umbral y duración
 
 ---
 
-### **🔄 3. Alertas y Notificaciones**
-**Prioridad**: Media  
-**Complejidad**: Media  
-**Versión estimada**: v3.0
-
-**Concepto:**
-Sistema de alertas configurable con notificaciones externas.
-
-**Funcionalidades propuestas:**
-- Alertas por temperatura alta (>80°C)
-- Alertas por CPU alta sostenida (>90%)
-- Alertas por disco lleno (>95%)
-- Alertas por servicios caídos
-- Notificaciones por email
-- Notificaciones por Telegram
-- Notificaciones por webhook
-
-**Configuración:**
-```python
-ALERTS = {
-    'temperature': {
-        'threshold': 80,
-        'notify': ['email', 'telegram']
-    },
-    'cpu': {
-        'threshold': 90,
-        'duration': 300,  # 5 minutos sostenido
-        'notify': ['telegram']
-    }
-}
-```
-
----
-
-### **🔄 4. Gráficas Mejoradas**
-**Prioridad**: Media  
-**Complejidad**: Baja  
-**Versión estimada**: v2.6
-
-**Concepto:**
-Mejorar las gráficas existentes del histórico.
-
-**Funcionalidades propuestas:**
-- Gráfica de Red (download/upload histórico)
-- Gráfica de Disco (I/O histórico)
-- Gráfica de PWM del ventilador
-- Zoom en gráficas
-- Selección de rango personalizado
-- Comparación de periodos
-- Líneas de umbral configurables
+### **Monitor de GPU**
+**Prioridad**: Muy baja (Raspberry Pi sin GPU dedicada)  
+**Complejidad**: Media
 
 ---
 
 ## 🚀 Ideas Futuras (Backlog)
 
-### **Automatización:**
-- Scripts programados (cron visual)
-- Acciones automáticas según condiciones
-- Profiles de ventiladores según hora del día
-- Auto-reinicio de servicios caídos
-- Backup automático de configuración
+**Automatización**: cron visual, profiles de ventiladores por hora, auto-reinicio de servicios caídos
 
-### **Smart Home / IoT:**
-- Integración con Home Assistant
-- Control de luces Philips Hue
-- Sensores de temperatura externos
-- Control de enchufes inteligentes
-- Dashboard de sensores
+**Red avanzada**: monitor de dispositivos en red (nmap), Pi-hole stats, VPN panel
 
-### **Multimedia:**
-- Control de Plex/Jellyfin
-- Monitor de descargas (qBittorrent, Transmission)
-- Gestión de media library
-- Reproducción remota
-- Stats de uso multimedia
+**Backup**: programar backups, estado con progreso, sincronización cloud
 
-### **Red Avanzada:**
-- Monitor de dispositivos en red (nmap)
-- Bloqueo de IPs (firewall visual)
-- VPN control panel
-- DNS monitoring (Pi-hole stats)
-- Port scanning
+**Seguridad**: intentos de login fallidos, logs de seguridad, firewall status
 
-### **Backup y Sincronización:**
-- Programar backups automáticos
-- Sincronización con cloud (Nextcloud, Google Drive)
-- Estado de backups con progreso
-- Restauración visual
-- Versionado de backups
-
-### **Seguridad:**
-- Monitor de intentos de login fallidos
-- Análisis de logs de seguridad
-- Escaneo de puertos abiertos
-- Updates de sistema disponibles
-- Firewall status
-
-### **API REST:**
-- Endpoint para métricas actuales
-- Endpoint para histórico
-- Endpoint para control de servicios
-- Autenticación con tokens
-- Documentación Swagger
-
-### **Machine Learning:**
-- Predicción de uso de CPU/RAM
-- Detección de anomalías avanzada
-- Recomendaciones de optimización
-- Predicción de fallos
-- Clustering de patrones
-
----
-
-## 🤝 Contribuir
-
-¿Quieres implementar alguna de estas ideas?
-
-1. Fork del repositorio
-2. Crea una rama: `git checkout -b feature-nombre`
-3. Implementa la funcionalidad
-4. Pull Request con descripción detallada
-
-### **Qué incluir en tu PR:**
-- Código funcional y probado
-- Documentación (GUIA_TU_FEATURE.md)
-- Actualización del README.md
-- Tests si aplica
-- Screenshots o demos
-
----
-
-## 📊 Votación de Features
-
-Si quieres una feature específica, abre un **Issue** con:
-- Título: `[Feature Request] Nombre de la feature`
-- Descripción detallada con casos de uso
-- Mockups o ejemplos (opcional)
-- Por qué sería útil
-
-Las features más votadas (👍 reactions) tendrán prioridad.
+**API REST**: endpoints para métricas, histórico y control de servicios
 
 ---
 
 ## 🎯 Roadmap
 
-### **v2.5** ✅ ACTUAL - 2026-02-17
-- ✅ Monitor de Servicios systemd
-- ✅ Histórico de Datos con SQLite
-- ✅ Botón de Reinicio rápido
-- ✅ Recolección automática background
-- ✅ Exportación CSV
-- ✅ Detección de anomalías
+### **v2.5.1** ✅ ACTUAL — 2026-02-20
+- ✅ Logging completo en todos los módulos
+- ✅ Ventana Actualizaciones con caché y terminal
+- ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
+- ✅ Zoom y navegación en gráficas
+- ✅ Fix bug atexit en DataCollectionService
+- ✅ Paso correcto de dependencias (update_monitor inyectado)
 
-### **v2.6** (Próximo) - Q1 2026
-- [ ] Gráficas mejoradas (Red, Disco, PWM)
-- [ ] Zoom y selección de rango
-- [ ] Comparación de periodos
+### **v2.6** (Próximo)
+- [ ] Notificaciones visuales en menú (badges)
+- [ ] Monitor Docker (si aplica)
 - [ ] Mejoras UI generales
 
-### **v3.0** (Futuro) - Q2 2026
-- [ ] Monitor de Docker
-- [ ] Alertas y notificaciones
+### **v3.0** (Futuro)
+- [ ] Alertas externas (Telegram/webhook)
 - [ ] API REST básica
-- [ ] Plugin system
-
-### **v3.5** (Futuro) - Q3 2026
-- [ ] Monitor de GPU
-- [ ] Integración Home Assistant
-- [ ] Machine Learning básico
-- [ ] Dashboard web
 
 ---
 
-## 💬 Feedback
+## 📈 Cobertura actual
 
-¿Tienes otras ideas? Abre un Issue con la etiqueta `idea` 💡
-
----
-
-## 📈 Progreso del Proyecto
-
-### **Funcionalidades Totales:**
-- ✅ Implementadas: 5 grandes funciones (Procesos, Servicios, Histórico, Temas, Reinicio)
-- 🔄 En evaluación: 4 funciones (Docker, GPU, Alertas, Gráficas)
-- 💭 Ideas futuras: 30+ funciones en backlog
-
-### **Cobertura:**
-- Monitoreo básico: ✅ 100%
-- Control avanzado: ✅ 100%
-- Histórico: ✅ 100%
-- Alertas: ⏳ 0%
-- Automatización: ⏳ 0%
-- Integración externa: ⏳ 0%
+| Área | Estado |
+|------|--------|
+| Monitoreo básico (CPU, RAM, Temp, Disco, Red) | ✅ 100% |
+| Control avanzado (Ventiladores, Procesos, Servicios) | ✅ 100% |
+| Histórico y análisis | ✅ 100% |
+| Actualizaciones del sistema | ✅ 100% |
+| Logging y observabilidad | ✅ 100% |
+| Notificaciones visuales internas | ⏳ 0% |
+| Alertas externas | ⏳ 0% |
+| Docker | ⏳ 0% |
+| Automatización | ⏳ 0% |
 
 ---
 
-**Estado del proyecto**: Activamente desarrollado 🚀  
-**Versión actual**: v2.5  
-**Última actualización**: 2026-02-17  
-**Próxima versión**: v2.6 (Q1 2026)
+**Versión actual**: v2.5.1 — **Última actualización**: 2026-02-20
 ````
 
 ## File: INDEX.md
@@ -9908,243 +8741,6 @@ Si quieres implementar funciones nuevas, tenemos guías paso a paso:
 **¡Toda la información que necesitas está aquí!** 📚✨
 ````
 
-## File: QUICKSTART.md
-````markdown
-# 🚀 Inicio Rápido - Dashboard v2.5
-
-Guía ultra-rápida para tener el dashboard funcionando en 5 minutos.
-
----
-
-## ⚡ Instalación Express (3 Comandos)
-
-```bash
-# 1. Clonar
-git clone https://github.com/tu-usuario/system-dashboard.git
-cd system-dashboard
-
-# 2. Instalar
-chmod +x install.sh
-./install.sh
-
-# 3. Ejecutar
-python3 main.py
-```
-
-**¡Listo!** El dashboard debería abrirse en tu pantalla DSI.
-
----
-
-## 📋 Requisitos Mínimos
-
-- ✅ Raspberry Pi 3/4/5
-- ✅ Raspberry Pi OS (cualquier versión)
-- ✅ Python 3.8+
-- ✅ Conexión a internet (para instalación)
-
----
-
-## 🎯 Primeros Pasos
-
-### **Menú Principal (12 botones):**
-
-```
-┌───────────────────────────────────┐
-│  Control        │  Monitor         │
-│  Ventiladores   │  Placa           │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Red            │  USB             │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Lanzadores      │
-│  Disco          │                  │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Procesos       │  Servicios       │ ← NUEVO
-├─────────────────┼──────────────────┤
-│  Histórico      │  Cambiar         │
-│  Datos          │  Tema            │ ← NUEVO
-├─────────────────┼──────────────────┤
-│  Reiniciar      │  Salir           │ ← NUEVO
-└─────────────────┴──────────────────┘
-```
-
-### **Explora las Ventanas:**
-
-#### **1. Monitor Placa** - Ver CPU, RAM, Temperatura
-- CPU en tiempo real con gráfica
-- RAM usada/total
-- Temperatura del CPU
-
-#### **2. Monitor Red** - Tráfico y Speedtest
-- Download/Upload en vivo
-- Speedtest de velocidad
-- Lista de interfaces e IPs
-
-#### **3. Monitor USB** - Dispositivos USB
-- Ver dispositivos conectados
-- Expulsar almacenamiento seguro
-
-#### **4. Monitor Disco** - Espacio y temperatura
-- Espacio usado/disponible
-- Temperatura del NVMe
-- Velocidad I/O
-
-#### **5. Monitor Procesos** ⭐ - Gestión de procesos
-- Ver procesos activos
-- CPU y RAM por proceso
-- Matar procesos
-
-#### **6. Monitor Servicios** ⭐ NUEVO - Gestión systemd
-- Start/Stop/Restart servicios
-- Ver estado (active/inactive/failed)
-- Habilitar/deshabilitar autostart
-- Ver logs en tiempo real
-
-#### **7. Histórico Datos** ⭐ NUEVO - Métricas históricas
-- Gráficas de CPU, RAM, Temp
-- Periodos: 24h, 7d, 30d
-- Estadísticas y promedios
-- Exportar a CSV
-
-#### **8. Control Ventiladores** - Configurar PWM
-- Modo Auto (curva de temperatura)
-- Modo Manual (control directo)
-- Presets: Silent/Normal/Performance
-
-#### **9. Lanzadores** - Scripts personalizados
-- Ejecutar scripts del sistema
-- Apagar, reiniciar, etc.
-
-#### **10. Cambiar Tema** 🎨 - 15 temas
-- Cyberpunk, Matrix, Dracula, Nord...
-- Reinicio automático
-
-#### **11. Reiniciar** ⭐ NUEVO - Reinicio rápido
-- Reinicia el dashboard
-- Aplica cambios de código
-- Con confirmación
-
----
-
-## 🔧 Configuración Básica
-
-### **Ajustar Posición en Pantalla DSI:**
-Edita `config/settings.py`:
-```python
-DSI_X = 0     # Mover horizontalmente
-DSI_Y = 0     # Mover verticalmente
-```
-
-### **Cambiar Pin PWM de Ventiladores:**
-```python
-PWM_PIN = 18  # Cambiar al pin que uses
-```
-
-### **Configurar Histórico de Datos:**
-```python
-DATA_COLLECTION_INTERVAL = 5  # Minutos entre recolecciones
-DATA_RETENTION_DAYS = 90      # Días de retención
-```
-
----
-
-## ❓ Problemas Comunes
-
-### **No arranca:**
-```bash
-python3 --version  # Debe ser 3.8+
-pip install -r requirements.txt
-```
-
-### **No detecta temperatura:**
-```bash
-sudo sensors-detect --auto
-sudo systemctl restart lm-sensors
-sensors  # Verificar
-```
-
-### **Ventiladores no responden:**
-```bash
-gpio readall
-sudo python3 main.py  # Temporal
-```
-
-### **Speedtest no funciona:**
-```bash
-sudo apt install speedtest-cli
-```
-
-### **Base de datos crece mucho:**
-- Menú → "Histórico Datos" → "Limpiar Antiguos"
-- Elimina datos >90 días
-
----
-
-## 📚 Siguiente Paso
-
-¿Quieres profundizar?  
-Lee el **[README.md](README.md)** completo para características avanzadas.
-
----
-
-## 🎯 Tips Rápidos
-
-### **Gestión de Servicios:**
-1. Abre "Monitor Servicios"
-2. Busca servicio (ej: "nginx")
-3. Start/Stop/Restart con un clic
-4. Ver logs en tiempo real
-
-### **Histórico de Datos:**
-1. Abre "Histórico Datos"
-2. Selecciona periodo (24h/7d/30d)
-3. Ve gráficas de CPU, RAM, Temp
-4. Exporta a CSV si necesitas
-
-### **Cambio Rápido de Código:**
-1. Edita archivo Python
-2. Clic en "Reiniciar"
-3. Confirma
-4. ¡Dashboard se reinicia con cambios!
-
-### **Temas Recomendados:**
-- **Cyberpunk**: Original cyan neón ⚡
-- **Matrix**: Verde Matrix 💚
-- **Dracula**: Colores pastel 🦇
-- **Tokyo Night**: Noche de Tokio 🌃
-- **Nord**: Minimalista nórdico ❄️
-
-### **Ventanas Más Útiles:**
-- **Monitor Procesos**: Encuentra qué consume CPU/RAM
-- **Monitor Servicios**: Gestiona systemd sin terminal ⭐
-- **Histórico Datos**: Analiza tendencias ⭐
-- **Control Ventiladores**: Mantén tu Pi fresco
-
----
-
-## 🆕 Novedades v2.5
-
-✅ **Monitor de Servicios** - Control completo de systemd  
-✅ **Histórico de Datos** - SQLite + gráficas matplotlib  
-✅ **Botón Reiniciar** - Reinicio rápido con un clic  
-✅ **Recolección automática** - Background cada 5 min  
-✅ **Exportación CSV** - Descarga datos históricos  
-
----
-
-## 🚀 ¡Ya Estás Listo!
-
-Explora las 11 ventanas, personaliza los colores, ajusta los ventiladores, analiza el histórico.
-
-**¿Necesitas ayuda?** → [README.md](README.md)  
-**¿Quieres más funciones?** → Abre un Issue en GitHub
-
----
-
-**Dashboard v2.5: Profesional, Completo, Potente** 🎉✨
-````
-
 ## File: config/settings.py
 ````python
 """
@@ -10250,6 +8846,631 @@ FONT_SIZES = {
     "xlarge": 24,
     "xxlarge": 30
 }
+````
+
+## File: core/data_analyzer.py
+````python
+"""
+Análisis de datos históricos
+"""
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple
+from config.settings import DATA_DIR
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class DataAnalyzer:
+    """Analiza datos históricos de la base de datos"""
+
+    def __init__(self, db_path: str = f"{DATA_DIR}/history.db"):
+        self.db_path = db_path
+
+    def get_data_range(self, hours: int = 24) -> List[Dict]:
+        """
+        Obtiene datos de las últimas X horas
+
+        Args:
+            hours: Número de horas hacia atrás
+
+        Returns:
+            Lista de diccionarios con los datos
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cutoff_time = datetime.now() - timedelta(hours=hours)
+
+            cursor.execute('''
+                SELECT * FROM metrics
+                WHERE timestamp >= ?
+                ORDER BY timestamp ASC
+            ''', (cutoff_time,))
+
+            rows = cursor.fetchall()
+            conn.close()
+
+            logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros obtenidos (últimas {hours}h)")
+            return [dict(row) for row in rows]
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"[DataAnalyzer] get_data_range: error de base de datos: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_data_range: error inesperado: {e}")
+            return []
+
+    def get_stats(self, hours: int = 24) -> Dict:
+        """
+        Obtiene estadísticas de las últimas X horas
+
+        Args:
+            hours: Número de horas hacia atrás
+
+        Returns:
+            Diccionario con estadísticas
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cutoff_time = datetime.now() - timedelta(hours=hours)
+
+            cursor.execute('''
+                SELECT 
+                    AVG(cpu_percent) as cpu_avg,
+                    MAX(cpu_percent) as cpu_max,
+                    MIN(cpu_percent) as cpu_min,
+                    AVG(ram_percent) as ram_avg,
+                    MAX(ram_percent) as ram_max,
+                    MIN(ram_percent) as ram_min,
+                    AVG(temperature) as temp_avg,
+                    MAX(temperature) as temp_max,
+                    MIN(temperature) as temp_min,
+                    AVG(net_download_mb) as down_avg,
+                    MAX(net_download_mb) as down_max,
+                    MIN(net_download_mb) as down_min,
+                    AVG(net_upload_mb) as up_avg,
+                    MAX(net_upload_mb) as up_max,
+                    MIN(net_upload_mb) as up_min,
+                    AVG(disk_read_mb) as disk_read_avg,
+                    MAX(disk_read_mb) as disk_read_max,
+                    MIN(disk_read_mb) as disk_read_min,
+                    AVG(disk_write_mb) as disk_write_avg,
+                    MAX(disk_write_mb) as disk_write_max,
+                    MIN(disk_write_mb) as disk_write_min,
+                    AVG(fan_pwm) as pwm_avg,
+                    MAX(fan_pwm) as pwm_max,
+                    MIN(fan_pwm) as pwm_min,
+                    COUNT(*) as total_samples
+                FROM metrics
+                WHERE timestamp >= ?
+            ''', (cutoff_time,))
+
+            row = cursor.fetchone()
+            conn.close()
+
+            if row and row[24]:
+                logger.debug(f"[DataAnalyzer] get_stats: {row[24]} muestras en las últimas {hours}h")
+                return {
+                    'cpu_avg': round(row[0], 1) if row[0] else 0,
+                    'cpu_max': round(row[1], 1) if row[1] else 0,
+                    'cpu_min': round(row[2], 1) if row[2] else 0,
+                    'ram_avg': round(row[3], 1) if row[3] else 0,
+                    'ram_max': round(row[4], 1) if row[4] else 0,
+                    'ram_min': round(row[5], 1) if row[5] else 0,
+                    'temp_avg': round(row[6], 1) if row[6] else 0,
+                    'temp_max': round(row[7], 1) if row[7] else 0,
+                    'temp_min': round(row[8], 1) if row[8] else 0,
+                    'down_avg': round(row[9], 2) if row[9] else 0,
+                    'down_max': round(row[10], 2) if row[10] else 0,
+                    'down_min': round(row[11], 2) if row[11] else 0,
+                    'up_avg': round(row[12], 2) if row[12] else 0,
+                    'up_max': round(row[13], 2) if row[13] else 0,
+                    'up_min': round(row[14], 2) if row[14] else 0,
+                    'disk_read_avg': round(row[15], 2) if row[15] else 0,
+                    'disk_read_max': round(row[16], 2) if row[16] else 0,
+                    'disk_read_min': round(row[17], 2) if row[17] else 0,
+                    'disk_write_avg': round(row[18], 2) if row[18] else 0,
+                    'disk_write_max': round(row[19], 2) if row[19] else 0,
+                    'disk_write_min': round(row[20], 2) if row[20] else 0,
+                    'pwm_avg': round(row[21], 0) if row[21] else 0,
+                    'pwm_max': round(row[22], 0) if row[22] else 0,
+                    'pwm_min': round(row[23], 0) if row[23] else 0,
+                    'total_samples': row[24]
+                }
+
+            logger.debug(f"[DataAnalyzer] get_stats: sin datos en las últimas {hours}h")
+            return {}
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"[DataAnalyzer] get_stats: error de base de datos: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_stats: error inesperado: {e}")
+            return {}
+
+    def detect_anomalies(self, hours: int = 24) -> List[Dict]:
+        """
+        Detecta anomalías en los datos
+
+        Args:
+            hours: Número de horas hacia atrás
+
+        Returns:
+            Lista de anomalías detectadas
+        """
+        anomalies = []
+        stats = self.get_stats(hours)
+
+        if not stats:
+            return anomalies
+
+        if stats.get('cpu_avg', 0) > 80:
+            anomalies.append({
+                'type': 'cpu_high',
+                'severity': 'warning',
+                'message': f"CPU promedio alta: {stats['cpu_avg']:.1f}%"
+            })
+            logger.warning(f"[DataAnalyzer] Anomalía detectada: CPU promedio {stats['cpu_avg']:.1f}%")
+
+        if stats.get('temp_max', 0) > 80:
+            anomalies.append({
+                'type': 'temp_high',
+                'severity': 'critical',
+                'message': f"Temperatura máxima: {stats['temp_max']:.1f}°C"
+            })
+            logger.warning(f"[DataAnalyzer] Anomalía detectada: temperatura máxima {stats['temp_max']:.1f}°C")
+
+        if stats.get('ram_avg', 0) > 85:
+            anomalies.append({
+                'type': 'ram_high',
+                'severity': 'warning',
+                'message': f"RAM promedio alta: {stats['ram_avg']:.1f}%"
+            })
+            logger.warning(f"[DataAnalyzer] Anomalía detectada: RAM promedio {stats['ram_avg']:.1f}%")
+
+        return anomalies
+
+    def get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]:
+        """
+        Obtiene datos para gráficas
+
+        Args:
+            metric: Métrica a obtener (cpu_percent, ram_percent, temperature, etc)
+            hours: Número de horas hacia atrás
+
+        Returns:
+            Tupla (timestamps, values)
+        """
+        try:
+            data = self.get_data_range(hours)
+
+            timestamps = []
+            values = []
+
+            for entry in data:
+                ts = datetime.fromisoformat(entry['timestamp'])
+                timestamps.append(ts)
+                values.append(entry.get(metric, 0))
+
+            return timestamps, values
+
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_graph_data: error obteniendo datos de '{metric}': {e}")
+            return [], []
+
+    def export_to_csv(self, output_path: str, hours: int = 24):
+        """
+        Exporta datos a CSV
+
+        Args:
+            output_path: Ruta del archivo CSV a crear
+            hours: Número de horas a exportar
+        """
+        import csv
+
+        try:
+            data = self.get_data_range(hours)
+
+            if not data:
+                logger.warning(f"[DataAnalyzer] export_to_csv: sin datos para exportar (últimas {hours}h)")
+                return
+
+            with open(output_path, 'w', newline='') as csvfile:
+                fieldnames = data[0].keys()
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in data:
+                    writer.writerow(row)
+
+            logger.info(f"[DataAnalyzer] export_to_csv: {len(data)} registros exportados a {output_path}")
+
+        except OSError as e:
+            logger.error(f"[DataAnalyzer] export_to_csv: error escribiendo {output_path}: {e}")
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] export_to_csv: error inesperado: {e}")
+````
+
+## File: core/fan_auto_service.py
+````python
+"""
+Servicio en segundo plano para modo AUTO de ventiladores
+"""
+import threading
+import time
+from typing import Optional
+from core.fan_controller import FanController
+from core.system_monitor import SystemMonitor
+from utils import FileManager
+from utils.logger import get_logger
+
+
+logger = get_logger(__name__)
+
+
+class FanAutoService:
+    """
+    Servicio que actualiza automáticamente el PWM en modo AUTO
+    Se ejecuta en segundo plano independiente de la UI
+    
+    Características:
+    - Singleton: Solo una instancia en toda la aplicación
+    - Thread-safe: Seguro para concurrencia
+    - Daemon: Se cierra automáticamente con el programa
+    - Independiente de UI: Funciona con o sin ventanas abiertas
+    """
+    
+    _instance: Optional['FanAutoService'] = None
+    _lock = threading.Lock()
+    
+    def __new__(cls, *args, **kwargs):
+        """Singleton: solo una instancia"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, fan_controller: FanController, 
+                 system_monitor: SystemMonitor):
+        """
+        Inicializa el servicio (solo la primera vez)
+        
+        Args:
+            fan_controller: Instancia del controlador de ventiladores
+            system_monitor: Instancia del monitor del sistema
+        """
+        # Solo inicializar una vez (patrón singleton)
+        if hasattr(self, '_initialized'):
+            return
+        
+        self.fan_controller = fan_controller
+        self.system_monitor = system_monitor
+        self.file_manager = FileManager()
+        
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        self._update_interval = 2.0  # segundos
+        self._initialized = True
+        self.start_cycle = True
+    def start(self):
+        """Inicia el servicio en segundo plano"""
+        if self._running:
+            logger.info("[FanAutoService] ya está corriendo")
+            return
+        
+        self._running = True
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,  # Se cierra con el programa
+            name="FanAutoService"
+        )
+        self._thread.start()
+    
+    def stop(self):
+        """Detiene el servicio"""
+        if not self._running:
+            logger.warning("[FanAutoService] no está corriendo")
+            return
+        
+        self._running = False
+        
+        if self._thread:
+            self._thread.join(timeout=5)
+    
+    def _run(self):
+        """Bucle principal del servicio (ejecuta en thread separado)"""
+        while self._running:
+            try:
+                self._update_auto_mode()
+            except Exception as e:
+                logger.error(f"[FanAutoService] Error en actualización automática: {e}")
+            
+            # Dormir en intervalos pequeños para poder detener rápido
+            for _ in range(int(self._update_interval * 10)):
+                if not self._running:
+                    break
+                time.sleep(0.1)
+    
+    def _update_auto_mode(self):
+        """Actualiza el PWM si está en modo auto"""
+        
+        try:
+            state = self.file_manager.load_state()
+        except Exception as e:
+            logger.error(f"[FanAutoService] Error cargando estado: {e}")
+            return
+        
+        # Solo actuar si está en modo auto
+        if state.get("mode") != "auto":
+            
+            if self.start_cycle:
+                logger.info("[FanAutoService] Modo no es auto, esperando para iniciar actualizaciones automáticas...")
+                self.start_cycle = False
+            return
+        
+        try:
+            # Obtener temperatura actual
+            stats = self.system_monitor.get_current_stats()
+            temp = stats.get('temp', 50)
+            
+            # Calcular PWM según curva
+            target_pwm = self.fan_controller.get_pwm_for_mode(
+                mode="auto",
+                temp=temp,
+                manual_pwm=128  # No importa en auto
+            )
+            
+            # Solo guardar si cambió (evitar writes innecesarios)
+            current_pwm = state.get("target_pwm")
+            if target_pwm != current_pwm:
+                self.file_manager.write_state({
+                    "mode": "auto",
+                    "target_pwm": target_pwm
+                })
+        
+        except Exception as e:
+            logger.error(f"[FanAutoService] Error calculando o guardando PWM: {e}")
+    
+    def set_update_interval(self, seconds: float):
+        """
+        Cambia el intervalo de actualización
+        
+        Args:
+            seconds: Segundos entre actualizaciones (mínimo 1.0)
+        """
+        self._update_interval = max(1.0, seconds)
+    
+    def is_running(self) -> bool:
+        """
+        Verifica si el servicio está corriendo
+        
+        Returns:
+            True si está activo, False si no
+        """
+        logger.debug(f"[FanAutoService] is_running: {self._running}")
+        return self._running
+    
+    def get_status(self) -> dict:
+        """
+        Obtiene el estado del servicio
+        
+        Returns:
+            Diccionario con información del servicio
+        """
+        return {
+            'running': self._running,
+            'interval': self._update_interval,
+            'thread_alive': self._thread.is_alive() if self._thread else False
+        }
+````
+
+## File: ui/widgets/dialogs.py
+````python
+"""
+Diálogos y ventanas modales personalizadas
+"""
+import customtkinter as ctk
+from ui.styles import make_futuristic_button
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
+import subprocess
+import threading
+
+
+def custom_msgbox(parent, text: str, title: str = "Info") -> None:
+    """
+    Muestra un cuadro de mensaje personalizado
+    
+    Args:
+        parent: Ventana padre
+        text: Texto del mensaje
+        title: Título del diálogo
+    """
+    popup = ctk.CTkToplevel(parent)
+    popup.overrideredirect(True)
+    
+    # Contenedor
+    frame = ctk.CTkFrame(popup)
+    frame.pack(fill="both", expand=True)
+    
+    # Título
+    title_lbl = ctk.CTkLabel(
+        frame, 
+        text=title,
+        text_color=COLORS['primary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+    )
+    title_lbl.pack(anchor="center", pady=(0, 10))
+    
+    # Texto
+    text_lbl = ctk.CTkLabel(
+        frame, 
+        text=text,
+        text_color=COLORS['text'],
+        font=(FONT_FAMILY, FONT_SIZES['medium']),
+        compound="left",
+        wraplength=800
+    )
+    text_lbl.pack(anchor="center", pady=(0, 15))
+    
+    # Botón OK
+    btn = make_futuristic_button(
+        frame, 
+        text="OK",
+        command=popup.destroy,
+        width=15, 
+        height=6, 
+        font_size=16
+    )
+    btn.pack()
+    
+    # Calcular tamaño
+    popup.update_idletasks()
+    
+    w = popup.winfo_reqwidth()
+    h = popup.winfo_reqheight()
+    
+    max_w = parent.winfo_screenwidth() - 40
+    max_h = parent.winfo_screenheight() - 40
+    
+    w = min(w, max_w)
+    h = min(h, max_h)
+    
+    # Centrar
+    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
+    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
+    
+    popup.geometry(f"{w}x{h}+{x}+{y}")
+    
+    popup.lift()
+    popup.focus_force()
+    popup.grab_set()
+
+
+def confirm_dialog(parent, text: str, title: str = "Confirmar", 
+                   on_confirm=None, on_cancel=None) -> None:
+    """
+    Muestra un diálogo de confirmación
+    
+    Args:
+        parent: Ventana padre
+        text: Texto del mensaje
+        title: Título del diálogo
+        on_confirm: Callback al confirmar
+        on_cancel: Callback al cancelar
+    """
+    popup = ctk.CTkToplevel(parent)
+    popup.overrideredirect(True)
+    
+    frame = ctk.CTkFrame(popup)
+    frame.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    # Título
+    title_lbl = ctk.CTkLabel(
+        frame, 
+        text=title,
+        text_color=COLORS['primary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
+    )
+    title_lbl.pack(anchor="center", pady=(0, 10))
+    
+    # Texto
+    text_lbl = ctk.CTkLabel(
+        frame, 
+        text=text,
+        text_color=COLORS['text'],
+        font=(FONT_FAMILY, FONT_SIZES['medium']),
+        wraplength=600
+    )
+    text_lbl.pack(anchor="center", pady=(0, 20))
+    
+    # Botones
+    btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    btn_frame.pack()
+    
+    def _on_confirm():
+        popup.destroy()
+        if on_confirm:
+            on_confirm()
+    
+    def _on_cancel():
+        popup.destroy()
+        if on_cancel:
+            on_cancel()
+    
+    btn_confirm = make_futuristic_button(
+        btn_frame,
+        text="Confirmar",
+        command=_on_confirm,
+        width=15,
+        height=8,
+        font_size=16
+    )
+    btn_confirm.pack(side="left", padx=5)
+    
+    btn_cancel = make_futuristic_button(
+        btn_frame,
+        text="Cancelar",
+        command=_on_cancel,
+        width=20,
+        height=10,
+        font_size=16
+    )
+    btn_cancel.pack(side="left", padx=5)
+    
+    # Centrar
+    popup.update_idletasks()
+    w = popup.winfo_reqwidth()
+    h = popup.winfo_reqheight()
+    
+    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
+    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
+    
+    popup.geometry(f"{w}x{h}+{x}+{y}")
+    
+    popup.lift()
+    popup.focus_force()
+    popup.grab_set()
+def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=None):
+    popup = ctk.CTkToplevel(parent)
+    popup.overrideredirect(True)
+    popup.configure(fg_color=COLORS['bg_dark'])
+    
+    # Tamaño para pantalla 800x480
+    w, h = 720, 400
+    x = parent.winfo_x() + (parent.winfo_width() // 2) - (w // 2)
+    y = parent.winfo_y() + (parent.winfo_height() // 2) - (h // 2)
+    popup.geometry(f"{w}x{h}+{x}+{y}")
+
+    frame = ctk.CTkFrame(popup, fg_color=COLORS['bg_dark'], border_width=2, border_color=COLORS['primary'])
+    frame.pack(fill="both", expand=True, padx=2, pady=2)
+
+    ctk.CTkLabel(frame, text=title, font=(FONT_FAMILY, 18, "bold"), text_color=COLORS['secondary']).pack(pady=5)
+    def _on_close():
+        popup.destroy()
+        if on_close:
+            on_close()
+    console = ctk.CTkTextbox(frame, fg_color="black", text_color="#00FF00", font=("Courier New", 12))
+    console.pack(fill="both", expand=True, padx=10, pady=5)
+
+    btn_close = ctk.CTkButton(frame, text="Cerrar", command=_on_close, state="disabled")
+    btn_close.pack(pady=10)
+
+    def run_command():
+        process = subprocess.Popen(["bash", script_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in process.stdout:
+            popup.after(0, lambda l=line: console.insert("end", l))
+            popup.after(0, lambda: console.see("end"))
+        process.wait()
+        popup.after(0, lambda: btn_close.configure(state="normal"))
+
+    threading.Thread(target=run_command, daemon=True).start()
+    popup.grab_set()
 ````
 
 ## File: ui/windows/fan_control.py
@@ -10735,715 +9956,602 @@ class FanControlWindow(ctk.CTkToplevel):
         self.after(2000, self._update_pwm_display)
 ````
 
-## File: ui/windows/launchers.py
+## File: utils/system_utils.py
 ````python
 """
-Ventana de lanzadores de scripts
+Utilidades para obtener información del sistema
 """
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
-from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox, confirm_dialog
-from utils.system_utils import SystemUtils
+import re
+import socket
+import psutil
+import subprocess
+import glob
+from typing import Tuple, Dict, Optional, Any
+from collections import namedtuple
+from config.settings import UPDATE_MS
+import json
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class LaunchersWindow(ctk.CTkToplevel):
-    """Ventana de lanzadores de scripts del sistema"""
+class SystemUtils:
+    """Utilidades para interactuar con el sistema"""
     
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        self.system_utils = SystemUtils()
-        
-        self.title("Lanzadores")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        
-        self._create_ui()
+    # Variable de clase para mantener estado de red entre llamadas
+    _last_net_io = {}
     
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
+    @staticmethod
+    def get_cpu_temp() -> float:
+        """
+        Obtiene la temperatura de la CPU
         
-        title = ctk.CTkLabel(
-            main,
-            text="LANZADORES",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=(10, 20))
-        
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        self._create_launcher_buttons(inner)
-        
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-    
-    def _create_launcher_buttons(self, parent):
-        """Crea los botones de lanzadores en layout grid"""
-        if not LAUNCHERS:
-            no_launchers = ctk.CTkLabel(
-                parent,
-                text="No hay lanzadores configurados\n\nEdita config/settings.py para añadir scripts",
-                text_color=COLORS['warning'],
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-                justify="center"
+        Returns:
+            Temperatura en grados Celsius
+        """
+        # Método 1: vcgencmd (Raspberry Pi - método oficial)
+        try:
+            out = subprocess.check_output(
+                ["vcgencmd", "measure_temp"],
+                universal_newlines=True,
+                timeout=2
             )
-            no_launchers.pack(pady=50)
-            return
+            temp_str = out.replace("temp=", "").replace("'C", "").strip()
+            return float(temp_str)
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            pass
+        except ValueError as e:
+            logger.warning(f"[SystemUtils] get_cpu_temp: formato inesperado de vcgencmd: {e}")
         
-        columns = 2
+        # Método 2: sensors (Linux genérico)
+        try:
+            out = subprocess.check_output(["sensors"], universal_newlines=True, timeout=2)
+            for line in out.split('\n'):
+                if 'Package id 0:' in line or 'Tdie:' in line or 'CPU:' in line:
+                    m = re.search(r'[\+\-](\d+\.\d+).C', line)
+                    if m:
+                        return float(m.group(1))
+                        
+            for line in out.split('\n'):
+                if 'temp' in line.lower():
+                    m = re.search(r'[\+\-](\d+\.\d+).C', line)
+                    if m:
+                        return float(m.group(1))
+        except subprocess.TimeoutExpired:
+            logger.warning("[SystemUtils] get_cpu_temp: timeout leyendo sensors")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
         
-        for i, launcher in enumerate(LAUNCHERS):
-            label = launcher.get("label", "Script")
-            script_path = launcher.get("script", "")
-            
-            row = i // columns
-            col = i % columns
-            
-            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-            launcher_frame.grid(row=row, column=col, sticky="nsew")
-            
-            btn = make_futuristic_button(
-                launcher_frame,
-                text=label,
-                command=lambda s=script_path, l=label: self._run_script(s, l),
-                width=40,
-                height=15,
-                font_size=FONT_SIZES['large']
-            )
-            btn.pack(pady=(10, 5), padx=10)
-            
-            path_label = ctk.CTkLabel(
-                launcher_frame,
-                text=script_path,
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small']),
-                wraplength=300
-            )
-            path_label.pack(pady=(0, 10), padx=10)
+        # Método 3: Fallback - leer de thermal_zone
+        try:
+            with open("/sys/class/thermal/thermal_zone0/temp") as f:
+                val = f.read().strip()
+                return float(val) / 1000.0
+        except FileNotFoundError:
+            logger.warning("[SystemUtils] get_cpu_temp: no se encontró thermal_zone0, retornando 0.0")
+        except ValueError as e:
+            logger.error(f"[SystemUtils] get_cpu_temp: error leyendo thermal_zone0: {e}")
         
-        for c in range(columns):
-            parent.grid_columnconfigure(c, weight=1)
+        return 0.0
     
-    def _run_script(self, script_path: str, label: str):
-        """Ejecuta un script usando la terminal integrada tras confirmar"""
-        from ui.widgets.dialogs import terminal_dialog
+    @staticmethod
+    def get_hostname() -> str:
+        """
+        Obtiene el nombre del host
+        
+        Returns:
+            Nombre del host o "unknown"
+        """
+        try:
+            return socket.gethostname()
+        except Exception as e:
+            logger.warning(f"[SystemUtils] get_hostname: {e}")
+            return "unknown"
+    
+    @staticmethod
+    def get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]:
+        """
+        Obtiene estadísticas de red con auto-detección de interfaz activa
+        
+        Args:
+            interface: Nombre de la interfaz o None para auto-detección
+            
+        Returns:
+            Tupla (nombre_interfaz, estadísticas)
+        """
+        if not SystemUtils._last_net_io:
+            SystemUtils._last_net_io = psutil.net_io_counters(pernic=True)
+        
+        stats = psutil.net_io_counters(pernic=True)
+        
+        if interface and interface in stats:
+            SystemUtils._last_net_io = stats
+            return interface, stats[interface]
+        
+        best_name = None
+        best_speed = -1
+        
+        for name in stats:
+            if name not in SystemUtils._last_net_io:
+                continue
+            
+            curr = stats[name]
+            prev = SystemUtils._last_net_io[name]
+            
+            speed = (
+                (curr.bytes_recv - prev.bytes_recv) +
+                (curr.bytes_sent - prev.bytes_sent)
+            )
+            
+            if speed < 0 or speed > 500 * 1024 * 1024:
+                continue
+            
+            if speed > best_speed:
+                best_speed = speed
+                best_name = name
+        
+        SystemUtils._last_net_io = stats
+        
+        if best_name:
+            return best_name, stats[best_name]
+        
+        for iface, s in stats.items():
+            if iface.startswith(('eth', 'enp', 'wlan', 'wlp', 'tun')):
+                if s.bytes_sent > 0 or s.bytes_recv > 0:
+                    return iface, s
+        
+        if stats:
+            first = list(stats.items())[0]
+            return first[0], first[1]
+        
+        EmptyStats = namedtuple('EmptyStats', 
+            ['bytes_sent', 'bytes_recv', 'packets_sent', 'packets_recv',
+             'errin', 'errout', 'dropin', 'dropout'])
+        return "none", EmptyStats(0, 0, 0, 0, 0, 0, 0, 0)
+    
+    @staticmethod
+    def safe_net_speed(current: Any, previous: Optional[Any]) -> Tuple[float, float]:
+        """
+        Calcula velocidad de red de forma segura
+        
+        Args:
+            current: Estadísticas actuales
+            previous: Estadísticas anteriores
+            
+        Returns:
+            Tupla (download_mb, upload_mb)
+        """
+        if previous is None:
+            return 0.0, 0.0
+        
+        try:
+            dl_bytes = max(0, current.bytes_recv - previous.bytes_recv)
+            ul_bytes = max(0, current.bytes_sent - previous.bytes_sent)
+            
+            seconds = UPDATE_MS / 1000.0
+            
+            dl_mb = (dl_bytes / (1024 * 1024)) / seconds
+            ul_mb = (ul_bytes / (1024 * 1024)) / seconds
+            
+            return dl_mb, ul_mb
+        except (AttributeError, TypeError) as e:
+            logger.warning(f"[SystemUtils] safe_net_speed: error calculando velocidad de red: {e}")
+            return 0.0, 0.0
+    
+    @staticmethod
+    def list_usb_storage_devices() -> list:
+        """
+        Lista dispositivos USB de almacenamiento (discos)
+        
+        Returns:
+            Lista de diccionarios con información de almacenamiento USB
+        """
+        storage_devices = []
+        
+        try:
+            result = subprocess.run(
+                ['lsblk', '-o', 'NAME,MODEL,TRAN,MOUNTPOINT,SIZE,TYPE', '-J'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                
+                for block in data.get('blockdevices', []):
+                    if block.get('tran') == 'usb':
+                        dev = {
+                            'name': block.get('model', 'USB Disk').strip(),
+                            'type': block.get('type', 'disk'),
+                            'mount': block.get('mountpoint'),
+                            'dev': '/dev/' + block.get('name', ''),
+                            'size': block.get('size', ''),
+                            'children': []
+                        }
+                        
+                        for child in block.get('children', []):
+                            child_dev = {
+                                'name': child.get('name', ''),
+                                'type': child.get('type', 'part'),
+                                'mount': child.get('mountpoint'),
+                                'dev': '/dev/' + child.get('name', ''),
+                                'size': child.get('size', '')
+                            }
+                            dev['children'].append(child_dev)
+                        
+                        storage_devices.append(dev)
+            else:
+                logger.warning(f"[SystemUtils] list_usb_storage_devices: lsblk retornó código {result.returncode}")
+        
+        except subprocess.TimeoutExpired:
+            logger.error("[SystemUtils] list_usb_storage_devices: timeout ejecutando lsblk")
+        except FileNotFoundError:
+            logger.error("[SystemUtils] list_usb_storage_devices: lsblk no encontrado")
+        except json.JSONDecodeError as e:
+            logger.error(f"[SystemUtils] list_usb_storage_devices: error parseando JSON de lsblk: {e}")
+        
+        return storage_devices
+    
+    @staticmethod
+    def list_usb_other_devices() -> list:
+        """
+        Lista otros dispositivos USB (no almacenamiento)
+        
+        Returns:
+            Lista de strings con información de dispositivos USB
+        """
+        try:
+            result = subprocess.run(
+                ['lsusb'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                devices = [line for line in result.stdout.strip().split('\n') if line]
+                return devices
+            else:
+                logger.warning(f"[SystemUtils] list_usb_other_devices: lsusb retornó código {result.returncode}")
+            
+        except subprocess.TimeoutExpired:
+            logger.error("[SystemUtils] list_usb_other_devices: timeout ejecutando lsusb")
+        except FileNotFoundError:
+            logger.error("[SystemUtils] list_usb_other_devices: lsusb no encontrado")
+        
+        return []
+    
+    @staticmethod
+    def list_usb_devices() -> list:
+        """
+        Lista TODOS los dispositivos USB (mantener para compatibilidad)
+        
+        Returns:
+            Lista de strings con lsusb
+        """
+        return SystemUtils.list_usb_other_devices()
+    
+    @staticmethod
+    def eject_usb_device(device: dict) -> Tuple[bool, str]:
+        """
+        Expulsa un dispositivo USB de forma segura
+        
+        Args:
+            device: Diccionario con información del dispositivo
+                   (debe tener 'children' con particiones)
+        
+        Returns:
+            Tupla (success: bool, message: str)
+        """
+        device_name = device.get('name', 'desconocido')
+        
+        try:
+            unmounted = []
+            for partition in device.get('children', []):
+                if partition.get('mount'):
+                    result = subprocess.run(
+                        ['udisksctl', 'unmount', '-b', partition['dev']],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    
+                    if result.returncode == 0:
+                        unmounted.append(partition['name'])
+                        logger.info(f"[SystemUtils] Partición {partition['name']} desmontada correctamente")
+                    else:
+                        logger.error(f"[SystemUtils] Error desmontando {partition['name']}: {result.stderr}")
+                        return (False, f"Error desmontando {partition['name']}: {result.stderr}")
+            
+            if unmounted:
+                logger.info(f"[SystemUtils] Dispositivo '{device_name}' expulsado: {', '.join(unmounted)}")
+                return (True, f"Desmontado correctamente: {', '.join(unmounted)}")
+            else:
+                logger.info(f"[SystemUtils] Dispositivo '{device_name}': no había particiones montadas")
+                return (True, "No había particiones montadas")
+        
+        except subprocess.TimeoutExpired:
+            logger.error(f"[SystemUtils] eject_usb_device: timeout desmontando '{device_name}'")
+            return (False, "Timeout al desmontar el dispositivo")
+        except FileNotFoundError:
+            logger.error("[SystemUtils] eject_usb_device: udisksctl no encontrado")
+            return (False, "udisksctl no encontrado. Instala: sudo apt-get install udisks2")
+        except Exception as e:
+            logger.error(f"[SystemUtils] eject_usb_device: error inesperado con '{device_name}': {e}")
+            return (False, f"Error: {str(e)}")
+    
+    @staticmethod
+    def run_script(script_path: str) -> Tuple[bool, str]:
+        """
+        Ejecuta un script de sistema
+        
+        Args:
+            script_path: Ruta al script
+            
+        Returns:
+            Tupla (éxito, mensaje)
+        """
+        try:
+            result = subprocess.run(
+                ["bash", script_path],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"[SystemUtils] Script ejecutado correctamente: {script_path}")
+                return True, "Script ejecutado exitosamente"
+            else:
+                logger.error(f"[SystemUtils] Script falló ({script_path}): {result.stderr}")
+                return False, f"Error: {result.stderr}"
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"[SystemUtils] run_script: timeout ejecutando {script_path}")
+            return False, "Timeout: El script tardó demasiado"
+        except FileNotFoundError:
+            logger.error(f"[SystemUtils] run_script: script no encontrado: {script_path}")
+            return False, f"Script no encontrado: {script_path}"
+        except Exception as e:
+            logger.error(f"[SystemUtils] run_script: error inesperado ({script_path}): {e}")
+            return False, f"Error: {str(e)}"
+    
+    @staticmethod
+    def get_interfaces_ips() -> Dict[str, str]:
+        """
+        Obtiene las IPs de todas las interfaces de red
+        
+        Returns:
+            Diccionario {interfaz: IP}
+        """
+        result = {}
+        try:
+            addrs = psutil.net_if_addrs()
+            for iface, addr_list in addrs.items():
+                for addr in addr_list:
+                    if addr.family == socket.AF_INET:
+                        result[iface] = addr.address
+                        break
+        except Exception as e:
+            logger.warning(f"[SystemUtils] get_interfaces_ips: {e}")
+        
+        return result
+    
+    @staticmethod
+    def get_nvme_temp() -> float:
+        """
+        Obtiene la temperatura del disco NVMe
+        
+        Returns:
+            Temperatura en °C o 0.0 si no se puede leer
+        """
+        # Método 1: smartctl
+        try:
+            result = subprocess.run(
+                ["sudo", "smartctl", "-a", "/dev/nvme0"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if 'Temperature:' in line or 'Temperature Sensor' in line:
+                        match = re.search(r'(\d+)\s*Celsius', line)
+                        if match:
+                            return float(match.group(1))
+            else:
+                logger.debug(f"[SystemUtils] get_nvme_temp: smartctl retornó código {result.returncode}")
+        except subprocess.TimeoutExpired:
+            logger.warning("[SystemUtils] get_nvme_temp: timeout ejecutando smartctl")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
 
-        def do_execute():
-            logger.info(f"[LaunchersWindow] Ejecutando script: '{label}' → {script_path}")
-            terminal_dialog(
-                parent=self,
-                script_path=script_path,
-                title=f"EJECUTANDO: {label.upper()}"
-            )
-
-        confirm_dialog(
-            parent=self,
-            text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
-            title="⚠️ Lanzador de Sistema",
-            on_confirm=do_execute
-        )
+        # Método 2: sysfs
+        try:
+            temp_files = [
+                "/sys/class/hwmon/hwmon*/temp1_input",
+                "/sys/block/nvme0n1/device/hwmon/hwmon*/temp1_input"
+            ]
+            
+            for pattern in temp_files:
+                for temp_file in glob.glob(pattern):
+                    with open(temp_file, 'r') as f:
+                        temp_millis = int(f.read().strip())
+                        return temp_millis / 1000.0
+        except FileNotFoundError:
+            logger.debug("[SystemUtils] get_nvme_temp: archivos sysfs no encontrados")
+        except ValueError as e:
+            logger.warning(f"[SystemUtils] get_nvme_temp: error leyendo sysfs: {e}")
+        except PermissionError:
+            logger.warning("[SystemUtils] get_nvme_temp: sin permisos para leer sysfs")
+        
+        return 0.0
 ````
 
-## File: README.md
+## File: QUICKSTART.md
 ````markdown
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5
-
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos y gestión avanzada del sistema.
-
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.5-orange.svg)]()
+# 🚀 Inicio Rápido - Dashboard v2.5.1
 
 ---
 
-## ✨ Características Principales
-
-### 🖥️ **Monitoreo Completo del Sistema**
-- **CPU**: Uso en tiempo real, frecuencia, gráficas históricas
-- **RAM**: Memoria usada/total, porcentaje, visualización dinámica
-- **Temperatura**: Monitoreo de CPU con alertas por color
-- **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
-
-### 🌡️ **Control Inteligente de Ventiladores**
-- **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
-- **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
-- **Servicio background**: Funciona incluso con ventana cerrada
-- **Visualización en vivo**: Gráfica de curva activa y PWM actual
-
-### 🌐 **Monitor de Red Avanzado**
-- **Tráfico en tiempo real**: Download/Upload con gráficas
-- **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
-- **Lista de IPs**: Todas las interfaces con iconos por tipo
-- **Speedtest integrado**: Test de velocidad con resultados instantáneos
-
-### ⚙️ **Monitor de Procesos**
-- **Lista en tiempo real**: Top 20 procesos con CPU/RAM
-- **Búsqueda inteligente**: Por nombre o comando completo
-- **Filtros**: Todos / Usuario / Sistema
-- **Ordenación**: Por PID, Nombre, CPU%, RAM%
-- **Terminar procesos**: Con confirmación y feedback
-
-### 🔧 **Monitor de Servicios systemd** ⭐ NUEVO
-- **Gestión completa**: Start/Stop/Restart servicios
-- **Estado visual**: active, inactive, failed con iconos
-- **Autostart**: Enable/Disable con confirmación
-- **Logs en tiempo real**: Ver últimas 50 líneas
-- **Búsqueda y filtros**: Por nombre o estado
-
-### 📊 **Histórico de Datos** ⭐ NUEVO
-- **Recolección automática**: Cada 5 minutos en background
-- **Base de datos SQLite**: Ligera y eficiente
-- **Visualización gráfica**: CPU, RAM, Temperatura en 3 gráficas
-- **Periodos**: 24 horas, 7 días, 30 días
-- **Estadísticas**: Promedios, mínimos, máximos
-- **Detección de anomalías**: Alertas automáticas
-- **Exportación CSV**: Para análisis externo
-
-### 🔌 **Monitor USB**
-- **Detección automática**: Dispositivos conectados
-- **Separación inteligente**: Mouse/teclado vs almacenamiento
-- **Expulsión segura**: Unmount + eject con confirmación
-- **Actualización en vivo**: Detecta conexiones/desconexiones
-
-### 💾 **Monitor de Disco**
-- **Particiones**: Uso de espacio de todas las unidades
-- **Temperatura NVMe**: Monitoreo térmico del SSD
-- **Velocidad I/O**: Lectura/escritura en MB/s
-- **Gráficas históricas**: Actividad del disco
-
-### 🚀 **Lanzadores de Scripts**
-- **Ejecuta scripts personalizados**: Con confirmación previa
-- **Layout en grid**: Organización visual en columnas
-- **Feedback visual**: Mensajes de éxito/error
-
-### 🎨 **15 Temas Personalizables**
-- **Cambio con un clic**: Reinicio automático
-- **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
-- **Preview en vivo**: Ve los colores antes de aplicar
-- **Persistente**: Guarda tu elección
-
-### 🔄 **Reinicio Rápido** ⭐ NUEVO
-- **Botón de reinicio**: Reinicia el dashboard con un clic
-- **Aplica cambios**: Código, configuración, todo
-- **Con confirmación**: Evita reinicios accidentales
-- **Perfecto para desarrollo**: Cambios rápidos
-
----
-
-## 📦 Instalación
-
-### 🔧 **Requisitos del Sistema**
-- **Hardware**: Raspberry Pi 3/4/5
-- **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
-- **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
-- **Python**: 3.8 o superior
-- **Extras**: Ventiladores PWM (opcional), NVMe (opcional)
-
-### ⚡ **Instalación Rápida**
+## ⚡ Instalación (2 Comandos)
 
 ```bash
-# 1. Clonar repositorio
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
 
-# 2. Ejecutar instalador automático
+El script instala automáticamente las dependencias del sistema y Python, y pregunta si quieres configurar sensores y speedtest.
+
+---
+
+## 🔁 Alternativa con Entorno Virtual
+
+Si prefieres aislar las dependencias:
+
+```bash
 chmod +x install.sh
 ./install.sh
-
-# 3. Ejecutar
-python3 main.py
-```
-
-### 🛠️ **Instalación Manual**
-
-```bash
-# 1. Instalar dependencias del sistema
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv lm-sensors speedtest-cli
-
-# 2. Crear entorno virtual
-python3 -m venv venv
 source venv/bin/activate
-
-# 3. Instalar dependencias Python
-pip install -r requirements.txt
-
-# 4. Detectar sensores
-sudo sensors-detect --auto
-
-# 5. Ejecutar
 python3 main.py
 ```
 
----
-
-## 🎯 Uso
-
-### **Menú Principal (12 botones):**
-```
-┌─────────────────────────────────────┐
-│  Control         │  Monitor          │
-│  Ventiladores    │  Placa            │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Monitor          │
-│  Red             │  USB              │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Lanzadores       │
-│  Disco           │                   │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Monitor          │
-│  Procesos        │  Servicios        │
-├──────────────────┼───────────────────┤
-│  Histórico       │  Cambiar          │
-│  Datos           │  Tema             │
-├──────────────────┼───────────────────┤
-│  Reiniciar       │  Salir            │
-└──────────────────┴───────────────────┘
-```
-
-### **Ventanas Disponibles:**
-
-1. **Control Ventiladores** - Configura modos y curvas PWM
-2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
-3. **Monitor Red** - Tráfico, speedtest, interfaces
-4. **Monitor USB** - Dispositivos y expulsión segura
-5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
-6. **Lanzadores** - Ejecuta scripts personalizados
-7. **Monitor Procesos** - Gestión avanzada de procesos ⭐
-8. **Monitor Servicios** - Control de servicios systemd ⭐
-9. **Histórico Datos** - Visualización de métricas históricas ⭐
-10. **Cambiar Tema** - Selecciona entre 15 temas
-11. **Reiniciar** - Reinicia el dashboard ⭐
-12. **Salir** - Cierra con confirmación
+> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
 
 ---
 
-## 🎨 Temas Disponibles
+## 📋 Requisitos Mínimos
 
-El dashboard incluye **15 temas profesionales**:
-
-| Tema | Colores | Estilo |
-|------|---------|--------|
-| **Cyberpunk** | Cyan + Verde | Original neón |
-| **Matrix** | Verde brillante | Película Matrix |
-| **Sunset** | Naranja + Púrpura | Atardecer cálido |
-| **Ocean** | Azul + Aqua | Océano refrescante |
-| **Dracula** | Púrpura + Rosa | Elegante oscuro |
-| **Nord** | Azul hielo | Minimalista nórdico |
-| **Tokyo Night** | Azul + Púrpura | Noche de Tokio |
-| **Monokai** | Cyan + Verde | IDE clásico |
-| **Gruvbox** | Naranja + Beige | Retro cálido |
-| **Solarized** | Azul + Cyan | Científico |
-| **One Dark** | Azul claro | Atom editor |
-| **Synthwave** | Rosa + Verde | Neón 80s |
-| **GitHub Dark** | Azul GitHub | Profesional |
-| **Material** | Azul material | Google Design |
-| **Ayu Dark** | Azul cielo | Minimalista |
-
-**Cambiar tema**: Menú → "Cambiar Tema" → Seleccionar → "Aplicar y Reiniciar"
+- ✅ Raspberry Pi 3/4/5
+- ✅ Raspberry Pi OS (cualquier versión)
+- ✅ Python 3.8+
+- ✅ Conexión a internet (para instalación)
 
 ---
 
-## 📊 Arquitectura del Proyecto
+## 🎯 Menú Principal (13 botones)
 
 ```
-system_dashboard/
-├── config/                      # Configuración
-│   ├── settings.py             # Constantes globales
-│   └── themes.py               # 15 temas pre-configurados
-├── core/                        # Lógica de negocio (11 archivos)
-│   ├── fan_controller.py       # Control PWM y curvas
-│   ├── fan_auto_service.py     # Servicio background
-│   ├── system_monitor.py       # CPU, RAM, temperatura
-│   ├── network_monitor.py      # Red, speedtest, interfaces
-│   ├── disk_monitor.py         # Disco, NVMe, I/O
-│   ├── process_monitor.py      # Gestión de procesos
-│   ├── service_monitor.py      # Servicios systemd ⭐
-│   ├── data_logger.py          # SQLite logging ⭐
-│   ├── data_analyzer.py        # Análisis histórico ⭐
-│   ├── data_collection_service.py  # Recolección auto ⭐
-│   └── __init__.py
-├── ui/                          # Interfaz gráfica
-│   ├── main_window.py          # Ventana principal
-│   ├── styles.py               # Estilos y botones
-│   ├── widgets/                # Componentes reutilizables
-│   │   ├── graphs.py           # Gráficas personalizadas
-│   │   └── dialogs.py          # Diálogos confirm/alert
-│   └── windows/                # Ventanas secundarias (11)
-│       ├── monitor.py          # Monitor de placa
-│       ├── network.py          # Monitor de red
-│       ├── usb.py              # Monitor USB
-│       ├── disk.py             # Monitor de disco
-│       ├── process_window.py   # Monitor de procesos
-│       ├── service.py          # Monitor de servicios ⭐
-│       ├── history.py          # Histórico de datos ⭐
-│       ├── fan_control.py      # Control ventiladores
-│       ├── launchers.py        # Lanzadores
-│       └── theme_selector.py   # Selector de temas
-├── utils/                       # Utilidades
-│   ├── file_manager.py         # Gestión de JSON
-│   └── system_utils.py         # Utilidades del sistema
-├── data/                        # Estados persistentes
-│   ├── fan_state.json          # Estado ventiladores
-│   ├── theme_config.json       # Tema seleccionado
-│   └── history.db              # Base de datos histórico ⭐
-├── scripts/                     # Scripts personalizados
-├── main.py                      # Punto de entrada
-└── requirements.txt             # Dependencias Python
+┌───────────────────────────────────┐
+│  Control        │  Monitor         │
+│  Ventiladores   │  Placa           │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Red            │  USB             │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Lanzadores      │
+│  Disco          │                  │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Procesos       │  Servicios       │
+├─────────────────┼──────────────────┤
+│  Histórico      │  Actualizaciones │
+│  Datos          │                  │
+├─────────────────┼──────────────────┤
+│  Cambiar Tema   │  Reiniciar       │
+├─────────────────┼──────────────────┤
+│  Salir          │                  │
+└─────────────────┴──────────────────┘
 ```
-
-**Total: ~5,500 líneas de código Python en 35+ archivos**
 
 ---
 
-## 🔧 Configuración
+## 🖥️ Las 13 Ventanas
 
-### **Archivo Principal: `config/settings.py`**
+**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real con gráficas
 
-#### **Pantalla DSI:**
+**2. Monitor Red** — Download/Upload en vivo, speedtest, lista de IPs
+
+**3. Monitor USB** — Dispositivos conectados, expulsión segura
+
+**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O
+
+**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
+
+**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
+
+**7. Histórico Datos** — Gráficas CPU/RAM/Temp en 24h, 7d, 30d, exportar CSV
+
+**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
+
+**9. Lanzadores** — Scripts personalizados con terminal en vivo
+
+**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
+
+**11. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
+
+**12. Reiniciar** — Reinicia el dashboard aplicando cambios de código
+
+**13. Salir** — Salir de la app o apagar el sistema
+
+---
+
+## 🔧 Configuración Básica
+
+### Ajustar posición en pantalla DSI (`config/settings.py`):
 ```python
-DSI_WIDTH = 800
-DSI_HEIGHT = 480
-DSI_X = 0      # Posición X
-DSI_Y = 0      # Posición Y
+DSI_X = 0     # Posición horizontal
+DSI_Y = 0     # Posición vertical
 ```
 
-#### **Control de Ventiladores:**
+### Añadir scripts en Lanzadores:
 ```python
-PWM_PIN = 18           # Pin GPIO para PWM
-PWM_FREQ = 25000       # Frecuencia 25kHz
-```
-
-#### **Histórico de Datos:**
-```python
-DATA_COLLECTION_INTERVAL = 5  # Minutos entre recolecciones
-DATA_RETENTION_DAYS = 90      # Días de retención
+LAUNCHERS = [
+    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
+]
 ```
 
 ---
 
-## 🆕 Novedades en v2.5
+## 📋 Ver Logs del Sistema
 
-### **✨ Nuevas Características:**
-- ✅ **Monitor de Servicios** - Control completo de systemd
-- ✅ **Histórico de Datos** - Base de datos SQLite con gráficas
-- ✅ **Botón Reiniciar** - Reinicio rápido del dashboard
-- ✅ **Recolección automática** - Background service cada 5 min
-- ✅ **Exportación CSV** - Descarga datos históricos
-- ✅ **Detección de anomalías** - Alertas automáticas
-- ✅ **Logs de servicios** - Ver últimas 50 líneas
-
-### **🔧 Mejoras:**
-- ✅ Sliders y scrollbars usan colores de tema
-- ✅ Monitor de procesos con pausa inteligente
-- ✅ Speedtest corregido (Mbit/s → MB/s)
-- ✅ 11 temas con `secondary` corregido
-- ✅ FanAutoService singleton thread-safe
-- ✅ Layout grid configurable en lanzadores
-
----
-
-## 📈 Rendimiento
-
-- **Uso CPU**: ~5-10% en idle
-- **Uso RAM**: ~100-150 MB
-- **Base de datos**: ~5 MB por 10,000 registros
-- **Actualización**: 2 segundos (configurable)
-- **Threads**: 3 (main + FanAuto + DataCollection)
-- **Tiempo inicio**: ~2-3 segundos
-
----
-
-## 🐛 Troubleshooting
-
-### **No arranca**
 ```bash
-python3 --version  # Debe ser 3.8+
-pip install -r requirements.txt
-```
+# En tiempo real
+tail -f data/logs/dashboard.log
 
-### **No detecta temperatura**
-```bash
-sudo sensors-detect --auto
-sudo systemctl restart lm-sensors
-sensors  # Verificar
-```
-
-### **Ventiladores no responden**
-```bash
-gpio readall
-sudo python3 main.py  # Temporal
-```
-
-### **Speedtest no funciona**
-```bash
-sudo apt install speedtest-cli
-```
-
-### **Base de datos crece mucho**
-```bash
-# Limpiar datos >90 días desde Histórico Datos
-# O manualmente:
-sqlite3 data/history.db "DELETE FROM metrics WHERE timestamp < datetime('now', '-90 days');"
+# Solo errores
+grep ERROR data/logs/dashboard.log
 ```
 
 ---
 
-## 📚 Documentación Completa
+## ❓ Problemas Comunes
 
-### **Guías Disponibles:**
-- [README.md](README.md) - Este archivo
-- [QUICKSTART.md](QUICKSTART.md) - Inicio rápido 5 minutos
-- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) - Instalación detallada
-- [THEMES_GUIDE.md](THEMES_GUIDE.md) - Guía de temas
-- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Integración OLED
-- [INDEX.md](INDEX.md) - Índice completo
-
----
-
-## 📊 Estadísticas del Proyecto
-
-- **Versión**: 2.5
-- **Archivos Python**: 35+
-- **Líneas de código**: ~5,500
-- **Ventanas**: 11 ventanas funcionales
-- **Temas**: 15 temas pre-configurados
-- **Documentos**: 10+ guías
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | `sudo apt install speedtest-cli` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 🤝 Contribuir
+## 🆕 Novedades v2.5.1
 
-¿Quieres mejorar el dashboard?
-
-1. Fork del repositorio
-2. Crea una rama: `git checkout -b mi-mejora`
-3. Commit: `git commit -am 'Añade nueva función'`
-4. Push: `git push origin mi-mejora`
-5. Pull Request
+✅ **Logging completo** — Todos los módulos loguean eventos y errores  
+✅ **Ventana Actualizaciones** — Terminal integrada para instalar paquetes  
+✅ **Caché de actualizaciones** — `apt update` solo al arranque y al pedir  
+✅ **Fix arranque** — Servicio de datos ya no se detiene a los 3 segundos  
+✅ **Terminal de apagado** — Visualiza el proceso de shutdown  
 
 ---
 
-## 📝 Changelog
+## 📚 Más Información
 
-### **v2.5** - 2026-02-17 ⭐ ACTUAL
-- ✅ **NUEVO**: Monitor de Servicios systemd completo
-- ✅ **NUEVO**: Histórico de Datos con SQLite
-- ✅ **NUEVO**: Botón Reiniciar en menú
-- ✅ **NUEVO**: Recolección automática background
-- ✅ **NUEVO**: Exportación CSV
-- ✅ **NUEVO**: Detección de anomalías
-- ✅ **MEJORA**: 12 botones en menú (vs 9)
-
-### **v2.0** - 2026-02-16
-- ✅ **NUEVO**: Monitor de Procesos completo
-- ✅ **NUEVO**: 15 temas profesionales
-- ✅ **MEJORA**: Reinicio automático al cambiar tema
-- ✅ **MEJORA**: Sliders y scrollbars temáticos
-- ✅ **FIX**: Speedtest conversión correcta
-
-### **v1.0** - 2025-01
-- ✅ Release inicial modular
-- ✅ 8 ventanas funcionales
-- ✅ Control de ventiladores
-- ✅ Tema Cyberpunk
+**[README.md](README.md)** — Documentación completa  
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
+**[INDEX.md](INDEX.md)** — Índice de toda la documentación
 
 ---
 
-## 📜 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
-
----
-
-## 🙏 Agradecimientos
-
-- **CustomTkinter**: Framework de UI moderno
-- **psutil**: Utilidades del sistema
-- **matplotlib**: Visualización de gráficas
-- **Raspberry Pi Foundation**: Hardware increíble
-
----
-
-## 📧 Contacto
-
-¿Preguntas o sugerencias?  
-Abre un **Issue** en GitHub
-
----
-
-**¡Dashboard profesional v2.5 con todas las funciones!** 🚀✨
-````
-
-## File: core/data_collection_service.py
-````python
-"""
-Servicio de recolección automática de datos
-"""
-import threading
-import time
-from datetime import datetime
-from core.data_logger import DataLogger
-from utils.file_manager import FileManager
-from utils.system_utils import SystemUtils
-from utils import DashboardLogger
-
-
-class DataCollectionService:
-    """Servicio que recolecta métricas cada X minutos"""
-
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls, *args, **kwargs):
-        """Implementa singleton thread-safe"""
-        if not cls._instance:
-            with cls._lock:
-                if not cls._instance:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, update_monitor, interval_minutes: int = 5):
-        # Evitar re-inicialización del singleton
-        if hasattr(self, '_initialized'):
-            return
-
-        self.system_monitor = system_monitor
-        self.fan_controller = FileManager()
-        self.network_monitor = network_monitor
-        self.disk_monitor = disk_monitor
-        self.update_monitor = update_monitor
-        self.interval_minutes = interval_minutes
-
-        self.logger = DataLogger()
-        self.running = False
-        self.thread = None
-        self.dashboard_logger = DashboardLogger()
-
-        self._initialized = True
-
-        # ELIMINADO: atexit.register(self.stop)
-        # El registro del cleanup se hace en main.py junto con fan_service.stop()
-        # para evitar que se dispare durante os.execv() en el reinicio
-
-    def start(self):
-        """Inicia el servicio de recolección"""
-        if self.running:
-            self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio ya está corriendo")
-            return
-
-        self.running = True
-        self.thread = threading.Thread(target=self._collection_loop, daemon=True)
-        self.thread.start()
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
-
-    def stop(self):
-        """Detiene el servicio"""
-        if not self.running:
-            return
-
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=5)
-        self.dashboard_logger.get_logger(__name__).info("[DataCollection] Servicio detenido")
-
-    def _collection_loop(self):
-        """Bucle principal de recolección"""
-        while self.running:
-            try:
-                self._collect_and_save()
-            except Exception as e:
-                self.dashboard_logger.get_logger(__name__).error(f"[DataCollection] Error en recolección: {e}")
-            time.sleep(self.interval_minutes * 60)
-
-    def _collect_and_save(self):
-        """Recolecta métricas y las guarda"""
-        system_stats = self.system_monitor.get_current_stats()
-        network_stats = self.network_monitor.get_current_stats()
-        disk_stats = self.disk_monitor.get_current_stats()
-        update_stats = self.update_monitor.check_updates()
-        fan_state = self.fan_controller.load_state()
-
-        metrics = {
-            'cpu_percent': system_stats.get('cpu', 0),
-            'ram_percent': system_stats.get('ram', 0),
-            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),
-            'temperature': system_stats.get('temp', 0),
-            'disk_used_percent': disk_stats.get('disk_usage', 0),
-            'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
-            'disk_write_mb': "{:.2f}".format(disk_stats.get('disk_write_mb', 0)),
-            'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
-            'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
-            'fan_pwm': fan_state.get('target_pwm', 0),
-            'fan_mode': fan_state.get('mode', 'unknown'),
-            'updates_available': update_stats.get('pending', 0),
-        }
-
-        self.logger.log_metrics(metrics)
-
-        if metrics['temperature'] > 80:
-            self.logger.log_event(
-                'temp_high', 'critical',
-                f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
-                {'temperature': metrics['temperature']}
-            )
-
-        if metrics['cpu_percent'] > 90:
-            self.logger.log_event(
-                'cpu_high', 'warning',
-                f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
-                {'cpu': metrics['cpu_percent']}
-            )
-
-        self.dashboard_logger.get_logger(__name__).info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    def force_collection(self):
-        """Fuerza una recolección inmediata (útil para testing)"""
-        self._collect_and_save()
+**Dashboard v2.5.1** 🚀✨
 ````
 
 ## File: ui/windows/__init__.py
@@ -11620,10 +10728,10 @@ class HistoryWindow(ctk.CTkToplevel):
         """Crea área de gráficas"""
         # 1. Ajustamos el frame contenedor para que no tenga padding interno innecesario
         graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        graphs_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10)) # pady superior en 0
+        graphs_frame.pack(fill="both", expand=True, padx=(0,10), pady=(0, 10)) # pady superior en 0
 
         # Mantener tu figura original
-        self.fig = Figure(figsize=(10, 20), facecolor=COLORS['bg_medium'])
+        self.fig = Figure(figsize=(9, 20), facecolor=COLORS['bg_medium'])
         
         # IMPORTANTE: Esto elimina los márgenes blancos alrededor de las gráficas
         # sin cambiar el tamaño 10x20. Aprovecha mejor el espacio.
@@ -11969,6 +11077,157 @@ class HistoryWindow(ctk.CTkToplevel):
             custom_msgbox(self, f"Error al guardar la imagen: {str(e)}", "❌ Error")
 ````
 
+## File: ui/windows/launchers.py
+````python
+"""
+Ventana de lanzadores de scripts
+"""
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
+from ui.styles import make_futuristic_button, StyleManager
+from ui.widgets import custom_msgbox, confirm_dialog
+from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class LaunchersWindow(ctk.CTkToplevel):
+    """Ventana de lanzadores de scripts del sistema"""
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.system_utils = SystemUtils()
+        
+        self.title("Lanzadores")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        
+        self._create_ui()
+    
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        title = ctk.CTkLabel(
+            main,
+            text="LANZADORES",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(pady=(10, 20))
+        
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        self._create_launcher_buttons(inner)
+        
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+        close_btn = make_futuristic_button(
+            bottom,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        )
+        close_btn.pack(side="right", padx=5)
+    
+    def _create_launcher_buttons(self, parent):
+        """Crea los botones de lanzadores en layout grid"""
+        if not LAUNCHERS:
+            no_launchers = ctk.CTkLabel(
+                parent,
+                text="No hay lanzadores configurados\n\nEdita config/settings.py para añadir scripts",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+                justify="center"
+            )
+            no_launchers.pack(pady=50)
+            return
+        
+        columns = 2
+        
+        for i, launcher in enumerate(LAUNCHERS):
+            label = launcher.get("label", "Script")
+            script_path = launcher.get("script", "")
+            
+            row = i // columns
+            col = i % columns
+            
+            launcher_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
+            launcher_frame.grid(row=row, column=col, sticky="nsew")
+            
+            btn = make_futuristic_button(
+                launcher_frame,
+                text=label,
+                command=lambda s=script_path, l=label: self._run_script(s, l),
+                width=40,
+                height=15,
+                font_size=FONT_SIZES['large']
+            )
+            btn.pack(pady=(10, 5), padx=10)
+            
+            path_label = ctk.CTkLabel(
+                launcher_frame,
+                text=script_path,
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small']),
+                wraplength=300
+            )
+            path_label.pack(pady=(0, 10), padx=10)
+        
+        for c in range(columns):
+            parent.grid_columnconfigure(c, weight=1)
+    
+    def _run_script(self, script_path: str, label: str):
+        """Ejecuta un script usando la terminal integrada tras confirmar"""
+        from ui.widgets.dialogs import terminal_dialog
+
+        def do_execute():
+            logger.info(f"[LaunchersWindow] Ejecutando script: '{label}' → {script_path}")
+            terminal_dialog(
+                parent=self,
+                script_path=script_path,
+                title=f"EJECUTANDO: {label.upper()}"
+            )
+
+        confirm_dialog(
+            parent=self,
+            text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
+            title="⚠️ Lanzador de Sistema",
+            on_confirm=do_execute
+        )
+````
+
 ## File: core/__init__.py
 ````python
 """
@@ -11995,6 +11254,530 @@ __all__ = [
 ]
 ````
 
+## File: README.md
+````markdown
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5.1
+
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![Version](https://img.shields.io/badge/Version-2.5.1-orange.svg)]()
+
+---
+
+## ✨ Características Principales
+
+### 🖥️ **Monitoreo Completo del Sistema**
+- **CPU**: Uso en tiempo real, frecuencia, gráficas históricas
+- **RAM**: Memoria usada/total, porcentaje, visualización dinámica
+- **Temperatura**: Monitoreo de CPU con alertas por color
+- **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
+
+### 🌡️ **Control Inteligente de Ventiladores**
+- **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
+- **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
+- **Servicio background**: Funciona incluso con ventana cerrada
+- **Visualización en vivo**: Gráfica de curva activa y PWM actual
+
+### 🌐 **Monitor de Red Avanzado**
+- **Tráfico en tiempo real**: Download/Upload con gráficas
+- **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
+- **Lista de IPs**: Todas las interfaces con iconos por tipo
+- **Speedtest integrado**: Test de velocidad con resultados instantáneos
+
+### ⚙️ **Monitor de Procesos**
+- **Lista en tiempo real**: Top 20 procesos con CPU/RAM
+- **Búsqueda inteligente**: Por nombre o comando completo
+- **Filtros**: Todos / Usuario / Sistema
+- **Terminar procesos**: Con confirmación y feedback
+
+### ⚙️ **Monitor de Servicios systemd**
+- **Gestión completa**: Start/Stop/Restart servicios
+- **Estado visual**: active, inactive, failed con iconos
+- **Autostart**: Enable/Disable con confirmación
+- **Logs en tiempo real**: Ver últimas 50 líneas
+
+### 📊 **Histórico de Datos**
+- **Recolección automática**: Cada 5 minutos en background
+- **Base de datos SQLite**: Ligera y eficiente
+- **Visualización gráfica**: CPU, RAM, Temperatura con matplotlib
+- **Periodos**: 24 horas, 7 días, 30 días
+- **Estadísticas**: Promedios, mínimos, máximos
+- **Detección de anomalías**: Alertas automáticas
+- **Exportación CSV**: Para análisis externo
+
+### 󱇰 **Monitor USB**
+- **Detección automática**: Dispositivos conectados
+- **Separación inteligente**: Mouse/teclado vs almacenamiento
+- **Expulsión segura**: Unmount + eject con confirmación
+
+###  **Monitor de Disco**
+- **Particiones**: Uso de espacio de todas las unidades
+- **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
+- **Velocidad I/O**: Lectura/escritura en MB/s
+
+### 󱓞 **Lanzadores de Scripts**
+- **Terminal integrada**: Visualiza la ejecución en tiempo real
+- **Layout en grid**: Organización visual en columnas
+- **Confirmación previa**: Diálogo antes de ejecutar
+
+### 󰆧 **Actualizaciones del Sistema**
+- **Verificación al arranque**: En background sin bloquear la UI
+- **Sistema de caché 12h**: No repite `apt update` innecesariamente
+- **Terminal integrada**: Instala viendo el output en vivo
+- **Botón Buscar**: Fuerza comprobación manual
+
+### 󰆧 **15 Temas Personalizables**
+- **Cambio con un clic**: Reinicio automático
+- **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
+- **Preview en vivo**: Ve los colores antes de aplicar
+
+### /󰿅 **Reinicio y Apagado**
+- **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
+- **Botón Salir**: Salir de la app o apagar el sistema
+- **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
+- **Con confirmación**: Evita acciones accidentales
+
+### 📋 **Sistema de Logging Completo**
+- **Cobertura total**: Todos los módulos core y UI
+- **Niveles diferenciados**: DEBUG, INFO, WARNING, ERROR
+- **Rotación automática**: 2MB máximo con backup
+- **Ubicación**: `data/logs/dashboard.log`
+
+---
+
+## 📦 Instalación
+
+###  **Requisitos del Sistema**
+- **Hardware**: Raspberry Pi 3/4/5
+- **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
+- **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
+- **Python**: 3.8 o superior
+
+### ⚡ **Instalación Recomendada**
+
+Usa el script de instalación directa (sin entorno virtual):
+
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
+
+El script `install_system.sh` instala automáticamente:
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
+- Dependencias Python con `--break-system-packages`
+- Pregunta si instalar `speedtest-cli`
+- Ofrece configurar sensores de temperatura
+
+### 🛠️ **Instalación Manual**
+
+Si prefieres instalar paso a paso:
+
+```bash
+# 1. Dependencias del sistema
+sudo apt-get update
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools speedtest-cli
+
+# 2. Detectar sensores
+sudo sensors-detect --auto
+
+# 3. Dependencias Python
+pip3 install --break-system-packages -r requirements.txt
+
+# 4. Ejecutar
+python3 main.py
+```
+
+###  **Alternativa con Entorno Virtual**
+
+Si prefieres aislar las dependencias Python:
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> **Nota**: Con venv necesitas activar el entorno (`source venv/bin/activate`) cada vez antes de ejecutar.
+
+---
+
+## 󰍜 Menú Principal (13 botones)
+
+```
+┌─────────────────────────────────────┐
+│  Control         │  Monitor          │
+│  Ventiladores    │  Placa            │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Red             │  USB              │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Lanzadores       │
+│  Disco           │                   │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Procesos        │  Servicios        │
+├──────────────────┼───────────────────┤
+│  Histórico       │  Actualizaciones  │
+│  Datos           │                   │
+├──────────────────┼───────────────────┤
+│  Cambiar Tema    │  Reiniciar        │
+├──────────────────┼───────────────────┤
+│  Salir           │                   │
+└──────────────────┴───────────────────┘
+```
+
+### **Las 13 Ventanas:**
+
+1. **Control Ventiladores** - Configura modos y curvas PWM
+2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
+3. **Monitor Red** - Tráfico, speedtest, interfaces e IPs
+4. **Monitor USB** - Dispositivos y expulsión segura
+5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
+6. **Lanzadores** - Ejecuta scripts con terminal en vivo
+7. **Monitor Procesos** - Gestión avanzada de procesos
+8. **Monitor Servicios** - Control de servicios systemd
+9. **Histórico Datos** - Visualización de métricas históricas
+10. **Actualizaciones** - Gestión de paquetes del sistema
+11. **Cambiar Tema** - Selecciona entre 15 temas
+12. **Reiniciar** - Reinicia el dashboard
+13. **Salir** - Cierra la app o apaga el sistema
+
+---
+
+## 󰔎 Temas Disponibles
+
+| Tema | Colores | Estilo |
+|------|---------|--------|
+| **Cyberpunk** | Cyan + Verde | Original neón |
+| **Matrix** | Verde brillante | Película Matrix |
+| **Sunset** | Naranja + Púrpura | Atardecer cálido |
+| **Ocean** | Azul + Aqua | Océano refrescante |
+| **Dracula** | Púrpura + Rosa | Elegante oscuro |
+| **Nord** | Azul hielo | Minimalista nórdico |
+| **Tokyo Night** | Azul + Púrpura | Noche de Tokio |
+| **Monokai** | Cyan + Verde | IDE clásico |
+| **Gruvbox** | Naranja + Beige | Retro cálido |
+| **Solarized** | Azul + Cyan | Científico |
+| **One Dark** | Azul claro | Atom editor |
+| **Synthwave** | Rosa + Verde | Neón 80s |
+| **GitHub Dark** | Azul GitHub | Profesional |
+| **Material** | Azul material | Google Design |
+| **Ayu Dark** | Azul cielo | Minimalista |
+
+---
+
+## 📊 Arquitectura del Proyecto
+
+```
+system_dashboard/
+├── config/
+│   ├── settings.py                 # Constantes globales y LAUNCHERS
+│   └── themes.py                   # 15 temas pre-configurados
+├── core/
+│   ├── fan_controller.py           # Control PWM y curvas
+│   ├── fan_auto_service.py         # Servicio background ventiladores
+│   ├── system_monitor.py           # CPU, RAM, temperatura
+│   ├── network_monitor.py          # Red, speedtest, interfaces
+│   ├── disk_monitor.py             # Disco, NVMe, I/O
+│   ├── process_monitor.py          # Gestión de procesos
+│   ├── service_monitor.py          # Servicios systemd
+│   ├── update_monitor.py           # Actualizaciones con caché 12h
+│   ├── data_logger.py              # SQLite logging
+│   ├── data_analyzer.py            # Análisis histórico
+│   ├── data_collection_service.py  # Recolección automática (singleton)
+│   └── __init__.py
+├── ui/
+│   ├── main_window.py              # Ventana principal (13 botones)
+│   ├── styles.py                   # Estilos y botones
+│   ├── widgets/
+│   │   ├── graphs.py               # Gráficas personalizadas
+│   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
+│   └── windows/
+│       ├── monitor.py, network.py, usb.py, disk.py
+│       ├── process_window.py, service.py, history.py
+│       ├── update.py, fan_control.py
+│       ├── launchers.py, theme_selector.py
+│       └── __init__.py
+├── utils/
+│   ├── file_manager.py             # Gestión de JSON (escritura atómica)
+│   ├── system_utils.py             # Utilidades del sistema
+│   └── logger.py                   # DashboardLogger (rotación 2MB)
+├── data/                            # Auto-generado al ejecutar
+│   ├── fan_state.json, fan_curve.json, theme_config.json
+│   ├── history.db                  # SQLite histórico
+│   └── logs/dashboard.log          # Log del sistema
+├── scripts/                         # Scripts personalizados del usuario
+├── install_system.sh               # Instalación directa (recomendada)
+├── install.sh                      # Instalación con venv (alternativa)
+├── test_logging.py                 # Prueba del sistema de logging
+├── main.py
+└── requirements.txt
+```
+
+---
+
+##  Configuración
+
+### **`config/settings.py`**
+
+```python
+# Posición en pantalla DSI
+DSI_WIDTH = 800
+DSI_HEIGHT = 480
+DSI_X = 0
+DSI_Y = 0
+
+# Scripts personalizados en Lanzadores
+LAUNCHERS = [
+    {"label": "Montar NAS",   "script": str(SCRIPTS_DIR / "montarnas.sh")},
+    {"label": "Conectar VPN", "script": str(SCRIPTS_DIR / "conectar_vpn.sh")},
+    # Añade tus scripts aquí
+]
+```
+
+---
+
+## 📋 Sistema de Logging
+
+```bash
+# Ver logs en tiempo real
+tail -f data/logs/dashboard.log
+
+# Solo errores
+grep ERROR data/logs/dashboard.log
+
+# Eventos de hoy
+grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
+```
+
+**Niveles:** `DEBUG` (operaciones normales) · `INFO` (eventos importantes) · `WARNING` (degradación) · `ERROR` (fallos)
+
+---
+
+## 📈 Rendimiento
+
+- **Uso CPU**: ~5-10% en idle
+- **Uso RAM**: ~100-150 MB
+- **Base de datos**: ~5 MB por 10,000 registros
+- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`)
+- **Threads background**: 3 (main + FanAuto + DataCollection)
+- **Log**: máx. 2MB con rotación automática
+
+---
+
+##  Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Ventiladores no responden | `sudo python3 main.py` |
+| Speedtest falla | `sudo apt install speedtest-cli` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 📚 Documentación
+
+- [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
+- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) — Instalación detallada
+- [THEMES_GUIDE.md](THEMES_GUIDE.md) — Guía de temas
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — Integración con OLED
+- [INDEX.md](INDEX.md) — Índice completo
+
+---
+
+## 📊 Estadísticas del Proyecto
+
+| Métrica | Valor |
+|---------|-------|
+| Versión | 2.5.1 |
+| Archivos Python | 41 |
+| Líneas de código | ~12,500 |
+| Ventanas | 13 |
+| Temas | 15 |
+| Servicios background | 2 (FanAuto + DataCollection) |
+| Cobertura logging | 100% módulos core y UI |
+
+---
+
+## Changelog
+
+### **v2.5.1** - 2026-02-19 ⭐ ACTUAL
+- ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
+- ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
+- ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
+- ✅ **NUEVO**: `terminal_dialog` con callback `on_close`
+- ✅ **FIX**: Bug `atexit` en `DataCollectionService` (se detenía a los 3s del arranque)
+- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
+- ✅ **MEJORA**: `update_monitor` con caché 12h y parámetro `force`
+
+### **v2.5** - 2026-02-17
+- ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
+- ✅ Recolección automática background, Exportación CSV, Detección de anomalías
+
+### **v2.0** - 2026-02-16
+- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
+
+### **v1.0** - 2025-01
+- ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
+
+---
+
+## Licencia
+
+MIT License
+
+---
+
+## Agradecimientos
+
+**CustomTkinter** · **psutil** · **matplotlib** · **Raspberry Pi Foundation**
+
+---
+
+**Dashboard v2.5.1: Profesional, Completo, Monitoreado**
+````
+
+## File: core/data_collection_service.py
+````python
+"""
+Servicio de recolección automática de datos
+"""
+import threading
+import time
+from datetime import datetime
+from core.data_logger import DataLogger
+from utils.file_manager import FileManager
+
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class DataCollectionService:
+    """Servicio que recolecta métricas cada X minutos"""
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        """Implementa singleton thread-safe"""
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, system_monitor, fan_controller, network_monitor,
+                 disk_monitor, update_monitor, interval_minutes: int = 5):
+        # Evitar re-inicialización del singleton
+        if hasattr(self, '_initialized'):
+            return
+
+        self.system_monitor = system_monitor
+        self.fan_controller = FileManager()
+        self.network_monitor = network_monitor
+        self.disk_monitor = disk_monitor
+        self.update_monitor = update_monitor
+        self.interval_minutes = interval_minutes
+
+        self.logger = DataLogger()
+        self.running = False
+        self.thread = None
+
+
+        self._initialized = True
+
+        # ELIMINADO: atexit.register(self.stop)
+        # El registro del cleanup se hace en main.py junto con fan_service.stop()
+        # para evitar que se dispare durante os.execv() en el reinicio
+
+    def start(self):
+        """Inicia el servicio de recolección"""
+        if self.running:
+            logger.info("[DataCollection] Servicio ya está corriendo")
+            return
+
+        self.running = True
+        self.thread = threading.Thread(target=self._collection_loop, daemon=True)
+        self.thread.start()
+        logger.info(f"[DataCollection] Servicio iniciado (cada {self.interval_minutes} min)")
+
+    def stop(self):
+        """Detiene el servicio"""
+        if not self.running:
+            return
+
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=5)
+        logger.info("[DataCollection] Servicio detenido")
+
+    def _collection_loop(self):
+        """Bucle principal de recolección"""
+        while self.running:
+            try:
+                self._collect_and_save()
+            except Exception as e:
+                logger.error(f"[DataCollection] Error en recolección: {e}")
+            time.sleep(self.interval_minutes * 60)
+
+    def _collect_and_save(self):
+        """Recolecta métricas y las guarda"""
+        system_stats = self.system_monitor.get_current_stats()
+        network_stats = self.network_monitor.get_current_stats()
+        disk_stats = self.disk_monitor.get_current_stats()
+        update_stats = self.update_monitor.check_updates()
+        fan_state = self.fan_controller.load_state()
+
+        metrics = {
+            'cpu_percent': system_stats.get('cpu', 0),
+            'ram_percent': system_stats.get('ram', 0),
+            'ram_used_gb': "{:.2f}".format(system_stats.get('ram_used', 0) / (1024 ** 3)),
+            'temperature': system_stats.get('temp', 0),
+            'disk_used_percent': disk_stats.get('disk_usage', 0),
+            'disk_read_mb': "{:.2f}".format(disk_stats.get('disk_read_mb', 0)),
+            'disk_write_mb': "{:.2f}".format(disk_stats.get('disk_write_mb', 0)),
+            'net_download_mb': "{:.2f}".format(network_stats.get('download_mb', 0)),
+            'net_upload_mb': "{:.2f}".format(network_stats.get('upload_mb', 0)),
+            'fan_pwm': fan_state.get('target_pwm', 0),
+            'fan_mode': fan_state.get('mode', 'unknown'),
+            'updates_available': update_stats.get('pending', 0),
+        }
+
+        self.logger.log_metrics(metrics)
+
+        if metrics['temperature'] > 80:
+            self.logger.log_event(
+                'temp_high', 'critical',
+                f"Temperatura alta detectada: {metrics['temperature']:.1f}°C",
+                {'temperature': metrics['temperature']}
+            )
+
+        if metrics['cpu_percent'] > 90:
+            self.logger.log_event(
+                'cpu_high', 'warning',
+                f"CPU alta detectada: {metrics['cpu_percent']:.1f}%",
+                {'cpu': metrics['cpu_percent']}
+            )
+
+        logger.info(f"[DataCollection] Métricas guardadas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    def force_collection(self):
+        """Fuerza una recolección inmediata (útil para testing)"""
+        self._collect_and_save()
+````
+
 ## File: main.py
 ````python
 #!/usr/bin/env python3
@@ -12005,6 +11788,7 @@ Punto de entrada principal
 import sys
 import os
 import atexit
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -12043,7 +11827,14 @@ def main():
     process_monitor = ProcessMonitor()
     service_monitor = ServiceMonitor()
     update_monitor = UpdateMonitor()
-    
+
+    # Comprobación inicial de actualizaciones en background
+    # No bloquea el arranque y llena el caché para toda la sesión
+    threading.Thread(
+        target=lambda: update_monitor.check_updates(force=True),
+        daemon=True,
+        name="UpdateCheck-Startup"
+    ).start()
 
     # Iniciar servicio de recolección de datos
     data_service = DataCollectionService(
@@ -12083,8 +11874,6 @@ def main():
 
     try:
         root.mainloop()
-        # Esto se ejecuta una vez al arrancar y llena el caché inicial
-        update_monitor.check_updates(force=True)
     finally:
         cleanup()
 
@@ -12211,16 +12000,16 @@ class MainWindow:
         buttons_config = [
             ("󰈐  Control Ventiladores", self.open_fan_control),
             ("󰚗  Monitor Placa",         self.open_monitor_window),
-            ("  Monitor Red",           self.open_network_window),
+            ("  Monitor Red",           self.open_network_window),
             ("󱇰 Monitor USB",            self.open_usb_window),
-            ("  Monitor Disco",         self.open_disk_window),
+            ("  Monitor Disco",         self.open_disk_window),
             ("󱓞  Lanzadores",            self.open_launchers),
             ("⚙️ Monitor Procesos",      self.open_process_window),
             ("⚙️ Monitor Servicios",     self.open_service_window),
             ("󱘿  Histórico Datos",       self.open_history_window),
             ("󰆧  Actualizaciones",       self.open_update_window),
             ("󰔎  Cambiar Tema",          self.open_theme_selector),
-            ("  Reiniciar",            self.restart_application),
+            ("  Reiniciar",            self.restart_application),
             ("󰿅  Salir",                self.exit_application),
         ]
         
@@ -12338,7 +12127,7 @@ class MainWindow:
         if self.update_window is None or not self.update_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Actualizaciones")
             from ui.windows.update import UpdatesWindow
-            self.update_window = UpdatesWindow(self.root)
+            self.update_window = UpdatesWindow(self.root, self.update_monitor)
         else:
             self.update_window.lift()
     

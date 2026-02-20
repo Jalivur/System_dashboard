@@ -142,10 +142,10 @@ class HistoryWindow(ctk.CTkToplevel):
         """Crea área de gráficas"""
         # 1. Ajustamos el frame contenedor para que no tenga padding interno innecesario
         graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        graphs_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10)) # pady superior en 0
+        graphs_frame.pack(fill="both", expand=True, padx=(0,10), pady=(0, 10)) # pady superior en 0
 
         # Mantener tu figura original
-        self.fig = Figure(figsize=(10, 20), facecolor=COLORS['bg_medium'])
+        self.fig = Figure(figsize=(9, 20), facecolor=COLORS['bg_medium'])
         
         # IMPORTANTE: Esto elimina los márgenes blancos alrededor de las gráficas
         # sin cambiar el tamaño 10x20. Aprovecha mejor el espacio.
