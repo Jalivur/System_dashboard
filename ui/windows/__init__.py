@@ -10,6 +10,8 @@ from .disk import DiskWindow
 from .process_window import ProcessWindow
 from .service import ServiceWindow
 from .update import UpdatesWindow
+from .history import HistoryWindow
+from .theme_selector import ThemeSelector
 
 __all__ = [
     'FanControlWindow',
@@ -21,4 +23,6 @@ __all__ = [
     'ProcessWindow',
     'ServiceWindow',
     'UpdatesWindow',
+    'HistoryWindow',
+    'ThemeSelector'
 ]

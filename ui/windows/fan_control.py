@@ -3,7 +3,6 @@ Ventana de control de ventiladores
 """
 import tkinter as tk
 import customtkinter as ctk
-from typing import Optional
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
                              DSI_HEIGHT, DSI_X, DSI_Y)
 from ui.styles import make_futuristic_button, StyleManager

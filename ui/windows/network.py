@@ -4,9 +4,10 @@ Ventana de monitoreo de red
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
-from ui.styles import make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button
 from ui.widgets import GraphWidget
 from core.network_monitor import NetworkMonitor
+from utils.system_utils import SystemUtils
 
 
 class NetworkWindow(ctk.CTkToplevel):
@@ -78,8 +79,7 @@ class NetworkWindow(ctk.CTkToplevel):
             width=30
         )
         scrollbar.pack(side="right", fill="y")
-        
-        from ui.styles import StyleManager
+
         StyleManager.style_scrollbar_ctk(scrollbar)
         
         canvas.configure(yscrollcommand=scrollbar.set)
@@ -111,7 +111,6 @@ class NetworkWindow(ctk.CTkToplevel):
     
     def _create_interfaces_section(self, parent):
         """Crea la sección de interfaces e IPs"""
-        from utils.system_utils import SystemUtils
         
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
@@ -134,7 +133,7 @@ class NetworkWindow(ctk.CTkToplevel):
     
     def _update_interfaces(self):
         """Actualiza la lista de interfaces e IPs"""
-        from utils.system_utils import SystemUtils
+
         
         # Limpiar widgets anteriores
         for widget in self.interfaces_container.winfo_children():

@@ -4,7 +4,7 @@ Ventana de lanzadores de scripts
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
 from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox, confirm_dialog
+from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
 
@@ -129,7 +129,6 @@ class LaunchersWindow(ctk.CTkToplevel):
     
     def _run_script(self, script_path: str, label: str):
         """Ejecuta un script usando la terminal integrada tras confirmar"""
-        from ui.widgets.dialogs import terminal_dialog
 
         def do_execute():
             logger.info(f"[LaunchersWindow] Ejecutando script: '{label}' → {script_path}")

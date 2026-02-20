@@ -1,13 +1,12 @@
 """
 Monitor de red
 """
-import time
 import threading
 import subprocess
 from collections import deque
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 from config.settings import (HISTORY, NET_MIN_SCALE, NET_MAX_SCALE, 
-                             NET_IDLE_THRESHOLD, NET_IDLE_RESET_TIME, NET_MAX_MB)
+                             NET_IDLE_THRESHOLD, NET_IDLE_RESET_TIME, NET_MAX_MB, COLORS, NET_WARN, NET_CRIT)
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
 
@@ -201,7 +200,7 @@ class NetworkMonitor:
         Returns:
             Color en formato hex
         """
-        from config.settings import COLORS, NET_WARN, NET_CRIT
+
         
         if value >= NET_CRIT:
             return COLORS['danger']

@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import make_futuristic_button
-from ui.widgets.dialogs import terminal_dialog, confirm_dialog
+from ui.widgets.dialogs import terminal_dialog
 from utils import SystemUtils
 
 

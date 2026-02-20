@@ -30,8 +30,8 @@ class HistoryWindow(ctk.CTkToplevel):
 
         # Estado de periodo
         self.period_var = ctk.StringVar(value="24h")
-        self.period_start = ctk.StringVar(value="YYYY-MM-DD HH:MM")
-        self.period_end   = ctk.StringVar(value="YYYY-MM-DD HH:MM")
+        self.period_start = ctk.StringVar()
+        self.period_end   = ctk.StringVar()
 
         # Estado de rango personalizado
         self._using_custom_range = False
@@ -160,13 +160,11 @@ class HistoryWindow(ctk.CTkToplevel):
         self.date_start = ctk.CTkEntry(
             self._range_panel,
             textvariable=self.period_start,
-            text_color=COLORS['text_dim'],
+            placeholder_text="YYYY-MM-DD HH:MM",
+            placeholder_text_color=COLORS['text_dim'],
             width=300,
             font=(FONT_FAMILY, FONT_SIZES['small'])
         )
-        # Limpiar al hacer foco si tiene el texto de ejemplo
-        self.date_start.bind("<FocusIn>",  lambda e: self._entry_focus_in(self.date_start, self.period_start))
-        self.date_start.bind("<FocusOut>", lambda e: self._entry_focus_out(self.date_start, self.period_start))
         self.date_start.pack(side="left", padx=(0, 4))
                 # Entradas de fecha en la fila de controles (derecha)
         ctk.CTkLabel(
@@ -178,13 +176,11 @@ class HistoryWindow(ctk.CTkToplevel):
 
         self.date_end = ctk.CTkEntry(
             self._range_panel,
-            textvariable=self.period_end,
-            text_color=COLORS['text_dim'],
+            placeholder_text="YYYY-MM-DD HH:MM",
             width=300,
+            textvariable=self.period_end,
             font=(FONT_FAMILY, FONT_SIZES['small'])
         )
-        self.date_end.bind("<FocusIn>",  lambda e: self._entry_focus_in(self.date_end, self.period_end))
-        self.date_end.bind("<FocusOut>", lambda e: self._entry_focus_out(self.date_end, self.period_end))
         self.date_end.pack(side="left", padx=(0, 4))
 
 
@@ -286,20 +282,6 @@ class HistoryWindow(ctk.CTkToplevel):
     # Lógica de actualización
     # ─────────────────────────────────────────────
 
-    _PLACEHOLDER = "YYYY-MM-DD HH:MM"
-
-    def _entry_focus_in(self, entry: ctk.CTkEntry, var: ctk.StringVar):
-        """Al enfocar: si tiene el texto de ejemplo, lo borra y pone color normal."""
-        if var.get() == self._PLACEHOLDER:
-            var.set("")
-            entry.configure(text_color=COLORS['text'])
-
-    def _entry_focus_out(self, entry: ctk.CTkEntry, var: ctk.StringVar):
-        """Al perder foco: si quedó vacío, restaura el texto de ejemplo en gris."""
-        if var.get().strip() == "":
-            var.set(self._PLACEHOLDER)
-            entry.configure(text_color=COLORS['text_dim'])
-
     def _on_period_radio(self):
         """Al pulsar radio button fijo: desactiva modo custom y actualiza."""
         self._using_custom_range = False
@@ -307,11 +289,8 @@ class HistoryWindow(ctk.CTkToplevel):
 
     def _apply_custom_range(self):
         """Lee los OptionMenus y aplica el rango sin necesidad de teclado."""
-        _PH = self._PLACEHOLDER
         start_dt_text = self.period_start.get().strip()
-        end_dt_text   = self.period_end.get().strip()
-        if start_dt_text == _PH: start_dt_text = ""
-        if end_dt_text   == _PH: end_dt_text   = ""
+        end_dt_text = self.period_end.get().strip()
         try:
             start_dt = datetime.strptime(start_dt_text, _DATE_FMT)
         except ValueError as e:

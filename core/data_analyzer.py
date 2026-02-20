@@ -2,8 +2,9 @@
 Análisis de datos históricos
 """
 import sqlite3
+import csv
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from config.settings import DATA_DIR
 from utils.logger import get_logger
 
@@ -332,7 +333,6 @@ class DataAnalyzer:
 
     def _write_csv(self, output_path: str, data: List[Dict]):
         """Escribe una lista de registros a CSV."""
-        import csv
         try:
             if not data:
                 logger.warning(f"[DataAnalyzer] _write_csv: sin datos para exportar")

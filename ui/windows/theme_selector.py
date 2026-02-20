@@ -5,8 +5,9 @@ import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
 from config.themes import get_available_themes, get_theme, save_selected_theme, load_selected_theme
 from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox
-
+from ui.widgets import custom_msgbox, confirm_dialog
+import sys
+import os
 
 class ThemeSelector(ctk.CTkToplevel):
     """Ventana de selección de temas"""
@@ -222,12 +223,11 @@ class ThemeSelector(ctk.CTkToplevel):
         # Mostrar confirmación y reiniciar
         theme_name = get_theme(selected)["name"]
         
-        from ui.widgets import confirm_dialog
+
         
         def do_restart():
             """Reinicia la aplicación"""
-            import sys
-            import os
+            
             
             # Cerrar ventana de temas
             self.destroy()

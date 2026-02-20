@@ -3,7 +3,7 @@ Gestión de archivos JSON para estado y configuración
 """
 import json
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from config.settings import STATE_FILE, CURVE_FILE
 from utils.logger import get_logger
 

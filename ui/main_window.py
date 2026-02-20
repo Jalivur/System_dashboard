@@ -2,13 +2,14 @@
 Ventana principal del sistema de monitoreo
 """
 import customtkinter as ctk
-from typing import Optional
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
-from ui.styles import make_futuristic_button
-from ui.widgets import confirm_dialog, custom_msgbox
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, DSI_Y, SCRIPTS_DIR
+from ui.styles import StyleManager, make_futuristic_button
+from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow
+from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
-
+import sys
+import os
 logger = get_logger(__name__)
 
 
@@ -87,7 +88,7 @@ class MainWindow:
         )
         menu_scrollbar.pack(side="right", fill="y")
         
-        from ui.styles import StyleManager
+
         StyleManager.style_scrollbar_ctk(menu_scrollbar)
         
         self.menu_canvas.configure(yscrollcommand=menu_scrollbar.set)
@@ -152,7 +153,6 @@ class MainWindow:
         """Abre la ventana de control de ventiladores"""
         if self.fan_window is None or not self.fan_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Control Ventiladores")
-            from ui.windows.fan_control import FanControlWindow
             self.fan_window = FanControlWindow(self.root, self.fan_controller, self.system_monitor)
         else:
             self.fan_window.lift()
@@ -161,7 +161,6 @@ class MainWindow:
         """Abre la ventana de monitoreo del sistema"""
         if self.monitor_window is None or not self.monitor_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Placa")
-            from ui.windows.monitor import MonitorWindow
             self.monitor_window = MonitorWindow(self.root, self.system_monitor)
         else:
             self.monitor_window.lift()
@@ -170,7 +169,6 @@ class MainWindow:
         """Abre la ventana de monitoreo de red"""
         if self.network_window is None or not self.network_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Red")
-            from ui.windows.network import NetworkWindow
             self.network_window = NetworkWindow(self.root, self.network_monitor)
         else:
             self.network_window.lift()
@@ -179,7 +177,6 @@ class MainWindow:
         """Abre la ventana de monitoreo USB"""
         if self.usb_window is None or not self.usb_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor USB")
-            from ui.windows.usb import USBWindow
             self.usb_window = USBWindow(self.root)
         else:
             self.usb_window.lift()
@@ -188,7 +185,6 @@ class MainWindow:
         """Abre el monitor de procesos"""
         if self.process_window is None or not self.process_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Procesos")
-            from ui.windows.process_window import ProcessWindow
             self.process_window = ProcessWindow(self.root, self.process_monitor)
         else:
             self.process_window.lift()
@@ -197,7 +193,6 @@ class MainWindow:
         """Abre el monitor de servicios"""
         if self.service_window is None or not self.service_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Servicios")
-            from ui.windows.service import ServiceWindow
             self.service_window = ServiceWindow(self.root, self.service_monitor)
         else:
             self.service_window.lift()
@@ -206,7 +201,6 @@ class MainWindow:
         """Abre la ventana de histórico"""
         if self.history_window is None or not self.history_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Histórico Datos")
-            from ui.windows.history import HistoryWindow
             self.history_window = HistoryWindow(self.root)
         else:
             self.history_window.lift()
@@ -215,7 +209,6 @@ class MainWindow:
         """Abre la ventana de lanzadores"""
         if self.launchers_window is None or not self.launchers_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Lanzadores")
-            from ui.windows.launchers import LaunchersWindow
             self.launchers_window = LaunchersWindow(self.root)
         else:
             self.launchers_window.lift()
@@ -223,7 +216,6 @@ class MainWindow:
     def open_theme_selector(self):
         """Abre el selector de temas"""
         logger.debug("[MainWindow] Abriendo: Cambiar Tema")
-        from ui.windows.theme_selector import ThemeSelector
         theme_window = ThemeSelector(self.root)
         theme_window.lift()
     
@@ -231,7 +223,6 @@ class MainWindow:
         """Abre la ventana de monitor de disco"""
         if self.disk_window is None or not self.disk_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Disco")
-            from ui.windows.disk import DiskWindow
             self.disk_window = DiskWindow(self.root, self.disk_monitor)
         else:
             self.disk_window.lift()
@@ -240,7 +231,6 @@ class MainWindow:
         """Abre la ventana de actualizaciones"""
         if self.update_window is None or not self.update_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Actualizaciones")
-            from ui.windows.update import UpdatesWindow
             self.update_window = UpdatesWindow(self.root, self.update_monitor)
         else:
             self.update_window.lift()
@@ -301,7 +291,7 @@ class MainWindow:
         )
         shutdown_radio.pack(anchor="w", padx=20, pady=12)
         
-        from ui.styles import StyleManager
+
         StyleManager.style_radiobutton_ctk(exit_radio)
         StyleManager.style_radiobutton_ctk(shutdown_radio)
         
@@ -321,7 +311,7 @@ class MainWindow:
                 confirm_dialog(
                     parent=self.root,
                     text="¿Confirmar salir de la aplicación?",
-                    title="⚠️ Confirmar Salida",
+                    title=" Confirmar Salida",
                     on_confirm=do_exit,
                     on_cancel=None
                 )
@@ -329,7 +319,6 @@ class MainWindow:
             else:  # shutdown
                 def do_shutdown():
                     logger.info("[MainWindow] Iniciando apagado del sistema")
-                    from ui.widgets.dialogs import terminal_dialog
                     shutdown_script = str(SCRIPTS_DIR / "apagado.sh")
                     terminal_dialog(
                         parent=self.root,
@@ -340,7 +329,7 @@ class MainWindow:
                 confirm_dialog(
                     parent=self.root,
                     text="⚠️ ¿Confirmar APAGAR el sistema?\n\nEsta acción apagará completamente el equipo.",
-                    title="🔴 Confirmar Apagado",
+                    title=" Confirmar Apagado",
                     on_confirm=do_shutdown,
                     on_cancel=None
                 )
@@ -371,11 +360,8 @@ class MainWindow:
     
     def restart_application(self):
         """Reinicia la aplicación"""
-        from ui.widgets import confirm_dialog
-        
         def do_restart():
-            import sys
-            import os
+
             logger.info("[MainWindow] Reiniciando dashboard")
             self.root.quit()
             self.root.destroy()
@@ -384,7 +370,7 @@ class MainWindow:
         confirm_dialog(
             parent=self.root,
             text="¿Reiniciar el dashboard?\n\nSe aplicarán los cambios realizados.",
-            title="🔄 Reiniciar Dashboard",
+            title=" Reiniciar Dashboard",
             on_confirm=do_restart,
             on_cancel=None
         )

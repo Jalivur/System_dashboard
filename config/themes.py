@@ -1,7 +1,9 @@
 """
 Sistema de temas personalizados
 """
-
+import json
+import os
+from pathlib import Path
 # ========================================
 # TEMAS DISPONIBLES
 # ========================================
@@ -363,9 +365,6 @@ def create_custom_theme(name: str, colors: dict) -> dict:
 # GUARDAR/CARGAR TEMA SELECCIONADO
 # ========================================
 
-import json
-import os
-from pathlib import Path
 
 THEME_CONFIG_FILE = Path(__file__).parent.parent / "data" / "theme_config.json"
 

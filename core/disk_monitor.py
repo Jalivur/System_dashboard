@@ -3,7 +3,7 @@ Monitor de disco
 """
 from collections import deque
 from typing import Dict
-from config.settings import HISTORY
+from config.settings import HISTORY, UPDATE_MS, COLORS
 from utils.system_utils import SystemUtils
 import psutil
 
@@ -40,7 +40,7 @@ class DiskMonitor:
         self.last_disk_io = disk_io
         
         # Convertir a MB/s
-        from config.settings import UPDATE_MS
+
         seconds = UPDATE_MS / 1000.0
         read_mb = (read_bytes / (1024 * 1024)) / seconds
         write_mb = (write_bytes / (1024 * 1024)) / seconds
@@ -94,7 +94,6 @@ class DiskMonitor:
         Returns:
             Color en formato hex
         """
-        from config.settings import COLORS
         
         if value >= crit:
             return COLORS['danger']

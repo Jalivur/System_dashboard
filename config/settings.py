@@ -1,9 +1,8 @@
 """
 Configuración centralizada del sistema de monitoreo
 """
-import os
 from pathlib import Path
-
+from config.themes import load_selected_theme, get_theme_colors
 # Rutas del proyecto
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -84,7 +83,7 @@ LAUNCHERS = [
 # ========================================
 
 # Importar sistema de temas
-from config.themes import load_selected_theme, get_theme_colors
+
 
 # Cargar tema seleccionado
 SELECTED_THEME = load_selected_theme()

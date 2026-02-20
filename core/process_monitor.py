@@ -2,7 +2,7 @@
 Monitor de procesos del sistema
 """
 import psutil
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime
 from utils import DashboardLogger
 

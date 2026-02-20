@@ -6,7 +6,7 @@ from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS,
                              CPU_WARN, CPU_CRIT, TEMP_WARN, TEMP_CRIT,
                              RAM_WARN, RAM_CRIT)
-from ui.styles import make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button
 from ui.widgets import GraphWidget
 from core.system_monitor import SystemMonitor
 
@@ -72,7 +72,6 @@ class MonitorWindow(ctk.CTkToplevel):
         )
         scrollbar.pack(side="right", fill="y")
         
-        from ui.styles import StyleManager
         StyleManager.style_scrollbar_ctk(scrollbar)
         
         canvas.configure(yscrollcommand=scrollbar.set)

@@ -7,14 +7,12 @@ import sys
 import os
 import atexit
 import threading
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 import customtkinter as ctk
-from config.settings import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from config import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
 from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor
 from core.data_collection_service import DataCollectionService
 from ui.main_window import MainWindow
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def main():

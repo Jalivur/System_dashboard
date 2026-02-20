@@ -3,7 +3,7 @@ Ventana de monitor de procesos
 """
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from ui.styles import make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button
 from ui.widgets import confirm_dialog, custom_msgbox
 from core.process_monitor import ProcessMonitor
 
@@ -76,7 +76,6 @@ class ProcessWindow(ctk.CTkToplevel):
         )
         scrollbar.pack(side="right", fill="y")
         
-        from ui.styles import StyleManager
         StyleManager.style_scrollbar_ctk(scrollbar)
         
         canvas.configure(yscrollcommand=scrollbar.set)
