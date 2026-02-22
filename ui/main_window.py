@@ -1,6 +1,7 @@
 """
 Ventana principal del sistema de monitoreo
 """
+import tkinter as tk
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import StyleManager, make_futuristic_button
@@ -31,6 +32,9 @@ class MainWindow:
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
         
+        # Referencias a badges (canvas item ids)
+        self._badges = {}  # key -> (canvas, oval_id, text_id)
+
         # Referencias a ventanas secundarias
         self.fan_window = None
         self.monitor_window = None
@@ -113,24 +117,24 @@ class MainWindow:
     def _create_menu_buttons(self):
         """Crea los botones del menú principal"""
         buttons_config = [
-            ("󰈐  Control Ventiladores", self.open_fan_control),
-            ("󰚗  Monitor Placa",         self.open_monitor_window),
-            ("  Monitor Red",           self.open_network_window),
-            ("󱇰 Monitor USB",            self.open_usb_window),
-            ("  Monitor Disco",         self.open_disk_window),
-            ("󱓞  Lanzadores",            self.open_launchers),
-            ("⚙️ Monitor Procesos",      self.open_process_window),
-            ("⚙️ Monitor Servicios",     self.open_service_window),
-            ("󱘿  Histórico Datos",       self.open_history_window),
-            ("󰆧  Actualizaciones",       self.open_update_window),
-            ("󰔎  Cambiar Tema",          self.open_theme_selector),
-            ("  Reiniciar",            self.restart_application),
-            ("󰿅  Salir",                self.exit_application),
+            ("󰈐  Control Ventiladores", self.open_fan_control,     None),
+            ("󰚗  Monitor Placa",         self.open_monitor_window,  None),
+            ("  Monitor Red",               self.open_network_window,  None),
+            ("󱇰 Monitor USB",            self.open_usb_window,      None),
+            ("  Monitor Disco",             self.open_disk_window,     None),
+            ("󱓞  Lanzadores",            self.open_launchers,       None),
+            ("⚙️ Monitor Procesos",     self.open_process_window,  None),
+            ("⚙️ Monitor Servicios",    self.open_service_window,  "services"),
+            ("󱘿  Histórico Datos",       self.open_history_window,  None),
+            ("󰆧  Actualizaciones",       self.open_update_window,   "updates"),
+            ("󰔎  Cambiar Tema",          self.open_theme_selector,  None),
+            ("  Reiniciar",                 self.restart_application,  None),
+            ("󰿅  Salir",                 self.exit_application,     None),
         ]
         
         columns = 2
         
-        for i, (text, command) in enumerate(buttons_config):
+        for i, (text, command, badge_key) in enumerate(buttons_config):
             row = i // columns
             col = i % columns
             
@@ -143,9 +147,56 @@ class MainWindow:
                 height=15
             )
             btn.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+
+            if badge_key:
+                self._create_badge(btn, badge_key)
         
         for c in range(columns):
             self.menu_inner.grid_columnconfigure(c, weight=1)
+
+    # ── Badges ────────────────────────────────────────────────────────────────
+
+    def _create_badge(self, btn, key):
+        """Crea un badge circular en la esquina superior-derecha del botón."""
+        BADGE_SIZE = 22
+        badge_canvas = tk.Canvas(
+            btn,
+            width=BADGE_SIZE,
+            height=BADGE_SIZE,
+            bg=COLORS['bg_dark'],
+            highlightthickness=0,
+            bd=0
+        )
+        badge_canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+
+        oval = badge_canvas.create_oval(
+            1, 1, BADGE_SIZE - 1, BADGE_SIZE - 1,
+            fill=COLORS['danger'],
+            outline=""
+        )
+        txt = badge_canvas.create_text(
+            BADGE_SIZE // 2, BADGE_SIZE // 2,
+            text="0",
+            fill="white",
+            font=(FONT_FAMILY, 9, "bold")
+        )
+
+        self._badges[key] = (badge_canvas, oval, txt)
+        badge_canvas.place_forget()
+
+    def _update_badge(self, key, value):
+        """Actualiza el valor y visibilidad de un badge."""
+        if key not in self._badges:
+            return
+        canvas, oval, txt = self._badges[key]
+        if value > 0:
+            display = str(value) if value < 100 else "99+"
+            canvas.itemconfigure(txt, text=display)
+            color = COLORS['danger'] if key == "services" else COLORS.get('warning', '#ffaa00')
+            canvas.itemconfigure(oval, fill=color)
+            canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+        else:
+            canvas.place_forget()
     
     # ── Apertura de ventanas ──────────────────────────────────────────────────
 
@@ -382,5 +433,18 @@ class MainWindow:
         self._update()
     
     def _update(self):
-        """Actualiza los datos del sistema"""
+        """Actualiza los datos del sistema y los badges"""
+        try:
+            pending = self.update_monitor.cached_result.get('pending', 0)
+            self._update_badge("updates", pending)
+        except Exception:
+            pass
+
+        try:
+            stats = self.service_monitor.get_stats()
+            failed = stats.get('failed', 0)
+            self._update_badge("services", failed)
+        except Exception:
+            pass
+
         self.root.after(self.update_interval, self._update)

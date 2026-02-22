@@ -214,14 +214,14 @@ class FanControlWindow(ctk.CTkToplevel):
 
         # — Temperatura —
         temp_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
-        temp_col.pack(side="left", padx=(0, 20))
+        temp_col.pack(side="top", padx=(0, 20))
 
         ctk.CTkLabel(
             temp_col,
             text="Temperatura (°C)",
             text_color=COLORS['text'],
             font=(FONT_FAMILY, FONT_SIZES['small'])
-        ).pack(anchor="w")
+        ).pack(anchor="n")
 
         self._entry_temp = ctk.CTkEntry(
             temp_col,
@@ -239,14 +239,14 @@ class FanControlWindow(ctk.CTkToplevel):
 
         # — PWM —
         pwm_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
-        pwm_col.pack(side="left")
+        pwm_col.pack(side="top", padx=(0, 20))
 
         ctk.CTkLabel(
             pwm_col,
             text="PWM (0-255)",
             text_color=COLORS['text'],
             font=(FONT_FAMILY, FONT_SIZES['small'])
-        ).pack(anchor="w")
+        ).pack(anchor="n")
 
         self._entry_pwm = ctk.CTkEntry(
             pwm_col,
