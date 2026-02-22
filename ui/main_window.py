@@ -18,7 +18,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -28,6 +28,7 @@ class MainWindow:
         self.process_monitor = process_monitor
         self.service_monitor = service_monitor
         self.update_monitor = update_monitor
+        self.cleanup_service = cleanup_service
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -117,24 +118,24 @@ class MainWindow:
     def _create_menu_buttons(self):
         """Crea los botones del menú principal"""
         buttons_config = [
-            ("󰈐  Control Ventiladores", self.open_fan_control,     None),
-            ("󰚗  Monitor Placa",         self.open_monitor_window,  None),
-            ("  Monitor Red",               self.open_network_window,  None),
-            ("󱇰 Monitor USB",            self.open_usb_window,      None),
-            ("  Monitor Disco",             self.open_disk_window,     None),
-            ("󱓞  Lanzadores",            self.open_launchers,       None),
-            ("⚙️ Monitor Procesos",     self.open_process_window,  None),
-            ("⚙️ Monitor Servicios",    self.open_service_window,  "services"),
-            ("󱘿  Histórico Datos",       self.open_history_window,  None),
-            ("󰆧  Actualizaciones",       self.open_update_window,   "updates"),
-            ("󰔎  Cambiar Tema",          self.open_theme_selector,  None),
-            ("  Reiniciar",                 self.restart_application,  None),
-            ("󰿅  Salir",                 self.exit_application,     None),
+            ("󰈐  Control Ventiladores", self.open_fan_control,     ["temp_fan"]),
+            ("󰚗  Monitor Placa",         self.open_monitor_window,  ["temp_monitor", "cpu", "ram"]),
+            ("  Monitor Red",               self.open_network_window,  []),
+            ("󱇰 Monitor USB",            self.open_usb_window,      []),
+            ("  Monitor Disco",             self.open_disk_window,     ["disk"]),
+            ("󱓞  Lanzadores",            self.open_launchers,       []),
+            ("⚙️ Monitor Procesos",     self.open_process_window,  []),
+            ("⚙️ Monitor Servicios",    self.open_service_window,  ["services"]),
+            ("󱘿  Histórico Datos",       self.open_history_window,  []),
+            ("󰆧  Actualizaciones",       self.open_update_window,   ["updates"]),
+            ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
+            ("  Reiniciar",                 self.restart_application,  []),
+            ("󰿅  Salir",                 self.exit_application,     []),
         ]
         
         columns = 2
         
-        for i, (text, command, badge_key) in enumerate(buttons_config):
+        for i, (text, command, badge_keys) in enumerate(buttons_config):
             row = i // columns
             col = i % columns
             
@@ -148,17 +149,20 @@ class MainWindow:
             )
             btn.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
-            if badge_key:
-                self._create_badge(btn, badge_key)
+            # Múltiples badges por botón, colocados de derecha a izquierda
+            for j, key in enumerate(badge_keys):
+                self._create_badge(btn, key, offset_index=j)
         
         for c in range(columns):
             self.menu_inner.grid_columnconfigure(c, weight=1)
 
     # ── Badges ────────────────────────────────────────────────────────────────
 
-    def _create_badge(self, btn, key):
-        """Crea un badge circular en la esquina superior-derecha del botón."""
-        BADGE_SIZE = 22
+    def _create_badge(self, btn, key, offset_index=0):
+        """Crea un badge circular en la esquina superior-derecha del botón.
+        offset_index separa horizontalmente múltiples badges en el mismo botón."""
+        BADGE_SIZE = 36
+        x_offset = -6 - offset_index * (BADGE_SIZE + 4)
         badge_canvas = tk.Canvas(
             btn,
             width=BADGE_SIZE,
@@ -167,7 +171,7 @@ class MainWindow:
             highlightthickness=0,
             bd=0
         )
-        badge_canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+        badge_canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
 
         oval = badge_canvas.create_oval(
             1, 1, BADGE_SIZE - 1, BADGE_SIZE - 1,
@@ -178,23 +182,40 @@ class MainWindow:
             BADGE_SIZE // 2, BADGE_SIZE // 2,
             text="0",
             fill="white",
-            font=(FONT_FAMILY, 9, "bold")
+            font=(FONT_FAMILY, 13, "bold")
         )
 
-        self._badges[key] = (badge_canvas, oval, txt)
+        self._badges[key] = (badge_canvas, oval, txt, x_offset)
         badge_canvas.place_forget()
 
-    def _update_badge(self, key, value):
+    # Umbrales de temperatura
+    _TEMP_WARN = 60   # °C — badge naranja
+    _TEMP_CRIT = 70   # °C — badge rojo
+
+    # Umbrales CPU / RAM (%)
+    _CPU_WARN  = 75
+    _CPU_CRIT  = 90
+    _RAM_WARN  = 75
+    _RAM_CRIT  = 90
+
+    # Umbrales disco (%)
+    _DISK_WARN = 80
+    _DISK_CRIT = 90
+
+    def _update_badge(self, key, value, color=None):
         """Actualiza el valor y visibilidad de un badge."""
         if key not in self._badges:
             return
-        canvas, oval, txt = self._badges[key]
+        canvas, oval, txt, x_offset = self._badges[key]
         if value > 0:
             display = str(value) if value < 100 else "99+"
             canvas.itemconfigure(txt, text=display)
-            color = COLORS['danger'] if key == "services" else COLORS.get('warning', '#ffaa00')
+            if color is None:
+                color = COLORS['danger'] if key == "services" else COLORS.get('warning', '#ffaa00')
             canvas.itemconfigure(oval, fill=color)
-            canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+            txt_color = "black" if color == COLORS.get('warning', '#ffaa00') else "white"
+            canvas.itemconfigure(txt, fill=txt_color)
+            canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
         else:
             canvas.place_forget()
     
@@ -252,7 +273,7 @@ class MainWindow:
         """Abre la ventana de histórico"""
         if self.history_window is None or not self.history_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Histórico Datos")
-            self.history_window = HistoryWindow(self.root)
+            self.history_window = HistoryWindow(self.root, self.cleanup_service)
         else:
             self.history_window.lift()
     
@@ -447,4 +468,65 @@ class MainWindow:
         except Exception:
             pass
 
+        try:
+            sys_stats = self.system_monitor.get_current_stats()
+
+            # Temperatura
+            temp = sys_stats['temp']
+            if temp >= self._TEMP_CRIT:
+                temp_color = COLORS['danger']
+                show_temp = True
+            elif temp >= self._TEMP_WARN:
+                temp_color = COLORS.get('warning', '#ffaa00')
+                show_temp = True
+            else:
+                show_temp = False
+            if show_temp:
+                self._update_badge_temp("temp_fan",     int(temp), temp_color)
+                self._update_badge_temp("temp_monitor", int(temp), temp_color)
+            else:
+                self._update_badge("temp_fan",     0)
+                self._update_badge("temp_monitor", 0)
+
+            # CPU
+            cpu = sys_stats['cpu']
+            if cpu >= self._CPU_CRIT:
+                self._update_badge("cpu", int(cpu), COLORS['danger'])
+            elif cpu >= self._CPU_WARN:
+                self._update_badge("cpu", int(cpu), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("cpu", 0)
+
+            # RAM
+            ram = sys_stats['ram']
+            if ram >= self._RAM_CRIT:
+                self._update_badge("ram", int(ram), COLORS['danger'])
+            elif ram >= self._RAM_WARN:
+                self._update_badge("ram", int(ram), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("ram", 0)
+
+            # Disco
+            disk = sys_stats['disk_usage']
+            if disk >= self._DISK_CRIT:
+                self._update_badge("disk", int(disk), COLORS['danger'])
+            elif disk >= self._DISK_WARN:
+                self._update_badge("disk", int(disk), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("disk", 0)
+
+        except Exception:
+            pass
+
         self.root.after(self.update_interval, self._update)
+
+    def _update_badge_temp(self, key, temp, color):
+        """Muestra la temperatura en el badge con el color indicado."""
+        if key not in self._badges:
+            return
+        canvas, oval, txt, x_offset = self._badges[key]
+        canvas.itemconfigure(txt, text=f"{temp}°")
+        canvas.itemconfigure(oval, fill=color)
+        txt_color = "black" if color == COLORS.get('warning', '#ffaa00') else "white"
+        canvas.itemconfigure(txt, fill=txt_color)
+        canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)

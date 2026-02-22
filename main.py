@@ -9,8 +9,9 @@ import atexit
 import threading
 import customtkinter as ctk
 from config import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor
+from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor, CleanupService
 from core.data_collection_service import DataCollectionService
+from core.data_logger import DataLogger
 from ui.main_window import MainWindow
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -63,6 +64,16 @@ def main():
     )
     data_service.start()
     
+    # Iniciar servicio de limpieza automática
+    cleanup_service = CleanupService(
+        data_logger=DataLogger(),
+        max_csv=10,
+        max_png=10,
+        db_days=30,
+        interval_hours=24,
+    )
+    cleanup_service.start()
+
     # Iniciar servicio de ventiladores AUTO
     fan_service = FanAutoService(fan_controller, system_monitor)
     fan_service.start()
@@ -72,6 +83,7 @@ def main():
         """Limpieza al cerrar la aplicación"""
         fan_service.stop()
         data_service.stop()
+        cleanup_service.stop()
     
     atexit.register(cleanup)
     
@@ -85,7 +97,8 @@ def main():
         update_interval=UPDATE_MS,
         process_monitor=process_monitor,
         service_monitor=service_monitor,
-        update_monitor=update_monitor
+        update_monitor=update_monitor,
+        cleanup_service=cleanup_service
     )
 
     try:

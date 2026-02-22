@@ -8,6 +8,7 @@ from ui.styles import make_futuristic_button, StyleManager
 from ui.widgets import custom_msgbox , confirm_dialog
 from core.data_analyzer import DataAnalyzer
 from core.data_logger import DataLogger
+from core.cleanup_service import CleanupService
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from utils.logger import get_logger
@@ -21,12 +22,13 @@ _DATE_FMT = "%Y-%m-%d %H:%M"
 class HistoryWindow(ctk.CTkToplevel):
     """Ventana de visualización de histórico"""
 
-    def __init__(self, parent):
+    def __init__(self, parent, cleanup_service: CleanupService):
         super().__init__(parent)
 
         # Referencias
-        self.analyzer = DataAnalyzer()
-        self.logger   = DataLogger()
+        self.analyzer         = DataAnalyzer()
+        self.logger           = DataLogger()
+        self.cleanup_service  = cleanup_service
 
         # Estado de periodo
         self.period_var = ctk.StringVar(value="24h")
@@ -457,22 +459,35 @@ class HistoryWindow(ctk.CTkToplevel):
                 custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
 
     def _clean_old_data(self):
-        days = 7
+        """Fuerza un ciclo de limpieza completo a través de CleanupService."""
+        status = self.cleanup_service.get_status()
 
         def do_clean():
             try:
-                self.logger.clean_old_data(days=days)
-                custom_msgbox(self, f"Datos mayores a {days} días eliminados.", "✅ Limpiado")
-                logger.info(f"[HistoryWindow] Limpieza completada (>{days} días)")
+                result = self.cleanup_service.force_cleanup()
+                msg = (
+                    f"Limpieza completada:\n\n"
+                    f"• CSV eliminados: {result['deleted_csv']}\n"
+                    f"• PNG eliminados: {result['deleted_png']}\n"
+                    f"• BD limpiada: {'Sí' if result['db_ok'] else 'No'}"
+                )
+                custom_msgbox(self, msg, "✅ Limpiado")
+                logger.info(f"[HistoryWindow] Limpieza manual completada: {result}")
                 self._update_data()
             except Exception as e:
-                logger.error(f"[HistoryWindow] Error limpiando: {e}")
+                logger.error(f"[HistoryWindow] Error en limpieza manual: {e}")
                 custom_msgbox(self, f"Error al limpiar:\n{e}", "❌ Error")
 
         confirm_dialog(
             parent=self,
-            text=f"¿Eliminar datos mayores a {days} días?\n\nEsto liberará espacio en disco.",
-            title="⚠️ Confirmar",
+            text=(
+                f"¿Forzar limpieza ahora?\n\n"
+                f"• CSV actuales: {status['csv_count']} (límite: {status['max_csv']})\n"
+                f"• PNG actuales: {status['png_count']} (límite: {status['max_png']})\n"
+                f"• BD: registros >'{status['db_days']}' días\n\n"
+                f"Esto liberará espacio en disco."
+            ),
+            title="⚠️ Confirmar Limpieza",
             on_confirm=do_clean,
             on_cancel=None
         )

@@ -9,6 +9,7 @@ from .disk_monitor import DiskMonitor
 from .process_monitor import ProcessMonitor
 from .service_monitor import ServiceMonitor
 from .update_monitor import UpdateMonitor
+from .cleanup_service import CleanupService
 
 __all__ = [
     'FanController',
@@ -19,4 +20,5 @@ __all__ = [
     'ProcessMonitor',
     'ServiceMonitor',
     'UpdateMonitor',
+    'CleanupService',
 ]
