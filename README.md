@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.6
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.7
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, logging completo y UI táctil unificada.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.6-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.7-orange.svg)]()
 
 ---
 
@@ -24,10 +24,10 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Visualización en vivo**: Gráfica de curva activa y PWM actual
 
 ### 🌐 **Monitor de Red Avanzado**
-- **Tráfico en tiempo real**: Download/Upload con gráficas
+- **Tráfico en tiempo real**: Download/Upload con gráficas en MB/s
 - **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
 - **Lista de IPs**: Todas las interfaces con iconos por tipo
-- **Speedtest integrado**: Test de velocidad con resultados instantáneos
+- **Speedtest integrado**: CLI oficial de Ookla, resultados en MB/s
 
 ### ⚙️ **Monitor de Procesos**
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
@@ -44,7 +44,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 ### 📊 **Histórico de Datos**
 - **Recolección automática**: Cada 5 minutos en background
 - **Base de datos SQLite**: Ligera y eficiente
-- **Visualización gráfica**: CPU, RAM, Temperatura con matplotlib
+- **8 gráficas**: CPU, RAM, Temperatura, Red ↓/↑, Disco R/W, PWM
 - **Periodos**: 24 horas, 7 días, 30 días
 - **Estadísticas**: Promedios, mínimos, máximos
 - **Detección de anomalías**: Alertas automáticas
@@ -55,7 +55,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Separación inteligente**: Mouse/teclado vs almacenamiento
 - **Expulsión segura**: Unmount + eject con confirmación
 
-###  **Monitor de Disco**
+###  **Monitor de Disco**
 - **Particiones**: Uso de espacio de todas las unidades
 - **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
 - **Velocidad I/O**: Lectura/escritura en MB/s
@@ -71,12 +71,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Terminal integrada**: Instala viendo el output en vivo
 - **Botón Buscar**: Fuerza comprobación manual
 
-### 󰆧 **15 Temas Personalizables**
+### 🎨 **15 Temas Personalizables**
 - **Cambio con un clic**: Reinicio automático
 - **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
 - **Preview en vivo**: Ve los colores antes de aplicar
 
-### /󰿅 **Reinicio y Apagado**
+### **Reinicio y Apagado**
 - **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
 - **Botón Salir**: Salir de la app o apagar el sistema
 - **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
@@ -104,6 +104,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Rotación automática**: 2MB máximo con backup
 - **Ubicación**: `data/logs/dashboard.log`
 
+### 👆 **UI Táctil Unificada** *(nuevo en v2.7)*
+- **Header consistente** en todas las ventanas: título + status en tiempo real + botón ✕
+- **Botón ✕ táctil** (52×42px) optimizado para pantalla DSI 4,5"
+- **Status dinámico** en el header: CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades
+- Sin botones "Cerrar" redundantes — un solo punto de cierre por ventana
+
 ---
 
 ## 📦 Instalación
@@ -116,8 +122,6 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 
 ### ⚡ **Instalación Recomendada**
 
-Usa el script de instalación directa (sin entorno virtual):
-
 ```bash
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
@@ -127,33 +131,32 @@ python3 main.py
 ```
 
 El script `install_system.sh` instala automáticamente:
-- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`, `smartmontools`)
 - Dependencias Python con `--break-system-packages`
-- Pregunta si instalar `speedtest-cli`
 - Ofrece configurar sensores de temperatura
 
 ### 🛠️ **Instalación Manual**
 
-Si prefieres instalar paso a paso:
-
 ```bash
 # 1. Dependencias del sistema
 sudo apt-get update
-sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools speedtest-cli
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
 
-# 2. Detectar sensores
+# 2. Speedtest CLI oficial de Ookla
+sudo apt install speedtest
+speedtest --accept-license --accept-gdpr
+
+# 3. Detectar sensores
 sudo sensors-detect --auto
 
-# 3. Dependencias Python
+# 4. Dependencias Python
 pip3 install --break-system-packages -r requirements.txt
 
-# 4. Ejecutar
+# 5. Ejecutar
 python3 main.py
 ```
 
-###  **Alternativa con Entorno Virtual**
-
-Si prefieres aislar las dependencias Python:
+###  **Alternativa con Entorno Virtual**
 
 ```bash
 chmod +x install.sh
@@ -242,7 +245,7 @@ system_dashboard/
 │   ├── fan_controller.py           # Control PWM y curvas
 │   ├── fan_auto_service.py         # Servicio background ventiladores
 │   ├── system_monitor.py           # CPU, RAM, temperatura
-│   ├── network_monitor.py          # Red, speedtest, interfaces
+│   ├── network_monitor.py          # Red, speedtest CLI Ookla, interfaces
 │   ├── disk_monitor.py             # Disco, NVMe, I/O
 │   ├── process_monitor.py          # Gestión de procesos
 │   ├── service_monitor.py          # Servicios systemd
@@ -253,16 +256,23 @@ system_dashboard/
 │   ├── cleanup_service.py          # Limpieza automática background (singleton)
 │   └── __init__.py
 ├── ui/
-│   ├── main_window.py              # Ventana principal (13 botones)
-│   ├── styles.py                   # Estilos y botones
+│   ├── main_window.py              # Ventana principal (13 botones + badges)
+│   ├── styles.py                   # Estilos, botones y make_window_header()
 │   ├── widgets/
 │   │   ├── graphs.py               # Gráficas personalizadas
 │   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
 │   └── windows/
-│       ├── monitor.py, network.py, usb.py, disk.py
-│       ├── process_window.py, service.py, history.py
-│       ├── update.py, fan_control.py
-│       ├── launchers.py, theme_selector.py
+│       ├── monitor.py              # Monitor placa (CPU/RAM/Temp)
+│       ├── network.py              # Monitor red + speedtest
+│       ├── disk.py                 # Monitor disco + NVMe
+│       ├── usb.py                  # Monitor USB
+│       ├── process_window.py       # Monitor procesos
+│       ├── service.py              # Monitor servicios systemd
+│       ├── history.py              # Histórico de datos
+│       ├── update.py               # Actualizaciones
+│       ├── fan_control.py          # Control ventiladores
+│       ├── launchers.py            # Lanzadores de scripts
+│       ├── theme_selector.py       # Selector de temas
 │       └── __init__.py
 ├── utils/
 │   ├── file_manager.py             # Gestión de JSON (escritura atómica)
@@ -275,14 +285,13 @@ system_dashboard/
 ├── scripts/                         # Scripts personalizados del usuario
 ├── install_system.sh               # Instalación directa (recomendada)
 ├── install.sh                      # Instalación con venv (alternativa)
-├── test_logging.py                 # Prueba del sistema de logging
 ├── main.py
 └── requirements.txt
 ```
 
 ---
 
-##  Configuración
+##  Configuración
 
 ### **`config/settings.py`**
 
@@ -339,7 +348,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 | Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
 | NVMe temp 0 | `sudo apt install smartmontools` |
 | Ventiladores no responden | `sudo python3 main.py` |
-| Speedtest falla | `sudo apt install speedtest-cli` |
+| Speedtest falla (403) | `sudo apt remove speedtest-cli && sudo apt install speedtest` |
 | USB no expulsa | `sudo apt install udisks2` |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
@@ -359,7 +368,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 | Métrica | Valor |
 |---------|-------|
-| Versión | 2.6 |
+| Versión | 2.7 |
 | Archivos Python | 41 |
 | Líneas de código | ~12,500 |
 | Ventanas | 13 |
@@ -371,7 +380,16 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ## Changelog
 
-### **v2.6** - 2026-02-22 ⭐ ACTUAL
+### **v2.7** - 2026-02-22 ⭐ ACTUAL
+- ✅ **NUEVO**: `make_window_header()` — header unificado y consistente en las 10 ventanas de monitoreo
+- ✅ **NUEVO**: Botón ✕ táctil (52×42px) en todas las ventanas, optimizado para pantalla DSI
+- ✅ **NUEVO**: Status en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
+- ✅ **NUEVO**: Speedtest migrado al CLI oficial de Ookla (JSON, MB/s correcto)
+- ✅ **FIX**: Botón Cerrar duplicado eliminado en Monitor de Red
+- ✅ **FIX**: Import `make_window_header` en ThemeSelector
+- ✅ **FIX**: Stats label de Servicios y Procesos en línea propia (sin superposición)
+
+### **v2.6** - 2026-02-22
 - ✅ **NUEVO**: 6 badges de notificación visual en menú principal
 - ✅ **NUEVO**: `CleanupService` — limpieza automática background de CSV, PNG y BD
 - ✅ **NUEVO**: Fan control con entries (placeholder) en lugar de sliders
@@ -382,9 +400,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
 - ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
 - ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
-- ✅ **NUEVO**: `terminal_dialog` con callback `on_close`
 - ✅ **FIX**: Bug `atexit` en `DataCollectionService` (se detenía a los 3s del arranque)
-- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
 - ✅ **MEJORA**: `update_monitor` con caché 12h y parámetro `force`
 
 ### **v2.5** - 2026-02-17
@@ -392,7 +408,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - ✅ Recolección automática background, Exportación CSV, Detección de anomalías
 
 ### **v2.0** - 2026-02-16
-- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
+- ✅ Monitor de Procesos, 15 temas
 
 ### **v1.0** - 2025-01
 - ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
@@ -411,4 +427,4 @@ MIT License
 
 ---
 
-**Dashboard v2.6: Profesional, Completo, Monitoreado y Auto-mantenido**
+**Dashboard v2.7: Profesional, Táctil, Completo y Auto-mantenido**

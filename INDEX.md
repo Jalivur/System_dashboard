@@ -1,4 +1,4 @@
-# 📚 Índice de Documentación - System Dashboard v2.6
+# 📚 Índice de Documentación - System Dashboard v2.7
 
 Guía completa de toda la documentación del proyecto actualizada.
 
@@ -8,7 +8,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ### **Para Empezar:**
 1. **[README.md](README.md)** ⭐  
-   Documentación completa del proyecto v2.6. **Empieza aquí.**
+   Documentación completa del proyecto v2.7. **Empieza aquí.**
 
 2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
    Instalación y ejecución en 5 minutos.
@@ -46,14 +46,14 @@ Guía completa de toda la documentación del proyecto actualizada.
 - Terminación de procesos
 - Personalización de columnas
 
-**[SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)** ⭐ NUEVO  
+**[SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)**  
 - Monitor de servicios systemd
 - Start/Stop/Restart servicios
 - Enable/Disable autostart
 - Ver logs en tiempo real
 - Implementación paso a paso
 
-**[HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)** ⭐ NUEVO  
+**[HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)**  
 - Sistema de histórico completo
 - Base de datos SQLite
 - Visualización con matplotlib
@@ -69,7 +69,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 **[NETWORK_GUIDE.md](NETWORK_GUIDE.md)** (si existe)  
 - Monitor de tráfico de red
-- Speedtest integrado
+- Speedtest integrado (CLI oficial Ookla)
 - Auto-detección de interfaz
 - Lista de IPs
 
@@ -98,10 +98,10 @@ Guía completa de toda la documentación del proyecto actualizada.
 ### 💡 **Ideas y Expansión**
 
 **[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)**  
-- ✅ Funcionalidades implementadas (Procesos, Servicios, Histórico)
-- 🔄 En evaluación (Docker, GPU)
-- 💭 Ideas futuras (Alertas, Automatización)
-- Roadmap v3.0
+- ✅ Funcionalidades implementadas (12 áreas)
+- 🔄 En evaluación (Alertas, GPU)
+- 💭 Ideas futuras (Automatización, API REST)
+- Roadmap v2.8 y v3.0
 
 ---
 
@@ -123,18 +123,18 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ---
 
-## 🗂️ Estructura de Documentos v2.5
+## 🗂️ Estructura de Documentos v2.7
 
 ```
 📚 Documentación/
-├── README.md                    ⭐ Documento principal v2.5
-├── QUICKSTART.md                ⚡ Inicio rápido v2.5
+├── README.md                    ⭐ Documento principal v2.7
+├── QUICKSTART.md                ⚡ Inicio rápido
 ├── INDEX.md                     📑 Este archivo
 ├── INSTALL_GUIDE.md             🔧 Instalación
 ├── THEMES_GUIDE.md              🎨 Guía de temas
 ├── PROCESS_MONITOR_GUIDE.md     ⚙️ Monitor de procesos
-├── SERVICE_MONITOR_GUIDE.md     🔧 Monitor de servicios ⭐ NUEVO
-├── HISTORICO_DATOS_GUIDE.md     📊 Histórico de datos ⭐ NUEVO
+├── SERVICE_MONITOR_GUIDE.md     🔧 Monitor de servicios
+├── HISTORICO_DATOS_GUIDE.md     📊 Histórico de datos
 ├── INTEGRATION_GUIDE.md         🤝 Integración
 ├── IDEAS_EXPANSION.md           💡 Ideas futuras
 ├── COMPATIBILIDAD.md            🌐 Compatibilidad
@@ -149,13 +149,13 @@ Guía completa de toda la documentación del proyecto actualizada.
 1. README.md - Leer sección "Características"
 2. QUICKSTART.md - Instalar y ejecutar
 3. THEMES_GUIDE.md - Personalizar colores
-4. Explorar las 12 ventanas del dashboard 🎉
+4. Explorar las 10 ventanas del dashboard 🎉
 
 ### **Usuario Avanzado:**
 1. README.md completo
 2. PROCESS_MONITOR_GUIDE.md - Gestión avanzada
-3. SERVICE_MONITOR_GUIDE.md - Control de servicios ⭐
-4. HISTORICO_DATOS_GUIDE.md - Análisis de datos ⭐
+3. SERVICE_MONITOR_GUIDE.md - Control de servicios
+4. HISTORICO_DATOS_GUIDE.md - Análisis de datos
 5. Personalizar configuración
 
 ### **Desarrollador:**
@@ -173,42 +173,46 @@ Guía completa de toda la documentación del proyecto actualizada.
 - **Cambiar tema** → THEMES_GUIDE.md
 - **Instalar** → QUICKSTART.md o INSTALL_GUIDE.md
 - **Ver procesos** → PROCESS_MONITOR_GUIDE.md
-- **Gestionar servicios** → SERVICE_MONITOR_GUIDE.md ⭐
-- **Ver histórico** → HISTORICO_DATOS_GUIDE.md ⭐
+- **Gestionar servicios** → SERVICE_MONITOR_GUIDE.md
+- **Ver histórico** → HISTORICO_DATOS_GUIDE.md
 - **Configurar ventiladores** → FAN_CONTROL_GUIDE.md
 - **Integrar con OLED** → INTEGRATION_GUIDE.md
 - **Añadir funciones** → ARCHITECTURE.md + IDEAS_EXPANSION.md
-- **Reiniciar rápido** → README.md sección "Reinicio Rápido" ⭐
 
 ### **¿Tengo un problema?**
 - **No arranca** → QUICKSTART.md sección "Problemas Comunes"
 - **Ventiladores no funcionan** → FAN_CONTROL_GUIDE.md
 - **Temperatura no se lee** → INSTALL_GUIDE.md
 - **Speedtest falla** → NETWORK_GUIDE.md
-- **Base de datos crece** → HISTORICO_DATOS_GUIDE.md ⭐
-- **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md ⭐
+- **Base de datos crece** → HISTORICO_DATOS_GUIDE.md
+- **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md
 - **Otro problema** → README.md sección "Troubleshooting"
 
 ---
 
-## 📊 Estadísticas del Proyecto v2.5
+## 📊 Estadísticas del Proyecto v2.7
 
 - **Archivos Python**: 42+
 - **Líneas de código**: ~13,000
-- **Ventanas**: 13 ventanas funcionales
+- **Ventanas**: 10 ventanas funcionales
 - **Temas**: 15 temas pre-configurados
 - **Documentos**: 12 guías
 - **Servicios background**: 3 (FanAuto + DataCollection + Cleanup)
 
 ---
 
-## 🆕 Novedades en v2.6
+## 🆕 Novedades en v2.7
 
 ### **Funcionalidades Nuevas:**
-- ✅ **6 Badges** de notificación visual en menú principal
-- ✅ **CleanupService** — servicio background de limpieza automática
-- ✅ **Fan Control** con entries en lugar de sliders
-- ✅ Inyección de dependencias profesional en toda la cadena
+- ✅ **Header unificado** (`make_window_header`) en las 10 ventanas
+- ✅ **Botón ✕ táctil** (52×42px) en todas las ventanas
+- ✅ **Status en tiempo real** en el header de cada ventana
+- ✅ **Speedtest** migrado al CLI oficial de Ookla (JSON, MB/s)
+
+### **Fixes:**
+- ✅ Botón Cerrar duplicado en Monitor de Red
+- ✅ Import `make_window_header` en ThemeSelector
+- ✅ Stats label de Servicios y Procesos en línea propia
 
 ---
 
@@ -228,39 +232,14 @@ Guía completa de toda la documentación del proyecto actualizada.
 | Tema | Documento |
 |------|-----------|
 | **Inicio Rápido** | [QUICKSTART.md](QUICKSTART.md) |
-| **Características** | [README.md#características](README.md#características-principales) |
+| **Características** | [README.md](README.md) |
 | **Instalación** | [INSTALL_GUIDE.md](INSTALL_GUIDE.md) |
 | **Temas** | [THEMES_GUIDE.md](THEMES_GUIDE.md) |
 | **Procesos** | [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md) |
-| **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) ⭐ |
-| **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) ⭐ |
-| **Troubleshooting** | [README.md#troubleshooting](README.md#troubleshooting) |
+| **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) |
+| **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) |
 | **Ideas Futuras** | [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) |
 
 ---
 
-## 🎯 Guías de Implementación
-
-Si quieres implementar funciones nuevas, tenemos guías paso a paso:
-
-| Función | Guía | Dificultad |
-|---------|------|------------|
-| **Monitor de Procesos** | PROCESS_MONITOR_GUIDE.md | Media |
-| **Monitor de Servicios** | SERVICE_MONITOR_GUIDE.md | Media ⭐ |
-| **Histórico de Datos** | HISTORICO_DATOS_GUIDE.md | Alta ⭐ |
-| **Monitor de Disco** | (Ejemplo en código) | Baja |
-
----
-
-## 📈 Evolución de la Documentación
-
-| Versión | Documentos | Páginas | Características |
-|---------|------------|---------|-----------------|
-| **v1.0** | 8 | ~50 | Básico |
-| **v2.0** | 10 | ~80 | + Procesos, Temas |
-| **v2.5** | 12 | ~120 | + Servicios, Histórico ⭐ |
-| **v2.6** | 12 | ~130 | + Badges, CleanupService ⭐ |
-
----
-
-**¡Toda la información que necesitas está aquí!** 📚✨
+**Versión actual**: v2.7 — **Última actualización**: 2026-02-22

@@ -1,4 +1,4 @@
-# 💡 Ideas de Expansión - Dashboard v2.5.1
+# 💡 Ideas de Expansión - Dashboard v2.7
 
 Roadmap de funcionalidades y estado real de implementación.
 
@@ -108,21 +108,7 @@ Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
-## 🔄 En Evaluación
-
-### **Monitor de Contenedores Docker**
-**Prioridad**: Alta si usas Docker en la Pi  
-**Complejidad**: Media
-
-- Start/Stop/Restart contenedores
-- Ver logs en tiempo real
-- Estadísticas de uso por contenedor (CPU, RAM)
-- Ver puertos expuestos
-- Similar a `docker ps` y `docker stats` pero visual
-
----
-
-### ~~**Notificaciones Visuales en el Menú**~~ ✅ Implementado en v2.6
+### **10. Notificaciones Visuales en el Menú**
 **Implementado en v2.6**
 - ✅ Badge en "Actualizaciones" con paquetes pendientes (naranja)
 - ✅ Badge en "Monitor Servicios" con servicios fallidos (rojo)
@@ -132,6 +118,35 @@ Roadmap de funcionalidades y estado real de implementación.
 - ✅ Badge en "Monitor Disco" con uso de disco (naranja >80%, rojo >90%)
 - ✅ Texto dinámico en badge (valor real: temperatura en °C, porcentaje)
 - ✅ Color de texto adaptativo (negro sobre amarillo, blanco sobre rojo)
+
+---
+
+### **11. Header Unificado y Mejoras UI**
+**Implementado en v2.7**
+- ✅ `make_window_header()` en `ui/styles.py` — componente reutilizable
+- ✅ Header consistente en las 10 ventanas (título + status + botón ✕)
+- ✅ Botón ✕ táctil (52×42px) apto para pantalla táctil DSI
+- ✅ Status en tiempo real en el header: CPU/RAM/Temp en Monitor, Disco/NVMe en Disco, interfaz/velocidades en Red
+- ✅ Stats label en línea propia para Servicios y Procesos (texto largo)
+- ✅ Eliminados todos los botones "Cerrar" inferiores redundantes
+- ✅ Separador decorativo bajo el header en todas las ventanas
+
+---
+
+### **12. Speedtest CLI Oficial de Ookla**
+**Implementado en v2.7**
+- ✅ Migrado de `speedtest-cli` a `speedtest` (CLI oficial de Ookla)
+- ✅ Salida en JSON — más robusto que parsear texto
+- ✅ Conversión correcta bytes/s → MB/s
+- ✅ Timeout ampliado a 90s
+- ✅ Captura de errores JSON y KeyError
+
+---
+
+## 🔄 En Evaluación
+
+### **Monitor de Contenedores Docker**
+**Prioridad**: Descartado — usuario no usa Docker  
 
 ---
 
@@ -163,6 +178,8 @@ Roadmap de funcionalidades y estado real de implementación.
 
 **API REST**: endpoints para métricas, histórico y control de servicios
 
+**UI**: grid de 2 columnas en ventanas de monitoreo (mejor aprovechamiento de 800×480)
+
 ---
 
 ## 🎯 Roadmap
@@ -175,15 +192,23 @@ Roadmap de funcionalidades y estado real de implementación.
 - ✅ Fix bug atexit en DataCollectionService
 - ✅ Paso correcto de dependencias (update_monitor inyectado)
 
-### **v2.6** ✅ ACTUAL — 2026-02-22
+### **v2.6** ✅ — 2026-02-22
 - ✅ Badges de notificación visual en menú principal (6 badges, 5 botones)
 - ✅ CleanupService — limpieza automática background de CSV, PNG y BD
 - ✅ Fan control: entries con placeholder en lugar de sliders
 - ✅ Inyección de dependencias profesional (CleanupService → HistoryWindow)
 
-### **v2.7** (Próximo)
-- [ ] Monitor Docker (si aplica)
-- [ ] Mejoras UI generales
+### **v2.7** ✅ ACTUAL — 2026-02-22
+- ✅ `make_window_header()` — header unificado y consistente en 10 ventanas
+- ✅ Botón ✕ táctil (52×42px) en todas las ventanas
+- ✅ Status en tiempo real en el header de cada ventana
+- ✅ Migración a speedtest CLI oficial de Ookla (JSON, MB/s)
+- ✅ Fix botón Cerrar duplicado en Monitor de Red
+- ✅ Fix import `make_window_header` en ThemeSelector
+
+### **v2.8** (Próximo)
+- [ ] Grid de 2 columnas en ventanas de monitoreo (mejor uso del espacio 800×480)
+- [ ] Mejoras UI adicionales
 
 ### **v3.0** (Futuro)
 - [ ] Alertas externas (Telegram/webhook)
@@ -201,10 +226,10 @@ Roadmap de funcionalidades y estado real de implementación.
 | Actualizaciones del sistema | ✅ 100% |
 | Logging y observabilidad | ✅ 100% |
 | Notificaciones visuales internas | ✅ 100% |
+| Consistencia visual UI | ✅ 100% |
 | Alertas externas | ⏳ 0% |
-| Docker | ⏳ 0% |
 | Automatización | ⏳ 0% |
 
 ---
 
-**Versión actual**: v2.6 — **Última actualización**: 2026-02-22
+**Versión actual**: v2.7 — **Última actualización**: 2026-02-22
