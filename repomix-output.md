@@ -70,7 +70,6 @@ ui/
     update.py
     usb.py
   __init__.py
-  history.py
   main_window.py
   styles.py
 utils/
@@ -246,501 +245,6 @@ def recolor_lines(canvas, lines: List, color: str) -> None:
 ## File: ui/__init__.py
 ````python
 
-````
-
-## File: ui/history.py
-````python
-"""
-Ventana de histórico de datos
-"""
-import customtkinter as ctk
-from datetime import datetime, timedelta
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
-from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox , confirm_dialog
-from core.data_analyzer import DataAnalyzer
-from core.data_logger import DataLogger
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.figure import Figure
-from utils.logger import get_logger
-import os
-
-logger = get_logger(__name__)
-
-_DATE_FMT = "%Y-%m-%d %H:%M"
-
-
-class HistoryWindow(ctk.CTkToplevel):
-    """Ventana de visualización de histórico"""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # Referencias
-        self.analyzer = DataAnalyzer()
-        self.logger   = DataLogger()
-
-        # Estado de periodo
-        self.period_var = ctk.StringVar(value="24h")
-        self.period_start = ctk.StringVar()
-        self.period_end   = ctk.StringVar()
-
-        # Estado de rango personalizado
-        self._using_custom_range = False
-        self._custom_start: datetime = None
-        self._custom_end:   datetime = None
-
-        # Configurar ventana
-        self.title("Histórico de Datos")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-
-        # Crear interfaz
-        self._create_ui()
-
-        # Cargar datos iniciales
-        self._update_data()
-
-    # ─────────────────────────────────────────────
-    # Construcción de la UI
-    # ─────────────────────────────────────────────
-
-    def _create_ui(self):
-        self._main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        self._main.pack(fill="both", expand=True, padx=5, pady=5) 
-        self._create_header(self._main)
-        self._create_period_controls(self._main)
-        self._create_range_panel(self._main)   # fila oculta de OptionMenus
-
-        scroll_container = ctk.CTkFrame(self._main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-
-        canvas_tk = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0,
-            height=DSI_HEIGHT - 300
-        )
-        canvas_tk.pack(side="left", fill="both", expand=True)
-
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas_tk.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-
-        StyleManager.style_scrollbar_ctk(scrollbar)
-
-        canvas_tk.configure(yscrollcommand=scrollbar.set)
-
-        inner = ctk.CTkFrame(canvas_tk, fg_color=COLORS['bg_medium'])
-        canvas_tk.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
-        inner.bind("<Configure>",
-                   lambda e: canvas_tk.configure(scrollregion=canvas_tk.bbox("all")))
-
-        self._create_graphs_area(inner)
-        self._create_stats_area(inner)
-        self._create_buttons(self._main)
-
-    def _create_header(self, parent):
-        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        header.pack(fill="x", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            header,
-            text="HISTÓRICO DE DATOS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        ).pack(pady=10)
-
-        self.toolbar_container = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
-        self.toolbar_container.pack(side="top", padx=10)
-
-    def _create_period_controls(self, parent):
-        """Fila 1: radio buttons 24h/7d/30d + botón para abrir/cerrar el panel de rango."""
-        self._controls_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        self._controls_frame.pack(fill="x", padx=10, pady=(5, 0))
-
-        ctk.CTkLabel(
-            self._controls_frame,
-            text="Periodo:",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        ).pack(side="left", padx=10)
-
-        for period, label in [("24h", "24 horas"), ("7d", "7 días"), ("30d", "30 días")]:
-            rb = ctk.CTkRadioButton(
-                self._controls_frame,
-                text=label,
-                variable=self.period_var,
-                value=period,
-                command=self._on_period_radio,
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            rb.pack(side="left", padx=10)
-            StyleManager.style_radiobutton_ctk(rb)
-
-        # Botón toggle del panel de rango
-        self._toggle_btn = make_futuristic_button(
-            self._controls_frame,
-            text="󰙹 Rango",
-            command=self._toggle_range_panel,
-            height=6,
-            width=13
-        )
-        self._toggle_btn.pack(side="right", padx=10)
-
-    def _create_range_panel(self, parent):
-        """
-        Fila 2 (oculta por defecto): selectores día/mes/año/hora/min
-        para inicio y fin del rango. Sin teclado — todo por OptionMenu.
-        """
-        self._range_panel = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        # No se hace pack aquí → empieza oculto
-        ctk.CTkLabel(
-            self._range_panel,
-            text="desde:",
-            text_color=COLORS['text_dim'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        ).pack(side="left", padx=(10, 2))
-
-        self.date_start = ctk.CTkEntry(
-            self._range_panel,
-            textvariable=self.period_start,
-            placeholder_text="YYYY-MM-DD HH:MM",
-            placeholder_text_color=COLORS['text_dim'],
-            width=300,
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        self.date_start.pack(side="left", padx=(0, 4))
-                # Entradas de fecha en la fila de controles (derecha)
-        ctk.CTkLabel(
-            self._range_panel,
-            text="hasta:",
-            text_color=COLORS['text_dim'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        ).pack(side="left", padx=(0, 2))
-
-        self.date_end = ctk.CTkEntry(
-            self._range_panel,
-            placeholder_text="YYYY-MM-DD HH:MM",
-            width=300,
-            textvariable=self.period_end,
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        self.date_end.pack(side="left", padx=(0, 4))
-
-
-        # ── BOTÓN APLICAR ─────────────────────────────────────────
-        self._apply_btn = make_futuristic_button(
-            self._controls_frame,
-            text="✓Aplicar",
-            command=self._apply_custom_range,
-            height=6,
-            width=12,
-            state="disabled"  # solo se habilita al abrir el panel, para evitar confusión
-        )
-        self._apply_btn.pack(side="right", padx=(10, 5))
-
-    def _create_graphs_area(self, parent):
-        graphs_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        graphs_frame.pack(fill="both", expand=True, padx=(0, 10), pady=(0, 10))
-
-        self.fig = Figure(figsize=(9, 20), facecolor=COLORS['bg_medium'])
-        self.fig.set_tight_layout(True)
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_frame)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack(fill="both", expand=True, pady=0)
-
-        # Toolbar invisible — sus métodos se invocan desde botones propios
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
-        self.toolbar.pack_forget()
-
-        for text, cmd, w in [
-            ("🏠 Inicio",  self.toolbar.home,          12),
-            ("🔍 Zoom",    self.toolbar.zoom,           12),
-            ("🖐️ Mover",  self.toolbar.pan,            12),
-            (" Guardar",  self._export_figure_image,   12),
-        ]:
-            make_futuristic_button(
-                self.toolbar_container, text=text, command=cmd, height=6, width=w
-            ).pack(side="left", padx=5)
-
-        self.canvas.mpl_connect('button_press_event',   self._on_click)
-        self.canvas.mpl_connect('button_release_event', self._on_release)
-        self.canvas.mpl_connect('motion_notify_event',  self._on_motion)
-
-    def _create_stats_area(self, parent):
-        stats_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        stats_frame.pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text="Estadísticas:",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        ).pack(pady=(10, 5))
-
-        self.stats_label = ctk.CTkLabel(
-            stats_frame,
-            text="Cargando...",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            justify="left"
-        )
-        self.stats_label.pack(pady=(0, 10), padx=20)
-
-    def _create_buttons(self, parent):
-        buttons = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        buttons.pack(fill="x", pady=10, padx=10)
-
-        for text, cmd, side, w in [
-            ("Actualizar",       self._update_data,    "left",  18),
-            ("Exportar CSV",     self._export_csv,     "left",  18),
-            ("Limpiar Antiguos", self._clean_old_data, "left",  18),
-            ("Cerrar",           self.destroy,         "right", 15),
-        ]:
-            make_futuristic_button(
-                buttons, text=text, command=cmd, width=w, height=6
-            ).pack(side=side, padx=5)
-
-    # ─────────────────────────────────────────────
-    # Control del panel de rango
-    # ─────────────────────────────────────────────
-
-    def _toggle_range_panel(self):
-        """Muestra u oculta la fila de OptionMenus de rango personalizado."""
-        if self._range_panel.winfo_ismapped():
-            self._range_panel.pack_forget()
-            self._toggle_btn.configure(text="󰙹 Rango")
-            self._apply_btn.configure(state="disabled")
-        else:
-            # Insertar después del frame de controles de periodo
-            self._range_panel.pack(
-                fill="x", padx=10, pady=(10, 5),
-                after=self._controls_frame
-            )
-            self._toggle_btn.configure(text="✕ Cerrar")
-            self._apply_btn.configure(state="normal")
-
-
-    # ─────────────────────────────────────────────
-    # Lógica de actualización
-    # ─────────────────────────────────────────────
-
-    def _on_period_radio(self):
-        """Al pulsar radio button fijo: desactiva modo custom y actualiza."""
-        self._using_custom_range = False
-        self._update_data()
-
-    def _apply_custom_range(self):
-        """Lee los OptionMenus y aplica el rango sin necesidad de teclado."""
-        start_dt_text = self.period_start.get().strip()
-        end_dt_text = self.period_end.get().strip()
-        try:
-            start_dt = datetime.strptime(start_dt_text, _DATE_FMT)
-        except ValueError as e:
-            custom_msgbox(self, f"Fecha de inicio inválida:\n{e}", "❌ Error")
-            return
-
-        try:
-            end_dt = datetime.strptime(end_dt_text, _DATE_FMT)
-        except ValueError as e:
-            custom_msgbox(self, f"Fecha de fin inválida:\n{e}", "❌ Error")
-            return
-
-        if end_dt <= start_dt:
-            custom_msgbox(self, "La fecha de fin debe ser\nposterior a la de inicio.", "⚠️ Rango inválido")
-            return
-
-        if (end_dt - start_dt).days > 90:
-            custom_msgbox(self, "El rango no puede superar 90 días.", "⚠️ Rango demasiado amplio")
-            return
-
-        self._using_custom_range = True
-        self._custom_start = start_dt
-        self._custom_end   = end_dt
-
-        logger.info(
-            f"[HistoryWindow] Rango aplicado: "
-            f"{start_dt.strftime('%Y-%m-%d %H:%M')} → {end_dt.strftime('%Y-%m-%d %H:%M')}"
-        )
-        self._update_data()
-
-    def _update_data(self):
-        """Actualiza estadísticas y gráficas según el modo activo."""
-        if self._using_custom_range:
-            start = self._custom_start
-            end   = self._custom_end
-            stats = self.analyzer.get_stats_between(start, end)
-            rango_label = f"{start.strftime('%Y-%m-%d %H:%M')} → {end.strftime('%Y-%m-%d %H:%M')}"
-            hours = None  # no se usa en modo custom
-        else:
-            period = self.period_var.get()
-            hours  = {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}[period]
-            stats  = self.analyzer.get_stats(hours)
-            rango_label = period
-
-        total_records = self.logger.get_metrics_count()
-        db_size       = self.logger.get_db_size_mb()
-
-        stats_text = (
-            f"• CPU promedio: {stats.get('cpu_avg', 0):.1f}%  "
-            f"(min: {stats.get('cpu_min', 0):.1f}%, max: {stats.get('cpu_max', 0):.1f}%)\n"
-            f"• RAM promedio: {stats.get('ram_avg', 0):.1f}%  "
-            f"(min: {stats.get('ram_min', 0):.1f}%, max: {stats.get('ram_max', 0):.1f}%)\n"
-            f"• Temp promedio: {stats.get('temp_avg', 0):.1f}°C  "
-            f"(min: {stats.get('temp_min', 0):.1f}°C, max: {stats.get('temp_max', 0):.1f}°C)\n"
-            f"• Red Down: {stats.get('down_avg', 0):.2f} MB/s  "
-            f"(min: {stats.get('down_min', 0):.2f}, max: {stats.get('down_max', 0):.2f})\n"
-            f"• Red Up: {stats.get('up_avg', 0):.2f} MB/s  "
-            f"(min: {stats.get('up_min', 0):.2f}, max: {stats.get('up_max', 0):.2f})\n"
-            f"• Disk Read: {stats.get('disk_read_avg', 0):.2f} MB/s  "
-            f"(min: {stats.get('disk_read_min', 0):.2f}, max: {stats.get('disk_read_max', 0):.2f})\n"
-            f"• Disk Write: {stats.get('disk_write_avg', 0):.2f} MB/s  "
-            f"(min: {stats.get('disk_write_min', 0):.2f}, max: {stats.get('disk_write_max', 0):.2f})\n"
-            f"• PWM promedio: {stats.get('pwm_avg', 0):.0f}  "
-            f"(min: {stats.get('pwm_min', 0):.0f}, max: {stats.get('pwm_max', 0):.0f})\n"
-            f"• Actualizaciones disponibles promedio: {stats.get('updates_available_avg', 0):.2f}\n"
-            f"• Actualizaciones disponibles (min: {stats.get('updates_available_min', 0)})\n"
-            f"• Actualizaciones disponibles (max: {stats.get('updates_available_max', 0)})\n"
-            f"• Muestras: {stats.get('total_samples', 0)} en {rango_label}\n"
-            f"• Total registros: {total_records}  |  DB: {db_size:.2f} MB"
-        )
-        self.stats_label.configure(text=stats_text)
-
-        if self._using_custom_range:
-            self._update_graphs_between(self._custom_start, self._custom_end)
-        else:
-            self._update_graphs(hours)
-
-    # ─────────────────────────────────────────────
-    # Gráficas
-    # ─────────────────────────────────────────────
-
-    _METRICS = [
-        ('cpu_percent',     'CPU %',           'primary'),
-        ('ram_percent',     'RAM %',           'secondary'),
-        ('temperature',     'Temp °C',         'danger'),
-        ('net_download_mb', 'Red Down MB/s',   'primary'),
-        ('net_upload_mb',   'Red Up MB/s',     'secondary'),
-        ('disk_read_mb',    'Disk Read MB/s',  'primary'),
-        ('disk_write_mb',   'Disk Write MB/s', 'secondary'),
-        ('fan_pwm',         'PWM',             'warning'),
-    ]
-
-    def _update_graphs(self, hours: int):
-        self.fig.clear()
-        axes = [self.fig.add_subplot(8, 1, i) for i in range(1, 9)]
-        for (metric, ylabel, color_key), ax in zip(self._METRICS, axes):
-            ts, vals = self.analyzer.get_graph_data(metric, hours)
-            self._draw_metric(ax, ts, vals, ylabel, COLORS[color_key])
-        self.fig.tight_layout()
-        self.canvas.draw()
-
-    def _update_graphs_between(self, start: datetime, end: datetime):
-        self.fig.clear()
-        axes = [self.fig.add_subplot(8, 1, i) for i in range(1, 9)]
-        for (metric, ylabel, color_key), ax in zip(self._METRICS, axes):
-            ts, vals = self.analyzer.get_graph_data_between(metric, start, end)
-            self._draw_metric(ax, ts, vals, ylabel, COLORS[color_key])
-        self.fig.tight_layout()
-        self.canvas.draw()
-
-    def _draw_metric(self, ax, timestamps, values, ylabel: str, color: str):
-        ax.set_facecolor(COLORS['bg_dark'])
-        ax.tick_params(colors=COLORS['text'])
-        ax.set_ylabel(ylabel, color=COLORS['text'])
-        ax.set_xlabel('Tiempo', color=COLORS['text'])
-        ax.grid(True, alpha=0.2)
-        if timestamps:
-            ax.plot(timestamps, values, color=color, linewidth=1.5)
-
-    # ─────────────────────────────────────────────
-    # Exportación
-    # ─────────────────────────────────────────────
-
-    def _export_csv(self):
-        if self._using_custom_range:
-            start = self._custom_start
-            end   = self._custom_end
-            label = f"custom_{start.strftime('%Y%m%d%H%M')}_{end.strftime('%Y%m%d%H%M')}"
-            path  = f"{DATA_DIR}/history_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            try:
-                self.analyzer.export_to_csv_between(path, start, end)
-                custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
-            except Exception as e:
-                custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
-        else:
-            period = self.period_var.get()
-            hours  = {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}[period]
-            path   = f"{DATA_DIR}/history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            try:
-                self.analyzer.export_to_csv(path, hours)
-                custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
-            except Exception as e:
-                custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
-
-    def _clean_old_data(self):
-        days = 7
-
-        def do_clean():
-            try:
-                self.logger.clean_old_data(days=days)
-                custom_msgbox(self, f"Datos mayores a {days} días eliminados.", "✅ Limpiado")
-                logger.info(f"[HistoryWindow] Limpieza completada (>{days} días)")
-                self._update_data()
-            except Exception as e:
-                logger.error(f"[HistoryWindow] Error limpiando: {e}")
-                custom_msgbox(self, f"Error al limpiar:\n{e}", "❌ Error")
-
-        confirm_dialog(
-            parent=self,
-            text=f"¿Eliminar datos mayores a {days} días?\n\nEsto liberará espacio en disco.",
-            title="⚠️ Confirmar",
-            on_confirm=do_clean,
-            on_cancel=None
-        )
-
-    def _export_figure_image(self):
-        
-        try:
-            save_dir = os.path.join(os.getcwd(), "data/screenshots")
-            os.makedirs(save_dir, exist_ok=True)
-            filepath = os.path.join(
-                save_dir,
-                f"graficas_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.png"
-            )
-            self.fig.savefig(
-                filepath, dpi=150,
-                facecolor=self.fig.get_facecolor(),
-                bbox_inches='tight'
-            )
-            logger.info(f"[HistoryWindow] Figura guardada: {filepath}")
-            custom_msgbox(self, f"Imagen guardada en:\n\n{filepath}", "✅ Captura Guardada")
-        except Exception as e:
-            logger.error(f"[HistoryWindow] Error guardando imagen: {e}")
-            custom_msgbox(self, f"Error al guardar la imagen: {e}", "❌ Error")
-
-    # ─────────────────────────────────────────────
-    # Eventos matplotlib
-    # ─────────────────────────────────────────────
-
-    def _on_click(self, event):
-        if event.inaxes:
-            logger.debug(f"Click en gráfica: x={event.xdata}, y={event.ydata}")
-
-    def _on_release(self, event):
-        pass
-
-    def _on_motion(self, event):
-        pass
 ````
 
 ## File: .gitignore
@@ -10311,488 +9815,6 @@ FONT_SIZES = {
 }
 ````
 
-## File: ui/windows/fan_control.py
-````python
-"""
-Ventana de control de ventiladores
-"""
-import tkinter as tk
-import customtkinter as ctk
-from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
-                             DSI_HEIGHT, DSI_X, DSI_Y)
-from ui.styles import make_futuristic_button, StyleManager
-from ui.widgets import custom_msgbox
-from core.fan_controller import FanController
-from core.system_monitor import SystemMonitor
-from utils.file_manager import FileManager
-
-
-class FanControlWindow(ctk.CTkToplevel):
-    """Ventana de control de ventiladores y curvas PWM"""
-    
-    def __init__(self, parent, fan_controller: FanController, 
-                 system_monitor: SystemMonitor):
-        super().__init__(parent)
-        
-        # Referencias
-        self.fan_controller = fan_controller
-        self.system_monitor = system_monitor
-        self.file_manager = FileManager()
-        
-        # Variables de estado
-        self.mode_var = tk.StringVar()
-        self.manual_pwm_var = tk.IntVar(value=128)
-        self.curve_vars = []
-        
-        # Cargar estado inicial
-        self._load_initial_state()
-        
-        # Configurar ventana
-        self.title("Control de Ventiladores")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        self.focus_force()
-        self.lift()  # Asegura que está en primer plano
-        self.after(100, lambda: self.grab_set())  # Después de 100ms
-        # Crear interfaz
-        self._create_ui()
-        
-        # Iniciar bucle de actualización del slider/valor
-        self._update_pwm_display()
-    
-    def _load_initial_state(self):
-        """Carga el estado inicial desde archivo"""
-        state = self.file_manager.load_state()
-        self.mode_var.set(state.get("mode", "auto"))
-        
-        target = state.get("target_pwm")
-        if target is not None:
-            self.manual_pwm_var.set(target)
-    
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Título
-        title = ctk.CTkLabel(
-            main,
-            text="CONTROL DE VENTILADORES",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=10)
-        
-        # Área de scroll
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Canvas y scrollbar
-        canvas = ctk.CTkCanvas(
-            scroll_container, 
-            bg=COLORS['bg_medium'], 
-            highlightthickness=0
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>", 
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        # Sección de modo
-        self._create_mode_section(inner)
-        
-        # Sección PWM manual
-        self._create_manual_pwm_section(inner)
-        
-        # Sección de curva
-        self._create_curve_section(inner)
-        
-        # Botones inferiores
-        self._create_bottom_buttons(main)
-    
-    def _create_mode_section(self, parent):
-        """Crea la sección de selección de modo"""
-        mode_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        mode_frame.pack(fill="x", pady=5, padx=10)
-        
-        # Label
-        mode_label = ctk.CTkLabel(
-            mode_frame,
-            text="MODO DE OPERACIÓN",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        mode_label.pack(anchor="w", pady=(0, 5))
-        
-        # Radiobuttons
-        modes_container = ctk.CTkFrame(mode_frame, fg_color=COLORS['bg_medium'])
-        modes_container.pack(fill="x", pady=5)
-        
-        modes = [
-            ("Auto", "auto"),
-            ("Silent", "silent"),
-            ("Normal", "normal"),
-            ("Performance", "performance"),
-            ("Manual", "manual")
-        ]
-        
-        for text, value in modes:
-            rb = ctk.CTkRadioButton(
-                modes_container,
-                text=text,
-                variable=self.mode_var,
-                value=value,
-                command=lambda v=value: self._on_mode_change(v),
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            rb.pack(side="left", padx=8)
-            StyleManager.style_radiobutton_ctk(rb)
-    
-    def _create_manual_pwm_section(self, parent):
-        """Crea la sección de PWM manual"""
-        manual_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        manual_frame.pack(fill="x", pady=5, padx=10)
-        
-        # Label
-        manual_label = ctk.CTkLabel(
-            manual_frame,
-            text="PWM MANUAL (0-255)",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        manual_label.pack(anchor="w", pady=(0, 5))
-        
-        # Valor actual
-        self.pwm_value_label = ctk.CTkLabel(
-            manual_frame,
-            text=f"Valor: {self.manual_pwm_var.get()} ({int(self.manual_pwm_var.get()/255*100)}%)",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        )
-        self.pwm_value_label.pack(anchor="w", pady=(0, 10))
-        
-        # Slider
-        slider = ctk.CTkSlider(
-            manual_frame,
-            from_=0,
-            to=255,
-            variable=self.manual_pwm_var,
-            command=self._on_pwm_change,
-            width=DSI_WIDTH - 100
-        )
-        slider.pack(fill="x", pady=5)
-        StyleManager.style_slider_ctk(slider)
-    
-    def _create_curve_section(self, parent):
-        """Crea la sección de curva temperatura-PWM"""
-        curve_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        curve_frame.pack(fill="x", pady=5, padx=10)
-        # Label
-        curve_label = ctk.CTkLabel(
-            curve_frame,
-            text="CURVA TEMPERATURA-PWM",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        curve_label.pack(anchor="w", pady=(0, 5))
-        
-        # Frame para la lista de puntos
-        self.points_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
-        self.points_frame.pack(fill="x", pady=5, padx=5)
-        
-        # Cargar y mostrar puntos
-        self._refresh_curve_points()
-        
-        # Botones para añadir punto
-        add_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_medium'])
-        add_frame.pack(fill="x", pady=5)
-        
-        add_label = ctk.CTkLabel(
-            add_frame,
-            text="Añadir Punto:",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        add_label.pack(side="left", padx=5)
-        
-        # Sección para añadir punto con SLIDERS
-        add_section = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
-        add_section.pack(fill="x", pady=5, padx=5)
-
-        # Label sección
-        add_title = ctk.CTkLabel(
-            add_section,
-            text="AÑADIR NUEVO PUNTO",
-            text_color=COLORS['success'],
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
-        )
-        add_title.pack(anchor="w", padx=5, pady=5)
-
-        # Variable para temperatura del nuevo punto
-        self.new_temp_var = tk.IntVar(value=50)
-        self.new_pwm_var = tk.IntVar(value=128)
-
-        # SLIDER 1: Temperatura
-        temp_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
-        temp_slider_frame.pack(fill="x", padx=5, pady=5)
-
-        temp_label = ctk.CTkLabel(
-            temp_slider_frame,
-            text="Temperatura:",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        temp_label.pack(anchor="w")
-
-        self.temp_value_label = ctk.CTkLabel(
-            temp_slider_frame,
-            text=f"{self.new_temp_var.get()}°C",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
-        )
-        self.temp_value_label.pack(anchor="w", pady=5)
-
-        temp_slider = ctk.CTkSlider(
-            temp_slider_frame,
-            from_=0,
-            to=100,
-            variable=self.new_temp_var,
-            command=self._on_new_temp_change,
-            width=DSI_WIDTH - 120
-        )
-        temp_slider.pack(fill="x", pady=5)
-        StyleManager.style_slider_ctk(temp_slider)
-
-        # SLIDER 2: PWM
-        pwm_slider_frame = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
-        pwm_slider_frame.pack(fill="x", padx=5, pady=5)
-
-        pwm_label = ctk.CTkLabel(
-            pwm_slider_frame,
-            text="PWM:",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        pwm_label.pack(anchor="w")
-
-        self.new_pwm_value_label = ctk.CTkLabel(
-            pwm_slider_frame,
-            text=f"{self.new_pwm_var.get()} ({int(self.new_pwm_var.get()/255*100)}%)",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
-        )
-        self.new_pwm_value_label.pack(anchor="w", pady=5)
-
-        pwm_slider = ctk.CTkSlider(
-            pwm_slider_frame,
-            from_=0,
-            to=255,
-            variable=self.new_pwm_var,
-            command=self._on_new_pwm_change,
-            width=DSI_WIDTH - 120
-        )
-        pwm_slider.pack(fill="x", pady=5)
-        StyleManager.style_slider_ctk(pwm_slider)
-
-        # Botón para añadir punto
-        add_btn = make_futuristic_button(
-            add_section,
-            text="✓ Añadir Punto a la Curva",
-            command=self._add_curve_point_from_sliders,
-            width=25,
-            height=6,
-            font_size=16
-        )
-        add_btn.pack(pady=10)
-        
-        
-    def _refresh_curve_points(self):
-        """Refresca la lista de puntos de la curva"""
-        # Limpiar widgets existentes
-        for widget in self.points_frame.winfo_children():
-            widget.destroy()
-        
-        # Cargar curva actual
-        curve = self.file_manager.load_curve()
-        
-        if not curve:
-            no_points = ctk.CTkLabel(
-                self.points_frame,
-                text="No hay puntos en la curva",
-                text_color=COLORS['warning'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            no_points.pack(pady=10)
-            return
-        
-        # Mostrar cada punto
-        for point in curve:
-            temp = point['temp']
-            pwm = point['pwm']
-            
-            point_frame = ctk.CTkFrame(self.points_frame, fg_color=COLORS['bg_medium'])
-            point_frame.pack(fill="x", pady=2, padx=5)
-            
-            # Texto del punto
-            point_label = ctk.CTkLabel(
-                point_frame,
-                text=f"{temp}°C → PWM {pwm}",
-                text_color=COLORS['text'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            point_label.pack(side="left", padx=10)
-            
-            # Botón eliminar
-            del_btn = make_futuristic_button(
-                point_frame,
-                text="Eliminar",
-                command=lambda t=temp: self._remove_curve_point(t),
-                width=10,
-                height=3,
-                font_size=12
-            )
-            del_btn.pack(side="right", padx=5)
-    def _on_new_temp_change(self, value):
-        """Callback cuando cambia el slider de temperatura del nuevo punto"""
-        temp = int(float(value))
-        self.temp_value_label.configure(text=f"{temp}°C")
-
-    def _on_new_pwm_change(self, value):
-        """Callback cuando cambia el slider de PWM del nuevo punto"""
-        pwm = int(float(value))
-        percent = int(pwm / 255 * 100)
-        self.new_pwm_value_label.configure(text=f"{pwm} ({percent}%)")
-
-    def _add_curve_point_from_sliders(self):
-        """Añade un punto a la curva desde los sliders"""
-        temp = self.new_temp_var.get()
-        pwm = self.new_pwm_var.get()
-        
-        # Añadir punto
-        self.fan_controller.add_curve_point(temp, pwm)
-        
-        # Resetear sliders a valores medios
-        self.new_temp_var.set(50)
-        self.new_pwm_var.set(128)
-        self._on_new_temp_change(50)
-        self._on_new_pwm_change(128)
-        
-        # Refrescar lista
-        self._refresh_curve_points()
-        
-        # Mensaje de confirmación
-        custom_msgbox(self, f"✓ Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
-    
-    def _remove_curve_point(self, temp: int):
-        """Elimina un punto de la curva"""
-        self.fan_controller.remove_curve_point(temp)
-        self._refresh_curve_points()
-    
-    def _create_bottom_buttons(self, parent):
-        """Crea los botones inferiores"""
-        bottom = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        # Botón cerrar
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
-        
-        # Botón refrescar
-        refresh_btn = make_futuristic_button(
-            bottom,
-            text="Refrescar Curva",
-            command=self._refresh_curve_points,
-            width=15,
-            height=6
-        )
-        refresh_btn.pack(side="left", padx=5)
-    
-    def _on_mode_change(self, mode: str):
-        """Callback cuando cambia el modo"""
-        # Obtener temperatura actual
-        temp = self.system_monitor.get_current_stats()['temp']
-        
-        # Calcular PWM usando el controlador
-        target_pwm = self.fan_controller.get_pwm_for_mode(
-            mode=mode,
-            temp=temp,
-            manual_pwm=self.manual_pwm_var.get()
-        )
-        percent = int(target_pwm/255*100) 
-        # Actualizar el slider y label VISUALMENTE (pero no editable si no es manual)
-        self.manual_pwm_var.set(target_pwm)
-        self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
-        
-        # Guardar estado con PWM calculado
-        self.file_manager.write_state({
-            "mode": mode,
-            "target_pwm": target_pwm
-        })
-    
-    def _on_pwm_change(self, value):
-        """Callback cuando cambia el PWM manual"""
-        pwm = int(float(value))
-        percent = int(pwm/255*100)
-        self.pwm_value_label.configure(text=f"Valor: {pwm} ({percent}%)")
-        
-        if self.mode_var.get() == "manual":
-            self.file_manager.write_state({
-                "mode": "manual",
-                "target_pwm": pwm
-            })
-    
-    def _update_pwm_display(self):
-        """Actualiza el slider y valor para reflejar el PWM activo"""
-        if not self.winfo_exists():
-            return
-        
-        # Obtener modo actual
-        mode = self.mode_var.get()
-        
-        # Solo actualizar si NO es modo manual (en manual, el usuario controla el slider)
-        if mode != "manual":
-            # Obtener temperatura actual
-            temp = self.system_monitor.get_current_stats()['temp']
-            
-            # Calcular PWM activo
-            target_pwm = self.fan_controller.get_pwm_for_mode(
-                mode=mode,
-                temp=temp,
-                manual_pwm=self.manual_pwm_var.get()
-            )
-            percent= int(target_pwm/255*100)
-            # Actualizar slider y label visualmente
-            self.manual_pwm_var.set(target_pwm)
-            self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
-        
-        # Programar siguiente actualización (cada 2 segundos)
-        self.after(2000, self._update_pwm_display)
-````
-
 ## File: core/__init__.py
 ````python
 """
@@ -11206,6 +10228,447 @@ __all__ = [
     'HistoryWindow',
     'ThemeSelector'
 ]
+````
+
+## File: ui/windows/fan_control.py
+````python
+"""
+Ventana de control de ventiladores
+"""
+import tkinter as tk
+import customtkinter as ctk
+from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
+                             DSI_HEIGHT, DSI_X, DSI_Y)
+from ui.styles import make_futuristic_button, StyleManager
+from ui.widgets import custom_msgbox
+from core.fan_controller import FanController
+from core.system_monitor import SystemMonitor
+from utils.file_manager import FileManager
+
+
+class FanControlWindow(ctk.CTkToplevel):
+    """Ventana de control de ventiladores y curvas PWM"""
+    
+    def __init__(self, parent, fan_controller: FanController, 
+                 system_monitor: SystemMonitor):
+        super().__init__(parent)
+        
+        # Referencias
+        self.fan_controller = fan_controller
+        self.system_monitor = system_monitor
+        self.file_manager = FileManager()
+        
+        # Variables de estado
+        self.mode_var = tk.StringVar()
+        self.manual_pwm_var = tk.IntVar(value=128)
+        self.curve_vars = []
+
+        # Variables para entries de nuevo punto (con placeholder)
+        self._PLACEHOLDER_TEMP = "0-100"
+        self._PLACEHOLDER_PWM  = "0-255"
+        self.new_temp_var = tk.StringVar(value=self._PLACEHOLDER_TEMP)
+        self.new_pwm_var  = tk.StringVar(value=self._PLACEHOLDER_PWM)
+        
+        # Cargar estado inicial
+        self._load_initial_state()
+        
+        # Configurar ventana
+        self.title("Control de Ventiladores")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        self.focus_force()
+        self.lift()
+        self.after(100, lambda: self.grab_set())
+        
+        # Crear interfaz
+        self._create_ui()
+        
+        # Iniciar bucle de actualización del slider/valor
+        self._update_pwm_display()
+    
+    def _load_initial_state(self):
+        """Carga el estado inicial desde archivo"""
+        state = self.file_manager.load_state()
+        self.mode_var.set(state.get("mode", "auto"))
+        
+        target = state.get("target_pwm")
+        if target is not None:
+            self.manual_pwm_var.set(target)
+    
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        # Frame principal
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Título
+        title = ctk.CTkLabel(
+            main,
+            text="CONTROL DE VENTILADORES",
+            text_color=COLORS['secondary'],
+            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        )
+        title.pack(pady=10)
+        
+        # Área de scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Canvas y scrollbar
+        canvas = ctk.CTkCanvas(
+            scroll_container, 
+            bg=COLORS['bg_medium'], 
+            highlightthickness=0
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Frame interno
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>", 
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        # Secciones
+        self._create_mode_section(inner)
+        self._create_manual_pwm_section(inner)
+        self._create_curve_section(inner)
+        self._create_bottom_buttons(main)
+    
+    def _create_mode_section(self, parent):
+        """Crea la sección de selección de modo"""
+        mode_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        mode_frame.pack(fill="x", pady=5, padx=10)
+        
+        ctk.CTkLabel(
+            mode_frame,
+            text="MODO DE OPERACIÓN",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        modes_container = ctk.CTkFrame(mode_frame, fg_color=COLORS['bg_medium'])
+        modes_container.pack(fill="x", pady=5)
+        
+        modes = [
+            ("Auto", "auto"),
+            ("Silent", "silent"),
+            ("Normal", "normal"),
+            ("Performance", "performance"),
+            ("Manual", "manual")
+        ]
+        
+        for text, value in modes:
+            rb = ctk.CTkRadioButton(
+                modes_container,
+                text=text,
+                variable=self.mode_var,
+                value=value,
+                command=lambda v=value: self._on_mode_change(v),
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            )
+            rb.pack(side="left", padx=8)
+            StyleManager.style_radiobutton_ctk(rb)
+    
+    def _create_manual_pwm_section(self, parent):
+        """Crea la sección de PWM manual"""
+        manual_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        manual_frame.pack(fill="x", pady=5, padx=10)
+        
+        ctk.CTkLabel(
+            manual_frame,
+            text="PWM MANUAL (0-255)",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        self.pwm_value_label = ctk.CTkLabel(
+            manual_frame,
+            text=f"Valor: {self.manual_pwm_var.get()} ({int(self.manual_pwm_var.get()/255*100)}%)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'])
+        )
+        self.pwm_value_label.pack(anchor="w", pady=(0, 10))
+        
+        slider = ctk.CTkSlider(
+            manual_frame,
+            from_=0,
+            to=255,
+            variable=self.manual_pwm_var,
+            command=self._on_pwm_change,
+            width=DSI_WIDTH - 100
+        )
+        slider.pack(fill="x", pady=5)
+        StyleManager.style_slider_ctk(slider)
+    
+    def _create_curve_section(self, parent):
+        """Crea la sección de curva temperatura-PWM"""
+        curve_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        curve_frame.pack(fill="x", pady=5, padx=10)
+
+        ctk.CTkLabel(
+            curve_frame,
+            text="CURVA TEMPERATURA-PWM",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        # Lista de puntos actuales
+        self.points_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
+        self.points_frame.pack(fill="x", pady=5, padx=5)
+        self._refresh_curve_points()
+        
+        # Sección añadir punto con ENTRIES
+        add_section = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
+        add_section.pack(fill="x", pady=5, padx=5)
+
+        ctk.CTkLabel(
+            add_section,
+            text="AÑADIR NUEVO PUNTO",
+            text_color=COLORS['success'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
+        ).pack(anchor="w", padx=5, pady=5)
+
+        # Fila con los dos entries en línea
+        entries_row = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
+        entries_row.pack(fill="x", padx=5, pady=5)
+
+        # — Temperatura —
+        temp_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
+        temp_col.pack(side="left", padx=(0, 20))
+
+        ctk.CTkLabel(
+            temp_col,
+            text="Temperatura (°C)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        ).pack(anchor="w")
+
+        self._entry_temp = ctk.CTkEntry(
+            temp_col,
+            textvariable=self.new_temp_var,
+            width=120,
+            height=36,
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
+            text_color=COLORS['text_dim'],      # color placeholder
+            fg_color=COLORS['bg_medium'],
+            border_color=COLORS['primary']
+        )
+        self._entry_temp.pack(pady=4)
+        self._entry_temp.bind("<FocusIn>",  lambda e: self._entry_focus_in(self._entry_temp, self.new_temp_var, self._PLACEHOLDER_TEMP))
+        self._entry_temp.bind("<FocusOut>", lambda e: self._entry_focus_out(self._entry_temp, self.new_temp_var, self._PLACEHOLDER_TEMP))
+
+        # — PWM —
+        pwm_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
+        pwm_col.pack(side="left")
+
+        ctk.CTkLabel(
+            pwm_col,
+            text="PWM (0-255)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        ).pack(anchor="w")
+
+        self._entry_pwm = ctk.CTkEntry(
+            pwm_col,
+            textvariable=self.new_pwm_var,
+            width=120,
+            height=36,
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
+            text_color=COLORS['text_dim'],      # color placeholder
+            fg_color=COLORS['bg_medium'],
+            border_color=COLORS['primary']
+        )
+        self._entry_pwm.pack(pady=4)
+        self._entry_pwm.bind("<FocusIn>",  lambda e: self._entry_focus_in(self._entry_pwm, self.new_pwm_var, self._PLACEHOLDER_PWM))
+        self._entry_pwm.bind("<FocusOut>", lambda e: self._entry_focus_out(self._entry_pwm, self.new_pwm_var, self._PLACEHOLDER_PWM))
+
+        # Botón añadir
+        make_futuristic_button(
+            add_section,
+            text="✓ Añadir Punto a la Curva",
+            command=self._add_curve_point_from_entries,
+            width=25,
+            height=6,
+            font_size=16
+        ).pack(pady=10)
+
+    # ── Helpers de placeholder ──────────────────────────────────────────────
+
+    def _entry_focus_in(self, entry: ctk.CTkEntry, var: tk.StringVar, placeholder: str):
+        """Borra el placeholder al enfocar y cambia color a texto normal"""
+        if var.get() == placeholder:
+            var.set("")
+            entry.configure(text_color=COLORS['text'])
+
+    def _entry_focus_out(self, entry: ctk.CTkEntry, var: tk.StringVar, placeholder: str):
+        """Restaura el placeholder si el campo queda vacío"""
+        if var.get().strip() == "":
+            var.set(placeholder)
+            entry.configure(text_color=COLORS['text_dim'])
+
+    # ── Lógica de añadir punto ──────────────────────────────────────────────
+
+    def _add_curve_point_from_entries(self):
+        """Valida los entries y añade el punto a la curva"""
+        temp_raw = self.new_temp_var.get().strip()
+        pwm_raw  = self.new_pwm_var.get().strip()
+
+        # Validar que no son placeholders ni vacíos
+        if temp_raw in ("", self._PLACEHOLDER_TEMP) or pwm_raw in ("", self._PLACEHOLDER_PWM):
+            custom_msgbox(self, "Introduce un valor en ambos campos.", "Error")
+            return
+
+        try:
+            temp = int(temp_raw)
+            pwm  = int(pwm_raw)
+        except ValueError:
+            custom_msgbox(self, "Los valores deben ser números enteros.", "Error")
+            return
+
+        if not (0 <= temp <= 100):
+            custom_msgbox(self, "La temperatura debe estar entre 0 y 100 °C.", "Error")
+            return
+        if not (0 <= pwm <= 255):
+            custom_msgbox(self, "El PWM debe estar entre 0 y 255.", "Error")
+            return
+
+        # Añadir punto
+        self.fan_controller.add_curve_point(temp, pwm)
+
+        # Resetear entries a placeholder
+        self.new_temp_var.set(self._PLACEHOLDER_TEMP)
+        self.new_pwm_var.set(self._PLACEHOLDER_PWM)
+        self._entry_temp.configure(text_color=COLORS['text_dim'])
+        self._entry_pwm.configure(text_color=COLORS['text_dim'])
+
+        # Refrescar lista y confirmar
+        self._refresh_curve_points()
+        custom_msgbox(self, f"✓ Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
+
+    # ── Curva ───────────────────────────────────────────────────────────────
+
+    def _refresh_curve_points(self):
+        """Refresca la lista de puntos de la curva"""
+        for widget in self.points_frame.winfo_children():
+            widget.destroy()
+        
+        curve = self.file_manager.load_curve()
+        
+        if not curve:
+            ctk.CTkLabel(
+                self.points_frame,
+                text="No hay puntos en la curva",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            ).pack(pady=10)
+            return
+        
+        for point in curve:
+            temp = point['temp']
+            pwm  = point['pwm']
+            
+            point_frame = ctk.CTkFrame(self.points_frame, fg_color=COLORS['bg_medium'])
+            point_frame.pack(fill="x", pady=2, padx=5)
+            
+            ctk.CTkLabel(
+                point_frame,
+                text=f"{temp}°C → PWM {pwm}",
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            ).pack(side="left", padx=10)
+            
+            make_futuristic_button(
+                point_frame,
+                text="Eliminar",
+                command=lambda t=temp: self._remove_curve_point(t),
+                width=10,
+                height=3,
+                font_size=12
+            ).pack(side="right", padx=5)
+
+    def _remove_curve_point(self, temp: int):
+        """Elimina un punto de la curva"""
+        self.fan_controller.remove_curve_point(temp)
+        self._refresh_curve_points()
+
+    # ── Botones inferiores ──────────────────────────────────────────────────
+
+    def _create_bottom_buttons(self, parent):
+        """Crea los botones inferiores"""
+        bottom = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+        make_futuristic_button(
+            bottom,
+            text="Cerrar",
+            command=self.destroy,
+            width=15,
+            height=6
+        ).pack(side="right", padx=5)
+        
+        make_futuristic_button(
+            bottom,
+            text="Refrescar Curva",
+            command=self._refresh_curve_points,
+            width=15,
+            height=6
+        ).pack(side="left", padx=5)
+
+    # ── Callbacks modo / PWM ────────────────────────────────────────────────
+
+    def _on_mode_change(self, mode: str):
+        """Callback cuando cambia el modo"""
+        temp = self.system_monitor.get_current_stats()['temp']
+        target_pwm = self.fan_controller.get_pwm_for_mode(
+            mode=mode,
+            temp=temp,
+            manual_pwm=self.manual_pwm_var.get()
+        )
+        percent = int(target_pwm / 255 * 100)
+        self.manual_pwm_var.set(target_pwm)
+        self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
+        self.file_manager.write_state({"mode": mode, "target_pwm": target_pwm})
+    
+    def _on_pwm_change(self, value):
+        """Callback cuando cambia el PWM manual"""
+        pwm = int(float(value))
+        percent = int(pwm / 255 * 100)
+        self.pwm_value_label.configure(text=f"Valor: {pwm} ({percent}%)")
+        if self.mode_var.get() == "manual":
+            self.file_manager.write_state({"mode": "manual", "target_pwm": pwm})
+    
+    def _update_pwm_display(self):
+        """Actualiza el slider y valor para reflejar el PWM activo"""
+        if not self.winfo_exists():
+            return
+        
+        mode = self.mode_var.get()
+        if mode != "manual":
+            temp = self.system_monitor.get_current_stats()['temp']
+            target_pwm = self.fan_controller.get_pwm_for_mode(
+                mode=mode,
+                temp=temp,
+                manual_pwm=self.manual_pwm_var.get()
+            )
+            percent = int(target_pwm / 255 * 100)
+            self.manual_pwm_var.set(target_pwm)
+            self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
+        
+        self.after(2000, self._update_pwm_display)
 ````
 
 ## File: ui/windows/launchers.py
