@@ -4,7 +4,7 @@ Ventana de monitoreo de disco
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
-from ui.styles import StyleManager, make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import GraphWidget
 from core.disk_monitor import DiskMonitor
 
@@ -41,14 +41,12 @@ class DiskWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
             main,
-            text="MONITOR DE DISCO",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="MONITOR DE DISCO",
+            on_close=self.destroy,
         )
-        title.pack(pady=(10, 20))
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -80,23 +78,10 @@ class DiskWindow(ctk.CTkToplevel):
         inner.bind("<Configure>",
                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         
-        # Secciones (AQUÍ CREAS CADA SECCIÓN)
-        self._create_usage_section(inner)       # Uso de disco
+        # Secciones
+        self._create_usage_section(inner)
         self._create_disk_io_section(inner)
-        self._create_nvme_temp_section(inner)   # Temperatura NVMe (NUEVO)
-        
-        # Botón cerrar
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
+        self._create_nvme_temp_section(inner)
         
     def _create_metric_section(self, parent, title: str, metric_key: str,
                                unit: str, max_val: float = 100):
@@ -133,9 +118,9 @@ class DiskWindow(ctk.CTkToplevel):
             'widget': graph,
             'max_val': max_val
         }    
+
     def _create_usage_section(self, parent):
         """Crea la sección de uso de disco"""
-        # Frame con label, valor y gráfica
         self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
 
     def _create_disk_io_section(self, parent):
@@ -239,7 +224,7 @@ class DiskWindow(ctk.CTkToplevel):
         self.widgets['nvme_temp_value'] = value_label
         self.graphs['nvme_temp'] = {
             'widget': graph,
-            'max_val': 85  # Temperatura máxima NVMe
+            'max_val': 85
         }
 
     def _update(self):
@@ -275,55 +260,48 @@ class DiskWindow(ctk.CTkToplevel):
             history['disk_read']
         )
         
-        # self._update_nvme_temp(stats, history)
-        # Temperatura NVMe (NUEVO)
+        # Temperatura NVMe
         self._update_metric(
             'nvme_temp',
             stats['nvme_temp'],
             history['nvme_temp'],
             "°C",
-            60,  # warning
-            70   # critical
+            60,
+            70
+        )
+
+        # Actualizar status en header
+        disk  = stats['disk_usage']
+        nvme  = stats['nvme_temp']
+        self._header.status_label.configure(
+            text=f"Uso {disk:.0f}%  ·  NVMe {nvme:.0f}°C"
         )
         
         # Programar siguiente actualización
         self.after(UPDATE_MS, self._update)
+
     def _update_metric(self, key, value, history, unit, warn, crit):
         """Actualiza una métrica genérica"""
-        # Determinar color
         color = self.disk_monitor.level_color(value, warn, crit)
         
-        # Actualizar valor
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
+        self.widgets[f"{key}_value"].configure(
             text=f"{value:.1f} {unit}",
             text_color=color
         )
+        self.widgets[f"{key}_label"].configure(text_color=color)
         
-        # Actualizar label
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
         graph_info = self.graphs[key]
         graph_info['widget'].update(history, graph_info['max_val'], color)
         
     def _update_disk_io(self, key: str, value: float, history: list):
         """Actualiza métricas de I/O de disco"""
-        # Determinar color (10 MB/s = warning, 50 MB/s = critical)
         color = self.disk_monitor.level_color(value, 10, 50)
         
-        # Actualizar valor
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
+        self.widgets[f"{key}_value"].configure(
             text=f"{value:.1f} MB/s",
             text_color=color
         )
+        self.widgets[f"{key}_label"].configure(text_color=color)
         
-        # Actualizar label
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
         graph_info = self.graphs[key]
         graph_info['widget'].update(history, graph_info['max_val'], color)

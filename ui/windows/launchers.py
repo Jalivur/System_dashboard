@@ -3,7 +3,7 @@ Ventana de lanzadores de scripts
 """
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
-from ui.styles import make_futuristic_button, StyleManager
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
@@ -32,13 +32,12 @@ class LaunchersWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        make_window_header(
             main,
-            text="LANZADORES",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="LANZADORES",
+            on_close=self.destroy,
         )
-        title.pack(pady=(10, 20))
         
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
         scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
@@ -68,17 +67,6 @@ class LaunchersWindow(ctk.CTkToplevel):
         
         self._create_launcher_buttons(inner)
         
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
     
     def _create_launcher_buttons(self, parent):
         """Crea los botones de lanzadores en layout grid"""

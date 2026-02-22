@@ -3,7 +3,7 @@ Ventana de monitor de servicios systemd
 """
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from ui.styles import StyleManager, make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import confirm_dialog, custom_msgbox
 from core.service_monitor import ServiceMonitor
 
@@ -42,8 +42,23 @@ class ServiceWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # Título y estadísticas
-        self._create_header(main)
+        # ── Header unificado ──────────────────────────────────────────────────
+        make_window_header(
+            main,
+            title="MONITOR DE SERVICIOS",
+            on_close=self.destroy,
+        )
+
+        # Stats en línea propia debajo del header
+        stats_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'])
+        stats_bar.pack(fill="x", padx=5, pady=(0, 4))
+        self.stats_label = ctk.CTkLabel(
+            stats_bar,
+            text="Cargando...",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        )
+        self.stats_label.pack(pady=4, padx=10, anchor="w")
 
         # Controles (búsqueda y filtros)
         self._create_controls(main)
@@ -98,35 +113,7 @@ class ServiceWindow(ctk.CTkToplevel):
         )
         refresh_btn.pack(side="left", padx=5)
 
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
 
-    def _create_header(self, parent):
-        """Crea el encabezado con estadísticas"""
-        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        header.pack(fill="x", padx=10, pady=(10, 5))
-
-        title = ctk.CTkLabel(
-            header,
-            text="MONITOR DE SERVICIOS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=(10, 5))
-
-        self.stats_label = ctk.CTkLabel(
-            header,
-            text="Cargando...",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        self.stats_label.pack(pady=(0, 10))
 
     def _create_controls(self, parent):
         """Crea controles de búsqueda y filtros"""

@@ -3,7 +3,7 @@ Ventana de monitor de procesos
 """
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from ui.styles import StyleManager, make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import confirm_dialog, custom_msgbox
 from core.process_monitor import ProcessMonitor
 
@@ -43,8 +43,23 @@ class ProcessWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título y estadísticas
-        self._create_header(main)
+        # ── Header unificado ──────────────────────────────────────────────────
+        make_window_header(
+            main,
+            title="MONITOR DE PROCESOS",
+            on_close=self.destroy,
+        )
+
+        # Stats en línea propia debajo del header
+        stats_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'])
+        stats_bar.pack(fill="x", padx=5, pady=(0, 4))
+        self.stats_label = ctk.CTkLabel(
+            stats_bar,
+            text="Cargando...",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        )
+        self.stats_label.pack(pady=4, padx=10, anchor="w")
         
         # Controles (búsqueda y filtros)
         self._create_controls(main)
@@ -90,41 +105,7 @@ class ProcessWindow(ctk.CTkToplevel):
         bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
         bottom.pack(fill="x", pady=5, padx=10)
         
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
     
-    def _create_header(self, parent):
-        """Crea el encabezado con estadísticas"""
-        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        header.pack(fill="x", padx=10, pady=(10, 5))
-        
-        # Título
-        title = ctk.CTkLabel(
-            header,
-            text="MONITOR DE PROCESOS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        )
-        title.pack(pady=(10, 5))
-        
-        # Estadísticas
-        stats_frame = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
-        stats_frame.pack(fill="x", padx=20, pady=(0, 10))
-        
-        self.stats_label = ctk.CTkLabel(
-            stats_frame,
-            text="Cargando...",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            justify="left"
-        )
-        self.stats_label.pack(anchor="w")
     
     def _create_controls(self, parent):
         """Crea controles de búsqueda y filtros"""

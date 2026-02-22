@@ -4,7 +4,7 @@ Ventana de selección de temas
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
 from config.themes import get_available_themes, get_theme, save_selected_theme, load_selected_theme
-from ui.styles import make_futuristic_button, StyleManager
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox, confirm_dialog
 import sys
 import os
@@ -35,23 +35,13 @@ class ThemeSelector(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        make_window_header(
             main,
-            text="SELECTOR DE TEMAS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="SELECTOR DE TEMAS",
+            on_close=self.destroy,
+            status_text="Elige un tema y reinicia el dashboard para aplicarlo",
         )
-        title.pack(pady=(10, 10))
-        
-        # Subtítulo
-        subtitle = ctk.CTkLabel(
-            main,
-            text="Elige un tema y reinicia el dashboard para aplicarlo",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small'])
-        )
-        subtitle.pack(pady=(0, 20))
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -179,16 +169,6 @@ class ThemeSelector(ctk.CTkToplevel):
         """Crea los botones inferiores"""
         bottom = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
         bottom.pack(fill="x", pady=10, padx=10)
-        
-        # Botón cerrar
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
         
         # Botón aplicar
         apply_btn = make_futuristic_button(

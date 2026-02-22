@@ -1,6 +1,7 @@
 """
 Monitor de red
 """
+import json
 import threading
 import subprocess
 from collections import deque
@@ -123,51 +124,58 @@ class NetworkMonitor:
         }
     
     def run_speedtest(self) -> None:
-        """Ejecuta speedtest en un thread separado"""
+        """Ejecuta speedtest (Ookla CLI) en un thread separado"""
         def _run():
             logger.info("[NetworkMonitor] Iniciando speedtest...")
             self.speedtest_result["status"] = "running"
             try:
                 result = subprocess.run(
-                    ["speedtest-cli", "--simple"],
+                    ["speedtest", "--format=json", "--accept-license", "--accept-gdpr"],
                     capture_output=True,
                     text=True,
-                    timeout=60
+                    timeout=90
                 )
-                
+
                 if result.returncode == 0:
-                    lines = result.stdout.strip().split('\n')
-                    ping = download = upload = 0
-                    
-                    for line in lines:
-                        if line.startswith("Ping:"):
-                            ping = float(line.split()[1])
-                        elif line.startswith("Download:"):
-                            download = float(line.split()[1]) / 8
-                        elif line.startswith("Upload:"):
-                            upload = float(line.split()[1]) / 8
-                    
+                    data = json.loads(result.stdout)
+
+                    # El nuevo CLI devuelve bytes/s → convertir a MB/s
+                    ping     = data["ping"]["latency"]
+                    download = data["download"]["bandwidth"] / 1_000_000
+                    upload   = data["upload"]["bandwidth"]   / 1_000_000
+
                     self.speedtest_result.update({
-                        "status": "done",
-                        "ping": ping,
-                        "download": download,
-                        "upload": upload
+                        "status":   "done",
+                        "ping":     round(ping, 1),
+                        "download": round(download, 2),
+                        "upload":   round(upload, 2),
                     })
-                    logger.info(f"[NetworkMonitor] Speedtest completado — Ping: {ping}ms, ↓{download:.2f} MB/s, ↑{upload:.2f} MB/s")
+                    logger.info(
+                        f"[NetworkMonitor] Speedtest completado — "
+                        f"Ping: {ping:.1f}ms, ↓{download:.2f} MB/s, ↑{upload:.2f} MB/s"
+                    )
                 else:
-                    logger.error(f"[NetworkMonitor] speedtest-cli retornó código {result.returncode}: {result.stderr}")
+                    logger.error(
+                        f"[NetworkMonitor] speedtest retornó código {result.returncode}: {result.stderr}"
+                    )
                     self.speedtest_result["status"] = "error"
-                    
+
             except subprocess.TimeoutExpired:
-                logger.warning("[NetworkMonitor] Speedtest timeout (>60s)")
+                logger.warning("[NetworkMonitor] Speedtest timeout (>90s)")
                 self.speedtest_result["status"] = "timeout"
             except FileNotFoundError:
-                logger.error("[NetworkMonitor] speedtest-cli no encontrado. Instala: sudo apt install speedtest-cli")
+                logger.error(
+                    "[NetworkMonitor] speedtest no encontrado. "
+                    "Instala el CLI oficial de Ookla: https://www.speedtest.net/apps/cli"
+                )
+                self.speedtest_result["status"] = "error"
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"[NetworkMonitor] Error parseando resultado de speedtest: {e}")
                 self.speedtest_result["status"] = "error"
             except Exception as e:
                 logger.error(f"[NetworkMonitor] Error inesperado en speedtest: {e}")
                 self.speedtest_result["status"] = "error"
-        
+
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
     
@@ -200,8 +208,6 @@ class NetworkMonitor:
         Returns:
             Color en formato hex
         """
-
-        
         if value >= NET_CRIT:
             return COLORS['danger']
         elif value >= NET_WARN:

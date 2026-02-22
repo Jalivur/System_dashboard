@@ -4,7 +4,7 @@ Ventana de histórico de datos
 import customtkinter as ctk
 from datetime import datetime, timedelta
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
-from ui.styles import make_futuristic_button, StyleManager
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox , confirm_dialog
 from core.data_analyzer import DataAnalyzer
 from core.data_logger import DataLogger
@@ -60,7 +60,15 @@ class HistoryWindow(ctk.CTkToplevel):
     def _create_ui(self):
         self._main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         self._main.pack(fill="both", expand=True, padx=5, pady=5) 
-        self._create_header(self._main)
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
+            self._main,
+            title="HISTÓRICO DE DATOS",
+            on_close=self.destroy,
+        )
+        # toolbar_container vive en el header para los botones de gráfica
+        self.toolbar_container = ctk.CTkFrame(self._header, fg_color="transparent")
+        self.toolbar_container.pack(side="left", padx=(10, 0))
         self._create_period_controls(self._main)
         self._create_range_panel(self._main)   # fila oculta de OptionMenus
 
@@ -96,19 +104,6 @@ class HistoryWindow(ctk.CTkToplevel):
         self._create_stats_area(inner)
         self._create_buttons(self._main)
 
-    def _create_header(self, parent):
-        header = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        header.pack(fill="x", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            header,
-            text="HISTÓRICO DE DATOS",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
-        ).pack(pady=10)
-
-        self.toolbar_container = ctk.CTkFrame(header, fg_color=COLORS['bg_dark'])
-        self.toolbar_container.pack(side="top", padx=10)
 
     def _create_period_controls(self, parent):
         """Fila 1: radio buttons 24h/7d/30d + botón para abrir/cerrar el panel de rango."""
@@ -258,7 +253,6 @@ class HistoryWindow(ctk.CTkToplevel):
             ("Actualizar",       self._update_data,    "left",  18),
             ("Exportar CSV",     self._export_csv,     "left",  18),
             ("Limpiar Antiguos", self._clean_old_data, "left",  18),
-            ("Cerrar",           self.destroy,         "right", 15),
         ]:
             make_futuristic_button(
                 buttons, text=text, command=cmd, width=w, height=6

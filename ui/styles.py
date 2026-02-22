@@ -197,3 +197,98 @@ def make_futuristic_button(parent, text: str, command=None,
     btn.bind("<Leave>", on_leave)
     
     return btn
+
+
+def make_window_header(parent, title: str, on_close, status_text: str = None) -> ctk.CTkFrame:
+    """
+    Crea una barra de cabecera unificada para ventanas de monitoreo.
+
+    Layout (altura fija 48px):
+    ┌─────────────────────────────────────────────────────────┐
+    │  ● TÍTULO DE VENTANA      status_text opcional   [✕]   │
+    └─────────────────────────────────────────────────────────┘
+
+    El indicador ● usa COLORS['secondary'] para identificar
+    visualmente que es una ventana hija del dashboard.
+
+    Args:
+        parent:      Widget padre (normalmente el frame main de la ventana).
+        title:       Texto del título en mayúsculas (ej. "MONITOR DEL SISTEMA").
+        on_close:    Callable ejecutado al pulsar el botón ✕.
+        status_text: Texto informativo opcional a la derecha del título
+                     (ej. "CPU 12% · RAM 45% · 52°C"). Si es None no se muestra.
+
+    Returns:
+        CTkFrame de cabecera ya empaquetado con pack(fill="x").
+        Guarda referencia al label de estado en frame.status_label
+        para que la ventana pueda actualizarlo dinámicamente.
+    """
+    # ── Contenedor ───────────────────────────────────────────────────────────
+    header = ctk.CTkFrame(
+        parent,
+        fg_color=COLORS['bg_dark'],
+        height=56,
+        corner_radius=8,
+    )
+    header.pack(fill="x", padx=5, pady=(5, 0))
+    header.pack_propagate(False)  # Altura fija
+
+    # Separador inferior (línea decorativa)
+    separator = ctk.CTkFrame(
+        parent,
+        fg_color=COLORS['border'],
+        height=1,
+        corner_radius=0,
+    )
+    separator.pack(fill="x", padx=5, pady=(0, 4))
+
+    # ── Indicador de color (pastilla izquierda) ───────────────────────────
+    dot = ctk.CTkLabel(
+        header,
+        text="●",
+        text_color=COLORS['secondary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+        width=28,
+    )
+    dot.pack(side="left", padx=(10, 2))
+
+    # ── Título ────────────────────────────────────────────────────────────
+    title_lbl = ctk.CTkLabel(
+        header,
+        text=title,
+        text_color=COLORS['secondary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+        anchor="w",
+    )
+    title_lbl.pack(side="left", padx=(0, 10))
+
+    # ── Botón cerrar (derecha) ────────────────────────────────────────────
+    close_btn = ctk.CTkButton(
+        header,
+        text="✕",
+        command=on_close,
+        width=52,
+        height=42,
+        fg_color=COLORS['bg_medium'],
+        hover_color=COLORS['danger'],
+        border_width=1,
+        border_color=COLORS['border'],
+        font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
+        corner_radius=6,
+    )
+    close_btn.pack(side="right", padx=(0, 8))
+
+    # ── Status label (derecha del título, izquierda del botón) ───────────
+    status_lbl = ctk.CTkLabel(
+        header,
+        text=status_text or "",
+        text_color=COLORS['text_dim'],
+        font=(FONT_FAMILY, FONT_SIZES['small']),
+        anchor="e",
+    )
+    status_lbl.pack(side="right", padx=(0, 12), expand=True, fill="x")
+
+    # Referencia pública para actualizaciones dinámicas
+    header.status_label = status_lbl
+
+    return header

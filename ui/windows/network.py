@@ -4,7 +4,7 @@ Ventana de monitoreo de red
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
-from ui.styles import StyleManager, make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import GraphWidget
 from core.network_monitor import NetworkMonitor
 from utils.system_utils import SystemUtils
@@ -42,23 +42,14 @@ class NetworkWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        # El status mostrará interfaz activa + velocidades en tiempo real
+        self._header = make_window_header(
             main,
-            text="MONITOR DE RED",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="MONITOR DE RED",
+            on_close=self.destroy,
+            status_text="Detectando interfaz...",
         )
-        title.pack(pady=(10, 10))
-        
-        # Interfaz actual
-        self.interface_label = ctk.CTkLabel(
-            main,
-            text="Interfaz: Detectando...",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        )
-        self.interface_label.pack(pady=(0, 20))
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -91,27 +82,15 @@ class NetworkWindow(ctk.CTkToplevel):
                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         
         # Secciones
-        self._create_interfaces_section(inner)  # NUEVO
+        self._create_interfaces_section(inner)
         self._create_download_section(inner)
         self._create_upload_section(inner)
         self._create_speedtest_section(inner)
         
-        # Botones inferiores
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
+
     
     def _create_interfaces_section(self, parent):
         """Crea la sección de interfaces e IPs"""
-        
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
         
@@ -133,8 +112,6 @@ class NetworkWindow(ctk.CTkToplevel):
     
     def _update_interfaces(self):
         """Actualiza la lista de interfaces e IPs"""
-
-        
         # Limpiar widgets anteriores
         for widget in self.interfaces_container.winfo_children():
             widget.destroy()
@@ -154,18 +131,17 @@ class NetworkWindow(ctk.CTkToplevel):
         
         # Mostrar cada interfaz
         for iface, ip in sorted(interfaces.items()):
-            # Color especial para tun0 (VPN)
             if iface.startswith('tun'):
-                text_color = COLORS['success']  # Verde para VPN
-                icon = "🔒"  # Candado para VPN
+                text_color = COLORS['success']
+                icon = "🔒"
             elif iface.startswith(('eth', 'enp')):
-                text_color = COLORS['primary']  # Cyan para ethernet
+                text_color = COLORS['primary']
                 icon = "🌐"
             elif iface.startswith(('wlan', 'wlp')):
-                text_color = COLORS['warning']  # Amarillo para wifi
-                icon = "󰖩"
+                text_color = COLORS['warning']
+                icon = "\uf0eb"  # icono wifi Nerd Font — extraer del repomix con repr()
             else:
-                text_color = COLORS['text']  # Blanco para otras
+                text_color = COLORS['text']
                 icon = "•"
             
             iface_label = ctk.CTkLabel(
@@ -182,7 +158,6 @@ class NetworkWindow(ctk.CTkToplevel):
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
         
-        # Label
         label = ctk.CTkLabel(
             frame,
             text="DESCARGA",
@@ -191,7 +166,6 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         label.pack(anchor="w", pady=(5, 0), padx=10)
         
-        # Valor
         value_label = ctk.CTkLabel(
             frame,
             text="0.00 MB/s | Escala: 10.00",
@@ -200,11 +174,9 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         value_label.pack(anchor="e", pady=(0, 5), padx=10)
         
-        # Gráfica
         graph = GraphWidget(frame, width=DSI_WIDTH-80, height=120)
         graph.pack(pady=(0, 10))
         
-        # Guardar referencias
         self.widgets['download_label'] = label
         self.widgets['download_value'] = value_label
         self.graphs['download'] = graph
@@ -214,7 +186,6 @@ class NetworkWindow(ctk.CTkToplevel):
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
         
-        # Label
         label = ctk.CTkLabel(
             frame,
             text="SUBIDA",
@@ -223,7 +194,6 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         label.pack(anchor="w", pady=(5, 0), padx=10)
         
-        # Valor
         value_label = ctk.CTkLabel(
             frame,
             text="0.00 MB/s | Escala: 10.00",
@@ -232,11 +202,9 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         value_label.pack(anchor="e", pady=(0, 5), padx=10)
         
-        # Gráfica
         graph = GraphWidget(frame, width=DSI_WIDTH-80, height=120)
         graph.pack(pady=(0, 10))
         
-        # Guardar referencias
         self.widgets['upload_label'] = label
         self.widgets['upload_value'] = value_label
         self.graphs['upload'] = graph
@@ -246,7 +214,6 @@ class NetworkWindow(ctk.CTkToplevel):
         frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
         frame.pack(fill="x", pady=10, padx=10)
         
-        # Título
         title = ctk.CTkLabel(
             frame,
             text="SPEEDTEST",
@@ -255,7 +222,6 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         title.pack(anchor="w", pady=(5, 10), padx=10)
         
-        # Resultado
         self.speedtest_result = ctk.CTkLabel(
             frame,
             text="Haz clic en 'Ejecutar Test' para comenzar",
@@ -265,7 +231,6 @@ class NetworkWindow(ctk.CTkToplevel):
         )
         self.speedtest_result.pack(pady=(0, 10), padx=10)
         
-        # Botón
         btn_frame = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
         btn_frame.pack(pady=(0, 10))
         
@@ -280,16 +245,13 @@ class NetworkWindow(ctk.CTkToplevel):
     
     def _run_speedtest(self):
         """Ejecuta el speedtest"""
-        # Verificar si ya hay uno corriendo
         result = self.network_monitor.get_speedtest_result()
         if result['status'] == 'running':
             return
         
-        # Resetear y ejecutar
         self.network_monitor.reset_speedtest()
         self.network_monitor.run_speedtest()
         
-        # Actualizar UI
         self.speedtest_btn.configure(state="disabled")
         self.speedtest_result.configure(
             text="Ejecutando test...",
@@ -308,9 +270,12 @@ class NetworkWindow(ctk.CTkToplevel):
         
         history = self.network_monitor.get_history()
         
-        # Actualizar interfaz
-        self.interface_label.configure(
-            text=f"Interfaz: {stats['interface']}"
+        # Actualizar status del header con interfaz activa + velocidades
+        dl = stats['download_mb']
+        ul = stats['upload_mb']
+        iface = stats['interface']
+        self._header.status_label.configure(
+            text=f"{iface}  ·  ↓{dl:.2f}  ↑{ul:.2f} MB/s"
         )
         
         # Actualizar descarga
@@ -342,12 +307,12 @@ class NetworkWindow(ctk.CTkToplevel):
         # Actualizar speedtest
         self._update_speedtest()
         
-        # Actualizar interfaces (cada 5 segundos para no sobrecargar)
+        # Actualizar interfaces cada 5 ciclos
         if not hasattr(self, '_interface_update_counter'):
             self._interface_update_counter = 0
         
         self._interface_update_counter += 1
-        if self._interface_update_counter >= 5:  # Cada 5 ciclos (10 segundos)
+        if self._interface_update_counter >= 5:
             self._update_interfaces()
             self._interface_update_counter = 0
         
@@ -374,9 +339,9 @@ class NetworkWindow(ctk.CTkToplevel):
             self.speedtest_btn.configure(state="disabled")
         
         elif status == 'done':
-            ping = result['ping']
+            ping     = result['ping']
             download = result['download']
-            upload = result['upload']
+            upload   = result['upload']
             
             self.speedtest_result.configure(
                 text=f"Ping: {ping} ms\n↓ {download:.2f} MB/s\n↑ {upload:.2f} MB/s",

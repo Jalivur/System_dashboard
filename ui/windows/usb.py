@@ -3,7 +3,7 @@ Ventana de monitoreo de dispositivos USB
 """
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
-from ui.styles import make_futuristic_button, StyleManager
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
@@ -34,25 +34,22 @@ class USBWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        header = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        header.pack(fill="x", pady=(10, 5), padx=10)
-        
-        title = ctk.CTkLabel(
-            header,
-            text="DISPOSITIVOS USB",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+        # ── Header unificado ──────────────────────────────────────────────────
+        make_window_header(
+            main,
+            title="DISPOSITIVOS USB",
+            on_close=self.destroy,
         )
-        title.pack(side="left")
-        
-        refresh_btn = make_futuristic_button(
-            header,
+        # Botón Actualizar
+        refresh_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        refresh_bar.pack(fill="x", padx=10, pady=(0, 5))
+        make_futuristic_button(
+            refresh_bar,
             text="Actualizar",
             command=self._refresh_devices,
             width=15,
             height=5
-        )
-        refresh_btn.pack(side="right")
+        ).pack(side="right")
         
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
         scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
@@ -88,17 +85,6 @@ class USBWindow(ctk.CTkToplevel):
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
         
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
     
     def _refresh_devices(self):
         """Refresca la lista de dispositivos USB"""

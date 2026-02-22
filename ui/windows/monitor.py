@@ -6,7 +6,7 @@ from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS,
                              CPU_WARN, CPU_CRIT, TEMP_WARN, TEMP_CRIT,
                              RAM_WARN, RAM_CRIT)
-from ui.styles import StyleManager, make_futuristic_button
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import GraphWidget
 from core.system_monitor import SystemMonitor
 
@@ -43,14 +43,12 @@ class MonitorWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
             main,
-            text="MONITOR DEL SISTEMA",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="MONITOR DEL SISTEMA",
+            on_close=self.destroy,
         )
-        title.pack(pady=(10, 20))
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -88,19 +86,6 @@ class MonitorWindow(ctk.CTkToplevel):
         self._create_temp_section(inner)
         self._create_disk_usage_section(inner)
         self._create_disk_io_section(inner)
-        
-        # Botón cerrar
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=10, padx=10)
-        
-        close_btn = make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        )
-        close_btn.pack(side="right", padx=5)
     
     def _create_metric_section(self, parent, title: str, metric_key: str,
                                unit: str, max_val: float = 100):
@@ -284,6 +269,14 @@ class MonitorWindow(ctk.CTkToplevel):
             'disk_read',
             stats['disk_read_mb'],
             history['disk_read']
+        )
+
+        # Actualizar status en header
+        cpu  = stats['cpu']
+        ram  = stats['ram']
+        temp = stats['temp']
+        self._header.status_label.configure(
+            text=f"CPU {cpu:.0f}%  ·  RAM {ram:.0f}%  ·  {temp:.0f}°C"
         )
         
         # Programar siguiente actualización

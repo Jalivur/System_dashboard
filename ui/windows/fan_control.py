@@ -5,7 +5,7 @@ import tkinter as tk
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
                              DSI_HEIGHT, DSI_X, DSI_Y)
-from ui.styles import make_futuristic_button, StyleManager
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox
 from core.fan_controller import FanController
 from core.system_monitor import SystemMonitor
@@ -69,14 +69,12 @@ class FanControlWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Título
-        title = ctk.CTkLabel(
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
             main,
-            text="CONTROL DE VENTILADORES",
-            text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
+            title="CONTROL DE VENTILADORES",
+            on_close=self.destroy,
         )
-        title.pack(pady=10)
         
         # Área de scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -378,13 +376,7 @@ class FanControlWindow(ctk.CTkToplevel):
         bottom = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
         bottom.pack(fill="x", pady=10, padx=10)
         
-        make_futuristic_button(
-            bottom,
-            text="Cerrar",
-            command=self.destroy,
-            width=15,
-            height=6
-        ).pack(side="right", padx=5)
+
         
         make_futuristic_button(
             bottom,
