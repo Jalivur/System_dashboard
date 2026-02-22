@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.5.1
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.6
 
 Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.5.1-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.6-orange.svg)]()
 
 ---
 
@@ -81,6 +81,22 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Botón Salir**: Salir de la app o apagar el sistema
 - **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
 - **Con confirmación**: Evita acciones accidentales
+
+### 🔔 **Badges de Notificación Visual**
+- **6 badges** en el menú principal con alertas en tiempo real
+- **Temperatura**: naranja >60°C, rojo >70°C (Control Ventiladores + Monitor Placa)
+- **CPU y RAM**: naranja >75%, rojo >90% (Monitor Placa)
+- **Disco**: naranja >80%, rojo >90% (Monitor Disco)
+- **Servicios fallidos**: rojo con contador (Monitor Servicios)
+- **Actualizaciones pendientes**: naranja con contador (Actualizaciones)
+- Texto dinámico: muestra el valor real (temperatura en °C, porcentaje)
+
+### 🧹 **Limpieza Automática**
+- **CleanupService**: servicio background singleton
+- Limpia CSV exportados (máx. 10), PNG exportados (máx. 10)
+- Limpia BD SQLite: registros >30 días cada 24h
+- Red de seguridad: si BD supera 5MB limpia a 7 días al arrancar
+- Botón "Limpiar Antiguos" fuerza limpieza manual completa
 
 ### 📋 **Sistema de Logging Completo**
 - **Cobertura total**: Todos los módulos core y UI
@@ -234,6 +250,7 @@ system_dashboard/
 │   ├── data_logger.py              # SQLite logging
 │   ├── data_analyzer.py            # Análisis histórico
 │   ├── data_collection_service.py  # Recolección automática (singleton)
+│   ├── cleanup_service.py          # Limpieza automática background (singleton)
 │   └── __init__.py
 ├── ui/
 │   ├── main_window.py              # Ventana principal (13 botones)
@@ -309,7 +326,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - **Uso RAM**: ~100-150 MB
 - **Base de datos**: ~5 MB por 10,000 registros
 - **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`)
-- **Threads background**: 3 (main + FanAuto + DataCollection)
+- **Threads background**: 4 (main + FanAuto + DataCollection + Cleanup)
 - **Log**: máx. 2MB con rotación automática
 
 ---
@@ -342,19 +359,26 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 | Métrica | Valor |
 |---------|-------|
-| Versión | 2.5.1 |
+| Versión | 2.6 |
 | Archivos Python | 41 |
 | Líneas de código | ~12,500 |
 | Ventanas | 13 |
 | Temas | 15 |
-| Servicios background | 2 (FanAuto + DataCollection) |
+| Servicios background | 3 (FanAuto + DataCollection + Cleanup) |
 | Cobertura logging | 100% módulos core y UI |
 
 ---
 
 ## Changelog
 
-### **v2.5.1** - 2026-02-19 ⭐ ACTUAL
+### **v2.6** - 2026-02-22 ⭐ ACTUAL
+- ✅ **NUEVO**: 6 badges de notificación visual en menú principal
+- ✅ **NUEVO**: `CleanupService` — limpieza automática background de CSV, PNG y BD
+- ✅ **NUEVO**: Fan control con entries (placeholder) en lugar de sliders
+- ✅ **MEJORA**: Botón "Limpiar Antiguos" delega en CleanupService (inyección de dependencias)
+- ✅ **MEJORA**: Badges con texto dinámico y color adaptativo
+
+### **v2.5.1** - 2026-02-19
 - ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
 - ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
 - ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
@@ -387,4 +411,4 @@ MIT License
 
 ---
 
-**Dashboard v2.5.1: Profesional, Completo, Monitoreado** 
+**Dashboard v2.6: Profesional, Completo, Monitoreado y Auto-mantenido**

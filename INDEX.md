@@ -1,4 +1,4 @@
-# 📚 Índice de Documentación - System Dashboard v2.5
+# 📚 Índice de Documentación - System Dashboard v2.6
 
 Guía completa de toda la documentación del proyecto actualizada.
 
@@ -8,7 +8,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ### **Para Empezar:**
 1. **[README.md](README.md)** ⭐  
-   Documentación completa del proyecto v2.5. **Empieza aquí.**
+   Documentación completa del proyecto v2.6. **Empieza aquí.**
 
 2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
    Instalación y ejecución en 5 minutos.
@@ -193,31 +193,22 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ## 📊 Estadísticas del Proyecto v2.5
 
-- **Archivos Python**: 35+
-- **Líneas de código**: ~5,500
-- **Ventanas**: 11 ventanas funcionales
+- **Archivos Python**: 42+
+- **Líneas de código**: ~13,000
+- **Ventanas**: 13 ventanas funcionales
 - **Temas**: 15 temas pre-configurados
 - **Documentos**: 12 guías
-- **Servicios background**: 2 (FanAuto + DataCollection)
+- **Servicios background**: 3 (FanAuto + DataCollection + Cleanup)
 
 ---
 
-## 🆕 Novedades en v2.5
+## 🆕 Novedades en v2.6
 
-### **Documentación Nueva:**
-- ✅ **SERVICE_MONITOR_GUIDE.md** - Guía completa de servicios
-- ✅ **HISTORICO_DATOS_GUIDE.md** - Guía completa de histórico
-- ✅ README actualizado con todas las funciones
-- ✅ QUICKSTART con 12 botones del menú
-- ✅ INDEX con referencias actualizadas
-
-### **Funcionalidades Documentadas:**
-- ✅ Monitor de Servicios systemd
-- ✅ Histórico de Datos con SQLite
-- ✅ Botón Reiniciar
-- ✅ Recolección automática background
-- ✅ Exportación CSV
-- ✅ Detección de anomalías
+### **Funcionalidades Nuevas:**
+- ✅ **6 Badges** de notificación visual en menú principal
+- ✅ **CleanupService** — servicio background de limpieza automática
+- ✅ **Fan Control** con entries en lugar de sliders
+- ✅ Inyección de dependencias profesional en toda la cadena
 
 ---
 
@@ -268,6 +259,7 @@ Si quieres implementar funciones nuevas, tenemos guías paso a paso:
 | **v1.0** | 8 | ~50 | Básico |
 | **v2.0** | 10 | ~80 | + Procesos, Temas |
 | **v2.5** | 12 | ~120 | + Servicios, Histórico ⭐ |
+| **v2.6** | 12 | ~130 | + Badges, CleanupService ⭐ |
 
 ---
 

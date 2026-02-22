@@ -95,6 +95,19 @@ Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
+### **9. Servicio de Limpieza Automática**
+**Implementado en v2.6**
+- ✅ `CleanupService` en `core/` — singleton, daemon thread
+- ✅ Limpieza automática de CSV exportados (máx. 10)
+- ✅ Limpieza automática de PNG exportados (máx. 10)
+- ✅ Limpieza periódica de BD SQLite (registros >30 días, cada 24h)
+- ✅ `force_cleanup()` para limpieza manual desde la UI
+- ✅ Inyección de dependencias en `HistoryWindow`
+- ✅ Botón "Limpiar Antiguos" delega en el servicio
+- ✅ Red de seguridad por tamaño en `DataLogger` (>5MB → limpia a 7 días)
+
+---
+
 ## 🔄 En Evaluación
 
 ### **Monitor de Contenedores Docker**
@@ -109,16 +122,16 @@ Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
-### **Notificaciones Visuales en el Menú**
-**Prioridad**: Media  
-**Complejidad**: Baja
-
-Badge o indicador en el botón del menú principal cuando:
-- Hay actualizaciones pendientes
-- Temperatura por encima del umbral crítico
-- Algún servicio en estado `failed`
-
-No requiere email ni Telegram, solo UI interna.
+### ~~**Notificaciones Visuales en el Menú**~~ ✅ Implementado en v2.6
+**Implementado en v2.6**
+- ✅ Badge en "Actualizaciones" con paquetes pendientes (naranja)
+- ✅ Badge en "Monitor Servicios" con servicios fallidos (rojo)
+- ✅ Badge en "Control Ventiladores" y "Monitor Placa" con temperatura (naranja >60°C, rojo >70°C)
+- ✅ Badge en "Monitor Placa" con CPU (naranja >75%, rojo >90%)
+- ✅ Badge en "Monitor Placa" con RAM (naranja >75%, rojo >90%)
+- ✅ Badge en "Monitor Disco" con uso de disco (naranja >80%, rojo >90%)
+- ✅ Texto dinámico en badge (valor real: temperatura en °C, porcentaje)
+- ✅ Color de texto adaptativo (negro sobre amarillo, blanco sobre rojo)
 
 ---
 
@@ -154,7 +167,7 @@ No requiere email ni Telegram, solo UI interna.
 
 ## 🎯 Roadmap
 
-### **v2.5.1** ✅ ACTUAL — 2026-02-20
+### **v2.5.1** ✅ — 2026-02-20
 - ✅ Logging completo en todos los módulos
 - ✅ Ventana Actualizaciones con caché y terminal
 - ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
@@ -162,8 +175,13 @@ No requiere email ni Telegram, solo UI interna.
 - ✅ Fix bug atexit en DataCollectionService
 - ✅ Paso correcto de dependencias (update_monitor inyectado)
 
-### **v2.6** (Próximo)
-- [ ] Notificaciones visuales en menú (badges)
+### **v2.6** ✅ ACTUAL — 2026-02-22
+- ✅ Badges de notificación visual en menú principal (6 badges, 5 botones)
+- ✅ CleanupService — limpieza automática background de CSV, PNG y BD
+- ✅ Fan control: entries con placeholder en lugar de sliders
+- ✅ Inyección de dependencias profesional (CleanupService → HistoryWindow)
+
+### **v2.7** (Próximo)
 - [ ] Monitor Docker (si aplica)
 - [ ] Mejoras UI generales
 
@@ -182,11 +200,11 @@ No requiere email ni Telegram, solo UI interna.
 | Histórico y análisis | ✅ 100% |
 | Actualizaciones del sistema | ✅ 100% |
 | Logging y observabilidad | ✅ 100% |
-| Notificaciones visuales internas | ⏳ 0% |
+| Notificaciones visuales internas | ✅ 100% |
 | Alertas externas | ⏳ 0% |
 | Docker | ⏳ 0% |
 | Automatización | ⏳ 0% |
 
 ---
 
-**Versión actual**: v2.5.1 — **Última actualización**: 2026-02-20
+**Versión actual**: v2.6 — **Última actualización**: 2026-02-22
