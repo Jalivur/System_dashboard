@@ -40,6 +40,7 @@ config/
   themes.py
 core/
   __init__.py
+  cleanup_service.py
   data_analyzer.py
   data_collection_service.py
   data_logger.py
@@ -99,6 +100,267 @@ THEMES_GUIDE.md
 ```
 
 # Files
+
+## File: core/cleanup_service.py
+````python
+"""
+Servicio de limpieza automática de archivos exportados y datos antiguos
+"""
+import os
+import glob
+import threading
+import time
+from typing import Optional
+from config.settings import DATA_DIR
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class CleanupService:
+    """
+    Servicio background que limpia periódicamente archivos exportados
+    y datos antiguos de la base de datos.
+
+    Características:
+    - Singleton: Solo una instancia en toda la aplicación
+    - Thread-safe: Seguro para concurrencia
+    - Daemon: Se cierra automáticamente con el programa
+    - Configurable: límites de archivos y antigüedad ajustables
+    """
+
+    _instance: Optional['CleanupService'] = None
+    _lock = threading.Lock()
+
+    # ── Configuración por defecto ─────────────────────────────────────────────
+    DEFAULT_MAX_CSV        = 10      # Máx. archivos CSV a conservar
+    DEFAULT_MAX_PNG        = 10      # Máx. archivos PNG a conservar
+    DEFAULT_DB_DAYS        = 30      # Días de datos a conservar en BD
+    DEFAULT_INTERVAL_HOURS = 24      # Cada cuántas horas limpiar
+
+    def __new__(cls, *args, **kwargs):
+        """Singleton: solo una instancia"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(
+        self,
+        data_logger=None,
+        max_csv: int = DEFAULT_MAX_CSV,
+        max_png: int = DEFAULT_MAX_PNG,
+        db_days: int = DEFAULT_DB_DAYS,
+        interval_hours: float = DEFAULT_INTERVAL_HOURS,
+    ):
+        """
+        Inicializa el servicio (solo la primera vez).
+
+        Args:
+            data_logger:     Instancia de DataLogger para limpiar la BD.
+                             Si es None, solo se limpian archivos.
+            max_csv:         Número máximo de CSV exportados a conservar.
+            max_png:         Número máximo de PNG exportados a conservar.
+            db_days:         Días de histórico a conservar en la BD.
+            interval_hours:  Horas entre ejecuciones del ciclo de limpieza.
+        """
+        if hasattr(self, '_initialized'):
+            return
+
+        self.data_logger    = data_logger
+        self.max_csv        = max_csv
+        self.max_png        = max_png
+        self.db_days        = db_days
+        self.interval_hours = interval_hours
+
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        self._initialized = True
+
+        logger.info(
+            f"[CleanupService] Configurado — "
+            f"CSV: {max_csv}, PNG: {max_png}, "
+            f"BD: {db_days}d, intervalo: {interval_hours}h"
+        )
+
+    # ── Ciclo de vida ─────────────────────────────────────────────────────────
+
+    def start(self):
+        """Inicia el servicio en segundo plano."""
+        if self._running:
+            logger.info("[CleanupService] Ya está corriendo")
+            return
+
+        self._running = True
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,
+            name="CleanupService"
+        )
+        self._thread.start()
+        logger.info("[CleanupService] Servicio iniciado")
+
+    def stop(self):
+        """Detiene el servicio."""
+        if not self._running:
+            return
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=5)
+        logger.info("[CleanupService] Servicio detenido")
+
+    def _run(self):
+        """Bucle principal: limpia al arrancar y luego cada interval_hours."""
+        # Primera limpieza inmediata al arrancar
+        self._cleanup_cycle()
+
+        interval_seconds = self.interval_hours * 3600
+        elapsed = 0.0
+        while self._running:
+            time.sleep(0.5)
+            elapsed += 0.5
+            if elapsed >= interval_seconds:
+                self._cleanup_cycle()
+                elapsed = 0.0
+
+    # ── Lógica de limpieza ────────────────────────────────────────────────────
+
+    def _cleanup_cycle(self):
+        """Ejecuta un ciclo completo de limpieza."""
+        logger.info("[CleanupService] Iniciando ciclo de limpieza")
+        self.clean_csv()
+        self.clean_png()
+        if self.data_logger:
+            self.clean_db()
+        logger.info("[CleanupService] Ciclo de limpieza completado")
+
+    def clean_csv(self, max_files: int = None) -> int:
+        """
+        Elimina los CSV exportados más antiguos que superen el límite.
+
+        Args:
+            max_files: Límite a aplicar. Si es None usa self.max_csv.
+
+        Returns:
+            Número de archivos eliminados.
+        """
+        limit = max_files if max_files is not None else self.max_csv
+        pattern = os.path.join(str(DATA_DIR), "history_*.csv")
+        return self._trim_files(pattern, limit, "CSV")
+
+    def clean_png(self, max_files: int = None) -> int:
+        """
+        Elimina los PNG exportados más antiguos que superen el límite.
+
+        Args:
+            max_files: Límite a aplicar. Si es None usa self.max_png.
+
+        Returns:
+            Número de archivos eliminados.
+        """
+        limit = max_files if max_files is not None else self.max_png
+        pattern = os.path.join(str(DATA_DIR), "screenshots", "*.png")
+        return self._trim_files(pattern, limit, "PNG")
+
+    def clean_db(self, days: int = None) -> bool:
+        """
+        Elimina registros de la BD más antiguos que 'days' días.
+
+        Args:
+            days: Antigüedad máxima. Si es None usa self.db_days.
+
+        Returns:
+            True si la limpieza fue exitosa.
+        """
+        if not self.data_logger:
+            logger.warning("[CleanupService] No hay data_logger configurado")
+            return False
+
+        d = days if days is not None else self.db_days
+        try:
+            self.data_logger.clean_old_data(days=d)
+            logger.info(f"[CleanupService] BD limpiada — registros >'{d}' días eliminados")
+            return True
+        except Exception as e:
+            logger.error(f"[CleanupService] Error limpiando BD: {e}")
+            return False
+
+    def _trim_files(self, pattern: str, max_files: int, label: str) -> int:
+        """
+        Elimina los archivos más antiguos que superen max_files.
+
+        Args:
+            pattern:   Patrón glob de los archivos a gestionar.
+            max_files: Número máximo a conservar.
+            label:     Etiqueta para el log.
+
+        Returns:
+            Número de archivos eliminados.
+        """
+        try:
+            files = sorted(glob.glob(pattern), key=os.path.getmtime)
+            to_delete = files[:-max_files] if len(files) > max_files else []
+            for f in to_delete:
+                try:
+                    os.remove(f)
+                    logger.info(f"[CleanupService] {label} eliminado: {os.path.basename(f)}")
+                except Exception as e:
+                    logger.warning(f"[CleanupService] No se pudo eliminar {f}: {e}")
+            if to_delete:
+                logger.info(
+                    f"[CleanupService] {label}: {len(to_delete)} eliminados, "
+                    f"{len(files) - len(to_delete)} conservados"
+                )
+            return len(to_delete)
+        except Exception as e:
+            logger.error(f"[CleanupService] Error en _trim_files ({label}): {e}")
+            return 0
+
+    # ── Información y estado ──────────────────────────────────────────────────
+
+    def get_status(self) -> dict:
+        """
+        Devuelve el estado actual del servicio.
+
+        Returns:
+            Diccionario con configuración y estado del hilo.
+        """
+        csv_files = glob.glob(os.path.join(str(DATA_DIR), "history_*.csv"))
+        png_files = glob.glob(os.path.join(str(DATA_DIR), "screenshots", "*.png"))
+        return {
+            'running':        self._running,
+            'thread_alive':   self._thread.is_alive() if self._thread else False,
+            'interval_hours': self.interval_hours,
+            'max_csv':        self.max_csv,
+            'max_png':        self.max_png,
+            'db_days':        self.db_days,
+            'csv_count':      len(csv_files),
+            'png_count':      len(png_files),
+        }
+
+    def force_cleanup(self) -> dict:
+        """
+        Fuerza un ciclo de limpieza inmediato desde fuera del hilo.
+        Útil para llamadas manuales desde la UI.
+
+        Returns:
+            Diccionario con el número de archivos eliminados y resultado de BD.
+        """
+        logger.info("[CleanupService] Limpieza forzada manualmente")
+        deleted_csv = self.clean_csv()
+        deleted_png = self.clean_png()
+        db_ok = self.clean_db() if self.data_logger else False
+        logger.info(
+            f"[CleanupService] Limpieza manual completada — "
+            f"CSV: {deleted_csv}, PNG: {deleted_png}, BD: {db_ok}"
+        )
+        return {'deleted_csv': deleted_csv, 'deleted_png': deleted_png, 'db_ok': db_ok}
+
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
+````
 
 ## File: ui/widgets/graphs.py
 ````python
@@ -9815,32 +10077,6 @@ FONT_SIZES = {
 }
 ````
 
-## File: core/__init__.py
-````python
-"""
-Paquete core con lógica de negocio
-"""
-from .fan_controller import FanController
-from .system_monitor import SystemMonitor
-from .network_monitor import NetworkMonitor
-from .fan_auto_service import FanAutoService
-from .disk_monitor import DiskMonitor
-from .process_monitor import ProcessMonitor
-from .service_monitor import ServiceMonitor
-from .update_monitor import UpdateMonitor
-
-__all__ = [
-    'FanController',
-    'SystemMonitor',
-    'NetworkMonitor',
-    'FanAutoService',
-    'DiskMonitor',
-    'ProcessMonitor',
-    'ServiceMonitor',
-    'UpdateMonitor',
-]
-````
-
 ## File: core/data_analyzer.py
 ````python
 """
@@ -10774,6 +11010,34 @@ MIT License
 **Dashboard v2.5.1: Profesional, Completo, Monitoreado**
 ````
 
+## File: core/__init__.py
+````python
+"""
+Paquete core con lógica de negocio
+"""
+from .fan_controller import FanController
+from .system_monitor import SystemMonitor
+from .network_monitor import NetworkMonitor
+from .fan_auto_service import FanAutoService
+from .disk_monitor import DiskMonitor
+from .process_monitor import ProcessMonitor
+from .service_monitor import ServiceMonitor
+from .update_monitor import UpdateMonitor
+from .cleanup_service import CleanupService
+
+__all__ = [
+    'FanController',
+    'SystemMonitor',
+    'NetworkMonitor',
+    'FanAutoService',
+    'DiskMonitor',
+    'ProcessMonitor',
+    'ServiceMonitor',
+    'UpdateMonitor',
+    'CleanupService',
+]
+````
+
 ## File: core/data_collection_service.py
 ````python
 """
@@ -11357,6 +11621,7 @@ from ui.styles import make_futuristic_button, StyleManager
 from ui.widgets import custom_msgbox , confirm_dialog
 from core.data_analyzer import DataAnalyzer
 from core.data_logger import DataLogger
+from core.cleanup_service import CleanupService
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from utils.logger import get_logger
@@ -11370,12 +11635,13 @@ _DATE_FMT = "%Y-%m-%d %H:%M"
 class HistoryWindow(ctk.CTkToplevel):
     """Ventana de visualización de histórico"""
 
-    def __init__(self, parent):
+    def __init__(self, parent, cleanup_service: CleanupService):
         super().__init__(parent)
 
         # Referencias
-        self.analyzer = DataAnalyzer()
-        self.logger   = DataLogger()
+        self.analyzer         = DataAnalyzer()
+        self.logger           = DataLogger()
+        self.cleanup_service  = cleanup_service
 
         # Estado de periodo
         self.period_var = ctk.StringVar(value="24h")
@@ -11806,22 +12072,35 @@ class HistoryWindow(ctk.CTkToplevel):
                 custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
 
     def _clean_old_data(self):
-        days = 7
+        """Fuerza un ciclo de limpieza completo a través de CleanupService."""
+        status = self.cleanup_service.get_status()
 
         def do_clean():
             try:
-                self.logger.clean_old_data(days=days)
-                custom_msgbox(self, f"Datos mayores a {days} días eliminados.", "✅ Limpiado")
-                logger.info(f"[HistoryWindow] Limpieza completada (>{days} días)")
+                result = self.cleanup_service.force_cleanup()
+                msg = (
+                    f"Limpieza completada:\n\n"
+                    f"• CSV eliminados: {result['deleted_csv']}\n"
+                    f"• PNG eliminados: {result['deleted_png']}\n"
+                    f"• BD limpiada: {'Sí' if result['db_ok'] else 'No'}"
+                )
+                custom_msgbox(self, msg, "✅ Limpiado")
+                logger.info(f"[HistoryWindow] Limpieza manual completada: {result}")
                 self._update_data()
             except Exception as e:
-                logger.error(f"[HistoryWindow] Error limpiando: {e}")
+                logger.error(f"[HistoryWindow] Error en limpieza manual: {e}")
                 custom_msgbox(self, f"Error al limpiar:\n{e}", "❌ Error")
 
         confirm_dialog(
             parent=self,
-            text=f"¿Eliminar datos mayores a {days} días?\n\nEsto liberará espacio en disco.",
-            title="⚠️ Confirmar",
+            text=(
+                f"¿Forzar limpieza ahora?\n\n"
+                f"• CSV actuales: {status['csv_count']} (límite: {status['max_csv']})\n"
+                f"• PNG actuales: {status['png_count']} (límite: {status['max_png']})\n"
+                f"• BD: registros >'{status['db_days']}' días\n\n"
+                f"Esto liberará espacio en disco."
+            ),
+            title="⚠️ Confirmar Limpieza",
             on_confirm=do_clean,
             on_cancel=None
         )
@@ -11874,8 +12153,9 @@ import atexit
 import threading
 import customtkinter as ctk
 from config import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor
+from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor, CleanupService
 from core.data_collection_service import DataCollectionService
+from core.data_logger import DataLogger
 from ui.main_window import MainWindow
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -11928,6 +12208,16 @@ def main():
     )
     data_service.start()
     
+    # Iniciar servicio de limpieza automática
+    cleanup_service = CleanupService(
+        data_logger=DataLogger(),
+        max_csv=10,
+        max_png=10,
+        db_days=30,
+        interval_hours=24,
+    )
+    cleanup_service.start()
+
     # Iniciar servicio de ventiladores AUTO
     fan_service = FanAutoService(fan_controller, system_monitor)
     fan_service.start()
@@ -11937,6 +12227,7 @@ def main():
         """Limpieza al cerrar la aplicación"""
         fan_service.stop()
         data_service.stop()
+        cleanup_service.stop()
     
     atexit.register(cleanup)
     
@@ -11950,7 +12241,8 @@ def main():
         update_interval=UPDATE_MS,
         process_monitor=process_monitor,
         service_monitor=service_monitor,
-        update_monitor=update_monitor
+        update_monitor=update_monitor,
+        cleanup_service=cleanup_service
     )
 
     try:
@@ -11985,7 +12277,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -11995,6 +12287,7 @@ class MainWindow:
         self.process_monitor = process_monitor
         self.service_monitor = service_monitor
         self.update_monitor = update_monitor
+        self.cleanup_service = cleanup_service
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -12084,24 +12377,24 @@ class MainWindow:
     def _create_menu_buttons(self):
         """Crea los botones del menú principal"""
         buttons_config = [
-            ("󰈐  Control Ventiladores", self.open_fan_control,     None),
-            ("󰚗  Monitor Placa",         self.open_monitor_window,  None),
-            ("  Monitor Red",               self.open_network_window,  None),
-            ("󱇰 Monitor USB",            self.open_usb_window,      None),
-            ("  Monitor Disco",             self.open_disk_window,     None),
-            ("󱓞  Lanzadores",            self.open_launchers,       None),
-            ("⚙️ Monitor Procesos",     self.open_process_window,  None),
-            ("⚙️ Monitor Servicios",    self.open_service_window,  "services"),
-            ("󱘿  Histórico Datos",       self.open_history_window,  None),
-            ("󰆧  Actualizaciones",       self.open_update_window,   "updates"),
-            ("󰔎  Cambiar Tema",          self.open_theme_selector,  None),
-            ("  Reiniciar",                 self.restart_application,  None),
-            ("󰿅  Salir",                 self.exit_application,     None),
+            ("󰈐  Control Ventiladores", self.open_fan_control,     ["temp_fan"]),
+            ("󰚗  Monitor Placa",         self.open_monitor_window,  ["temp_monitor", "cpu", "ram"]),
+            ("  Monitor Red",               self.open_network_window,  []),
+            ("󱇰 Monitor USB",            self.open_usb_window,      []),
+            ("  Monitor Disco",             self.open_disk_window,     ["disk"]),
+            ("󱓞  Lanzadores",            self.open_launchers,       []),
+            ("⚙️ Monitor Procesos",     self.open_process_window,  []),
+            ("⚙️ Monitor Servicios",    self.open_service_window,  ["services"]),
+            ("󱘿  Histórico Datos",       self.open_history_window,  []),
+            ("󰆧  Actualizaciones",       self.open_update_window,   ["updates"]),
+            ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
+            ("  Reiniciar",                 self.restart_application,  []),
+            ("󰿅  Salir",                 self.exit_application,     []),
         ]
         
         columns = 2
         
-        for i, (text, command, badge_key) in enumerate(buttons_config):
+        for i, (text, command, badge_keys) in enumerate(buttons_config):
             row = i // columns
             col = i % columns
             
@@ -12115,17 +12408,20 @@ class MainWindow:
             )
             btn.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
-            if badge_key:
-                self._create_badge(btn, badge_key)
+            # Múltiples badges por botón, colocados de derecha a izquierda
+            for j, key in enumerate(badge_keys):
+                self._create_badge(btn, key, offset_index=j)
         
         for c in range(columns):
             self.menu_inner.grid_columnconfigure(c, weight=1)
 
     # ── Badges ────────────────────────────────────────────────────────────────
 
-    def _create_badge(self, btn, key):
-        """Crea un badge circular en la esquina superior-derecha del botón."""
-        BADGE_SIZE = 22
+    def _create_badge(self, btn, key, offset_index=0):
+        """Crea un badge circular en la esquina superior-derecha del botón.
+        offset_index separa horizontalmente múltiples badges en el mismo botón."""
+        BADGE_SIZE = 36
+        x_offset = -6 - offset_index * (BADGE_SIZE + 4)
         badge_canvas = tk.Canvas(
             btn,
             width=BADGE_SIZE,
@@ -12134,7 +12430,7 @@ class MainWindow:
             highlightthickness=0,
             bd=0
         )
-        badge_canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+        badge_canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
 
         oval = badge_canvas.create_oval(
             1, 1, BADGE_SIZE - 1, BADGE_SIZE - 1,
@@ -12145,23 +12441,40 @@ class MainWindow:
             BADGE_SIZE // 2, BADGE_SIZE // 2,
             text="0",
             fill="white",
-            font=(FONT_FAMILY, 9, "bold")
+            font=(FONT_FAMILY, 13, "bold")
         )
 
-        self._badges[key] = (badge_canvas, oval, txt)
+        self._badges[key] = (badge_canvas, oval, txt, x_offset)
         badge_canvas.place_forget()
 
-    def _update_badge(self, key, value):
+    # Umbrales de temperatura
+    _TEMP_WARN = 60   # °C — badge naranja
+    _TEMP_CRIT = 70   # °C — badge rojo
+
+    # Umbrales CPU / RAM (%)
+    _CPU_WARN  = 75
+    _CPU_CRIT  = 90
+    _RAM_WARN  = 75
+    _RAM_CRIT  = 90
+
+    # Umbrales disco (%)
+    _DISK_WARN = 80
+    _DISK_CRIT = 90
+
+    def _update_badge(self, key, value, color=None):
         """Actualiza el valor y visibilidad de un badge."""
         if key not in self._badges:
             return
-        canvas, oval, txt = self._badges[key]
+        canvas, oval, txt, x_offset = self._badges[key]
         if value > 0:
             display = str(value) if value < 100 else "99+"
             canvas.itemconfigure(txt, text=display)
-            color = COLORS['danger'] if key == "services" else COLORS.get('warning', '#ffaa00')
+            if color is None:
+                color = COLORS['danger'] if key == "services" else COLORS.get('warning', '#ffaa00')
             canvas.itemconfigure(oval, fill=color)
-            canvas.place(relx=1.0, rely=0.0, anchor="ne", x=-6, y=6)
+            txt_color = "black" if color == COLORS.get('warning', '#ffaa00') else "white"
+            canvas.itemconfigure(txt, fill=txt_color)
+            canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
         else:
             canvas.place_forget()
     
@@ -12219,7 +12532,7 @@ class MainWindow:
         """Abre la ventana de histórico"""
         if self.history_window is None or not self.history_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Histórico Datos")
-            self.history_window = HistoryWindow(self.root)
+            self.history_window = HistoryWindow(self.root, self.cleanup_service)
         else:
             self.history_window.lift()
     
@@ -12414,5 +12727,66 @@ class MainWindow:
         except Exception:
             pass
 
+        try:
+            sys_stats = self.system_monitor.get_current_stats()
+
+            # Temperatura
+            temp = sys_stats['temp']
+            if temp >= self._TEMP_CRIT:
+                temp_color = COLORS['danger']
+                show_temp = True
+            elif temp >= self._TEMP_WARN:
+                temp_color = COLORS.get('warning', '#ffaa00')
+                show_temp = True
+            else:
+                show_temp = False
+            if show_temp:
+                self._update_badge_temp("temp_fan",     int(temp), temp_color)
+                self._update_badge_temp("temp_monitor", int(temp), temp_color)
+            else:
+                self._update_badge("temp_fan",     0)
+                self._update_badge("temp_monitor", 0)
+
+            # CPU
+            cpu = sys_stats['cpu']
+            if cpu >= self._CPU_CRIT:
+                self._update_badge("cpu", int(cpu), COLORS['danger'])
+            elif cpu >= self._CPU_WARN:
+                self._update_badge("cpu", int(cpu), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("cpu", 0)
+
+            # RAM
+            ram = sys_stats['ram']
+            if ram >= self._RAM_CRIT:
+                self._update_badge("ram", int(ram), COLORS['danger'])
+            elif ram >= self._RAM_WARN:
+                self._update_badge("ram", int(ram), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("ram", 0)
+
+            # Disco
+            disk = sys_stats['disk_usage']
+            if disk >= self._DISK_CRIT:
+                self._update_badge("disk", int(disk), COLORS['danger'])
+            elif disk >= self._DISK_WARN:
+                self._update_badge("disk", int(disk), COLORS.get('warning', '#ffaa00'))
+            else:
+                self._update_badge("disk", 0)
+
+        except Exception:
+            pass
+
         self.root.after(self.update_interval, self._update)
+
+    def _update_badge_temp(self, key, temp, color):
+        """Muestra la temperatura en el badge con el color indicado."""
+        if key not in self._badges:
+            return
+        canvas, oval, txt, x_offset = self._badges[key]
+        canvas.itemconfigure(txt, text=f"{temp}°")
+        canvas.itemconfigure(oval, fill=color)
+        txt_color = "black" if color == COLORS.get('warning', '#ffaa00') else "white"
+        canvas.itemconfigure(txt, fill=txt_color)
+        canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
 ````
