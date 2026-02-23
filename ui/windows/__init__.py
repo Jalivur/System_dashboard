@@ -12,6 +12,7 @@ from .service import ServiceWindow
 from .update import UpdatesWindow
 from .history import HistoryWindow
 from .theme_selector import ThemeSelector
+from .homebridge import HomebridgeWindow
 
 __all__ = [
     'FanControlWindow',
@@ -24,5 +25,6 @@ __all__ = [
     'ServiceWindow',
     'UpdatesWindow',
     'HistoryWindow',
-    'ThemeSelector'
+    'ThemeSelector',
+    'HomebridgeWindow'
 ]

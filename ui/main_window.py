@@ -5,7 +5,7 @@ import tkinter as tk
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import StyleManager, make_futuristic_button
-from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow
+from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
@@ -19,7 +19,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -30,6 +30,7 @@ class MainWindow:
         self.service_monitor = service_monitor
         self.update_monitor = update_monitor
         self.cleanup_service = cleanup_service
+        self.homebridge_monitor = homebridge_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -52,6 +53,7 @@ class MainWindow:
         self.history_window = None
         self.update_window = None
         self.theme_window = None
+        self.homebridge_window = None
 
         logger.info(f"[MainWindow] Dashboard iniciado en {self.system_utils.get_hostname()}")
 
@@ -150,6 +152,7 @@ class MainWindow:
             ("⚙️ Monitor Servicios",    self.open_service_window,  ["services"]),
             ("󱘿  Histórico Datos",       self.open_history_window,  []),
             ("󰆧  Actualizaciones",       self.open_update_window,   ["updates"]),
+            ("󰟐  Homebridge",        self.open_homebridge,     ["hb_offline", "hb_on", "hb_fault"]),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -376,6 +379,15 @@ class MainWindow:
         else:
             self.update_window.lift()
     
+    def open_homebridge(self):
+        """Abre la ventana de control de Homebridge"""
+        if self.homebridge_window is None or not self.homebridge_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Homebridge")
+            self.homebridge_window = HomebridgeWindow(self.root, self.homebridge_monitor)
+        else:
+            self.homebridge_window.lift()
+
+    
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
 
     def exit_application(self):
@@ -533,6 +545,18 @@ class MainWindow:
         try:
             pending = self.update_monitor.cached_result.get('pending', 0)
             self._update_badge("updates", pending)
+            #rojo falla conexion
+            self._update_badge("hb_offline", self.homebridge_monitor.get_offline_count())
+            #naranja n echufes encendidos
+            self._update_badge(
+                "hb_on",
+                self.homebridge_monitor.get_on_count(),
+                color=COLORS.get('warning', '#ffaa00'),
+            )
+            #enchufe con fallo
+            self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
+
+
         except Exception:
             pass
 

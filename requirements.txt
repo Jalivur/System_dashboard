@@ -25,6 +25,10 @@ matplotlib>=3.5.0
 
 # === Dependencias Opcionales ===
 
+# ── Entorno y configuración ───────────────────────────────────────────────────
+python-dotenv>=1.0.0          # Carga de variables desde .env (Homebridge, etc.)
+
+
 # Test de velocidad de internet (Monitor Red → Speedtest)
 # Instalar también en sistema: sudo apt install speedtest-cli
 # speedtest-cli>=2.1.3
