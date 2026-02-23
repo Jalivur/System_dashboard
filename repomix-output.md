@@ -6328,66 +6328,6 @@ class FileManager:
             raise
 ````
 
-## File: requirements.txt
-````
-# ============================================
-# System Dashboard - Python Dependencies
-# ============================================
-#
-# Instalación rápida (recomendada):
-#   sudo ./install_system.sh
-#
-# O manualmente:
-#   pip3 install --break-system-packages -r requirements.txt
-#
-# Versión mínima de Python: 3.8+
-# ============================================
-
-# === Dependencias Obligatorias ===
-
-# Interfaz gráfica moderna con tema oscuro
-customtkinter>=5.2.0
-
-# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
-psutil>=5.9.0
-
-# Gráficas históricas (ventana Histórico Datos)
-matplotlib>=3.5.0
-
-
-# === Dependencias Opcionales ===
-
-# ── Entorno y configuración ───────────────────────────────────────────────────
-python-dotenv>=1.0.0          # Carga de variables desde .env (Homebridge, etc.)
-
-
-# Test de velocidad de internet (Monitor Red → Speedtest)
-# Instalar también en sistema: sudo apt install speedtest-cli
-# speedtest-cli>=2.1.3
-
-
-# ============================================
-# NOTA: Dependencias del Sistema (NO Python)
-# ============================================
-#
-# El script install_system.sh las instala automáticamente.
-# O manualmente con apt-get:
-#
-#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
-#
-# Descripción:
-#   - lm-sensors:     Lectura de temperatura CPU (sensors)
-#   - usbutils:       Comando lsusb (listar USB)
-#   - udisks2:        Expulsar dispositivos USB de forma segura
-#   - util-linux:     Comando lsblk (suele venir instalado)
-#   - smartmontools:  Temperatura NVMe (smartctl)
-#
-# Opcional para speedtest (el script pregunta al instalarlo):
-#   sudo apt-get install speedtest-cli
-#
-# ============================================
-````
-
 ## File: core/fan_auto_service.py
 ````python
 """
@@ -8374,6 +8314,59 @@ class SystemUtils:
             logger.warning("[SystemUtils] get_nvme_temp: sin permisos para leer sysfs")
         
         return 0.0
+````
+
+## File: requirements.txt
+````
+# ============================================
+# System Dashboard - Python Dependencies
+# ============================================
+#
+# Instalación rápida (recomendada):
+#   sudo ./install_system.sh
+#
+# O manualmente:
+#   pip3 install --break-system-packages -r requirements.txt
+#
+# Versión mínima de Python: 3.8+
+# ============================================
+
+# === Dependencias Obligatorias ===
+
+# Interfaz gráfica moderna con tema oscuro
+customtkinter>=5.2.0
+
+# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
+psutil>=5.9.0
+
+# Gráficas históricas (ventana Histórico Datos)
+matplotlib>=3.5.0
+
+# Variables de entorno desde .env (credenciales Homebridge)
+python-dotenv>=1.0.0
+
+
+# ============================================
+# NOTA: Dependencias del Sistema (NO Python)
+# ============================================
+#
+# El script install_system.sh las instala automáticamente.
+# O manualmente con apt-get:
+#
+#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
+#
+# Descripción:
+#   - lm-sensors:     Lectura de temperatura CPU (sensors)
+#   - usbutils:       Comando lsusb (listar USB)
+#   - udisks2:        Expulsar dispositivos USB de forma segura
+#   - util-linux:     Comando lsblk (suele venir instalado)
+#   - smartmontools:  Temperatura NVMe (smartctl)
+#
+# Opcional para speedtest (CLI oficial de Ookla, NO speedtest-cli de pip):
+#   curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+#   sudo apt-get install speedtest
+#
+# ============================================
 ````
 
 ## File: config/settings.py
