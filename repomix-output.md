@@ -81,6 +81,7 @@ utils/
 .gitignore
 COMPATIBILIDAD.md
 create_desktop_launcher.sh
+fix_timestamps.py
 IDEAS_EXPANSION.md
 INDEX.md
 INSTALL_GUIDE.md
@@ -1068,6 +1069,54 @@ fi
 
 echo ""
 echo "¡Listo! 🎉"
+````
+
+## File: fix_timestamps.py
+````python
+"""
+Script puntual para corregir el desfase UTC en los registros históricos.
+Suma 1 hora a todos los timestamps de las tablas metrics y events.
+
+Uso: python3 fix_timestamps.py
+"""
+import sqlite3
+from datetime import datetime
+
+DB_PATH = "data/history.db"
+
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
+
+# Contar registros antes
+cursor.execute("SELECT COUNT(*) FROM metrics")
+n_metrics = cursor.fetchone()[0]
+cursor.execute("SELECT COUNT(*) FROM events")
+n_events = cursor.fetchone()[0]
+
+print(f"Registros encontrados: {n_metrics} métricas, {n_events} eventos")
+print("Aplicando corrección +1h...")
+
+# Sumar 1 hora a todos los timestamps
+cursor.execute("""
+    UPDATE metrics
+    SET timestamp = datetime(timestamp, '+1 hour')
+""")
+cursor.execute("""
+    UPDATE events
+    SET timestamp = datetime(timestamp, '+1 hour')
+""")
+
+conn.commit()
+
+# Verificar un par de registros para confirmar
+cursor.execute("SELECT timestamp FROM metrics ORDER BY timestamp DESC LIMIT 3")
+rows = cursor.fetchall()
+print("\nÚltimos timestamps tras la corrección:")
+for r in rows:
+    print(f"  {r[0]}")
+
+conn.close()
+print("\nHecho. Todos los registros corregidos.")
 ````
 
 ## File: INSTALL_GUIDE.md
@@ -5717,212 +5766,6 @@ class FileManager:
             raise
 ````
 
-## File: core/data_logger.py
-````python
-"""
-Sistema de logging de datos históricos
-"""
-import sqlite3
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict
-from utils import DashboardLogger
-
-
-class DataLogger:
-    """Registra datos del sistema en base de datos SQLite"""
-
-    def __init__(self, db_path: str = "data/history.db"):
-        """
-        Inicializa el logger
-
-        Args:
-            db_path: Ruta a la base de datos SQLite
-        """
-        # Crear directorio si no existe
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-        self.db_path = db_path
-        self._init_database()
-        self.dashboard_logger = DashboardLogger()  # Logger para eventos y errores
-        self.check_and_rotate_db(max_mb=5.0)  # Verificar tamaño al iniciar
-
-
-    def _init_database(self):
-        """Inicializa la base de datos con las tablas necesarias"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # Tabla principal de métricas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS metrics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                cpu_percent REAL,
-                ram_percent REAL,
-                ram_used_gb REAL,
-                temperature REAL,
-                disk_used_percent REAL,
-                disk_read_mb REAL,
-                disk_write_mb REAL,
-                net_download_mb REAL,
-                net_upload_mb REAL,
-                fan_pwm INTEGER,
-                fan_mode TEXT,
-                updates_available INTEGER 
-            )
-        ''')
-
-        # Índice para búsquedas por timestamp
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_timestamp 
-            ON metrics(timestamp)
-        ''')
-
-        # Tabla de eventos (opcional, para alertas futuras)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                event_type TEXT,
-                severity TEXT,
-                message TEXT,
-                data JSON
-            )
-        ''')
-
-        conn.commit()
-        conn.close()
-
-    def log_metrics(self, metrics: Dict):
-        """
-        Guarda un conjunto de métricas
-
-        Args:
-            metrics: Diccionario con las métricas a guardar
-
-        Ejemplo:
-            metrics = {
-                'cpu_percent': 45.2,
-                'ram_percent': 62.3,
-                'ram_used_gb': 5.2,
-                'temperature': 58.5,
-                'disk_used_percent': 75.0,
-                'disk_read_mb': 120.5,
-                'disk_write_mb': 45.2,
-                'net_download_mb': 2.5,
-                'net_upload_mb': 0.8,
-                'fan_pwm': 128,
-                'fan_mode': 'auto'
-            }
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO metrics (
-                cpu_percent, ram_percent, ram_used_gb, temperature,
-                disk_used_percent, disk_read_mb, disk_write_mb,
-                net_download_mb, net_upload_mb, fan_pwm, fan_mode, updates_available
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            metrics.get('cpu_percent'),
-            metrics.get('ram_percent'),
-            metrics.get('ram_used_gb'),
-            metrics.get('temperature'),
-            metrics.get('disk_used_percent'),
-            metrics.get('disk_read_mb'),
-            metrics.get('disk_write_mb'),
-            metrics.get('net_download_mb'),
-            metrics.get('net_upload_mb'),
-            metrics.get('fan_pwm'),
-            metrics.get('fan_mode'),
-            metrics.get('updates_available'),
-        ))
-
-        conn.commit()
-        conn.close()
-
-    def log_event(self, event_type: str, severity: str, message: str, data: Dict = None):
-        """
-        Registra un evento
-
-        Args:
-            event_type: Tipo de evento (cpu_high, disk_full, etc)
-            severity: Severidad (info, warning, critical)
-            message: Mensaje descriptivo
-            data: Datos adicionales (opcional)
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO events (event_type, severity, message, data)
-            VALUES (?, ?, ?, ?)
-        ''', (event_type, severity, message, json.dumps(data) if data else None))
-
-        conn.commit()
-        conn.close()
-
-    def get_metrics_count(self) -> int:
-        """Obtiene el número total de registros"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute('SELECT COUNT(*) FROM metrics')
-        count = cursor.fetchone()[0]
-
-        conn.close()
-        return count
-
-    def get_db_size_mb(self) -> float:
-        """Obtiene el tamaño de la base de datos en MB"""
-        db_file = Path(self.db_path)
-        if db_file.exists():
-            return db_file.stat().st_size / (1024 * 1024)
-        return 0.0
-
-    def clean_old_data(self, days: int = 7):
-        """
-        Elimina datos más antiguos de X días
-
-        Args:
-            days: Número de días a mantener
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cutoff_date = datetime.now() - timedelta(days=days)
-
-        cursor.execute('''
-            DELETE FROM metrics 
-            WHERE timestamp < ?
-        ''', (cutoff_date,))
-
-        # También limpiar eventos
-        cursor.execute('''
-            DELETE FROM events 
-            WHERE timestamp < ?
-        ''', (cutoff_date,))
-
-        conn.commit()
-
-        # Vacuum para recuperar espacio
-        cursor.execute('VACUUM')
-
-        conn.close()
-    def check_and_rotate_db(self, max_mb: float = 5.0):
-        """Si la DB supera el tamaño máximo, elimina datos antiguos de más de 30 días"""
-        self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Verificando tamaño de la base de datos... Tamaño actual: {self.get_db_size_mb():.2f} MB")
-        current_size = self.get_db_size_mb()
-        if current_size > max_mb:
-            # Limpia datos de más de 7 días para reducir tamaño
-            self.dashboard_logger.get_logger(__name__).warning(f"[DataLogger]La base de datos ha superado el tamaño máximo de {max_mb} MB. Limpiando datos antiguos...")
-            self.clean_old_data(days=7)
-            self.dashboard_logger.get_logger(__name__).info(f"[DataLogger]Limpieza completada. Nuevo tamaño de la base de datos: {self.get_db_size_mb():.2f} MB")
-````
-
 ## File: core/fan_auto_service.py
 ````python
 """
@@ -8181,6 +8024,165 @@ FONT_SIZES = {
 }
 ````
 
+## File: core/data_logger.py
+````python
+"""
+Sistema de logging de datos históricos
+"""
+import sqlite3
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict
+from utils import DashboardLogger
+
+
+class DataLogger:
+    """Registra datos del sistema en base de datos SQLite"""
+
+    def __init__(self, db_path: str = "data/history.db"):
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        self.db_path = db_path
+        self._init_database()
+        self.dashboard_logger = DashboardLogger()
+        self.check_and_rotate_db(max_mb=5.0)
+
+    def _init_database(self):
+        """Inicializa la base de datos con las tablas necesarias"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME,
+                cpu_percent REAL,
+                ram_percent REAL,
+                ram_used_gb REAL,
+                temperature REAL,
+                disk_used_percent REAL,
+                disk_read_mb REAL,
+                disk_write_mb REAL,
+                net_download_mb REAL,
+                net_upload_mb REAL,
+                fan_pwm INTEGER,
+                fan_mode TEXT,
+                updates_available INTEGER
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_timestamp
+            ON metrics(timestamp)
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME,
+                event_type TEXT,
+                severity TEXT,
+                message TEXT,
+                data JSON
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+
+    def log_metrics(self, metrics: Dict):
+        """
+        Guarda un conjunto de métricas.
+        La timestamp se genera con datetime.now() para usar la hora local del sistema,
+        evitando el desfase UTC que produce DEFAULT CURRENT_TIMESTAMP de SQLite.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Hora local explícita — SQLite CURRENT_TIMESTAMP siempre es UTC
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor.execute('''
+            INSERT INTO metrics (
+                timestamp,
+                cpu_percent, ram_percent, ram_used_gb, temperature,
+                disk_used_percent, disk_read_mb, disk_write_mb,
+                net_download_mb, net_upload_mb, fan_pwm, fan_mode, updates_available
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            now,
+            metrics.get('cpu_percent'),
+            metrics.get('ram_percent'),
+            metrics.get('ram_used_gb'),
+            metrics.get('temperature'),
+            metrics.get('disk_used_percent'),
+            metrics.get('disk_read_mb'),
+            metrics.get('disk_write_mb'),
+            metrics.get('net_download_mb'),
+            metrics.get('net_upload_mb'),
+            metrics.get('fan_pwm'),
+            metrics.get('fan_mode'),
+            metrics.get('updates_available'),
+        ))
+
+        conn.commit()
+        conn.close()
+
+    def log_event(self, event_type: str, severity: str, message: str, data: Dict = None):
+        """Registra un evento con hora local."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor.execute('''
+            INSERT INTO events (timestamp, event_type, severity, message, data)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (now, event_type, severity, message, json.dumps(data) if data else None))
+
+        conn.commit()
+        conn.close()
+
+    def get_metrics_count(self) -> int:
+        """Obtiene el número total de registros"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM metrics')
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+
+    def get_db_size_mb(self) -> float:
+        """Obtiene el tamaño de la base de datos en MB"""
+        db_file = Path(self.db_path)
+        if db_file.exists():
+            return db_file.stat().st_size / (1024 * 1024)
+        return 0.0
+
+    def clean_old_data(self, days: int = 7):
+        """Elimina datos más antiguos de X días"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor.execute('DELETE FROM metrics WHERE timestamp < ?', (cutoff,))
+        cursor.execute('DELETE FROM events  WHERE timestamp < ?', (cutoff,))
+
+        conn.commit()
+        cursor.execute('VACUUM')
+        conn.close()
+
+    def check_and_rotate_db(self, max_mb: float = 5.0):
+        """Si la DB supera el tamaño máximo, elimina datos antiguos"""
+        log = self.dashboard_logger.get_logger(__name__)
+        log.info(f"[DataLogger] Verificando tamaño BD... {self.get_db_size_mb():.2f} MB")
+        if self.get_db_size_mb() > max_mb:
+            log.warning(f"[DataLogger] BD supera {max_mb} MB. Limpiando...")
+            self.clean_old_data(days=7)
+            log.info(f"[DataLogger] Limpieza completada. Nuevo tamaño: {self.get_db_size_mb():.2f} MB")
+````
+
 ## File: core/network_monitor.py
 ````python
 """
@@ -9073,363 +9075,6 @@ Guía completa de toda la documentación del proyecto actualizada.
 **Versión actual**: v2.7 — **Última actualización**: 2026-02-22
 ````
 
-## File: core/data_analyzer.py
-````python
-"""
-Análisis de datos históricos
-"""
-import sqlite3
-import csv
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
-from config.settings import DATA_DIR
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class DataAnalyzer:
-    """Analiza datos históricos de la base de datos"""
-
-    def __init__(self, db_path: str = f"{DATA_DIR}/history.db"):
-        self.db_path = db_path
-
-    # ─────────────────────────────────────────────
-    # Métodos basados en horas (uso existente)
-    # ─────────────────────────────────────────────
-
-    def get_data_range(self, hours: int = 24) -> List[Dict]:
-        """
-        Obtiene datos de las últimas X horas
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Lista de diccionarios con los datos
-        """
-        try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            cutoff_time = datetime.now() - timedelta(hours=hours)
-
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ?
-                ORDER BY timestamp ASC
-            ''', (cutoff_time,))
-
-            rows = cursor.fetchall()
-            conn.close()
-
-            logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros obtenidos (últimas {hours}h)")
-            return [dict(row) for row in rows]
-
-        except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error de base de datos: {e}")
-            return []
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error inesperado: {e}")
-            return []
-
-    def get_stats(self, hours: int = 24) -> Dict:
-        """
-        Obtiene estadísticas de las últimas X horas
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Diccionario con estadísticas
-        """
-        cutoff_time = datetime.now() - timedelta(hours=hours)
-        return self._get_stats_between(cutoff_time, datetime.now())
-
-    def get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]:
-        """
-        Obtiene datos para gráficas (últimas X horas)
-
-        Args:
-            metric: Métrica a obtener (cpu_percent, ram_percent, temperature, etc)
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Tupla (timestamps, values)
-        """
-        try:
-            data = self.get_data_range(hours)
-            return self._extract_metric(data, metric)
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_graph_data: error obteniendo datos de '{metric}': {e}")
-            return [], []
-
-    def export_to_csv(self, output_path: str, hours: int = 24):
-        """
-        Exporta datos a CSV (últimas X horas)
-
-        Args:
-            output_path: Ruta del archivo CSV a crear
-            hours: Número de horas a exportar
-        """
-        data = self.get_data_range(hours)
-        self._write_csv(output_path, data)
-
-    # ─────────────────────────────────────────────
-    # Métodos basados en rango personalizado
-    # ─────────────────────────────────────────────
-
-    def get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]:
-        """
-        Obtiene datos entre dos fechas exactas.
-
-        Args:
-            start: Fecha/hora de inicio
-            end:   Fecha/hora de fin
-
-        Returns:
-            Lista de diccionarios con los datos
-        """
-        try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-                ORDER BY timestamp ASC
-            ''', (start, end))
-
-            rows = cursor.fetchall()
-            conn.close()
-
-            logger.debug(
-                f"[DataAnalyzer] get_data_range_between: {len(rows)} registros "
-                f"({start.strftime('%Y-%m-%d %H:%M')} → {end.strftime('%Y-%m-%d %H:%M')})"
-            )
-            return [dict(row) for row in rows]
-
-        except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_data_range_between: error de base de datos: {e}")
-            return []
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_data_range_between: error inesperado: {e}")
-            return []
-
-    def get_stats_between(self, start: datetime, end: datetime) -> Dict:
-        """
-        Obtiene estadísticas entre dos fechas exactas.
-
-        Args:
-            start: Fecha/hora de inicio
-            end:   Fecha/hora de fin
-
-        Returns:
-            Diccionario con estadísticas (mismo formato que get_stats)
-        """
-        return self._get_stats_between(start, end)
-
-    def get_graph_data_between(self, metric: str, start: datetime, end: datetime) -> Tuple[List, List]:
-        """
-        Obtiene datos para gráficas entre dos fechas exactas.
-
-        Args:
-            metric: Métrica a obtener
-            start:  Fecha/hora de inicio
-            end:    Fecha/hora de fin
-
-        Returns:
-            Tupla (timestamps, values)
-        """
-        try:
-            data = self.get_data_range_between(start, end)
-            return self._extract_metric(data, metric)
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] get_graph_data_between: error obteniendo datos de '{metric}': {e}")
-            return [], []
-
-    def export_to_csv_between(self, output_path: str, start: datetime, end: datetime):
-        """
-        Exporta datos a CSV entre dos fechas exactas.
-
-        Args:
-            output_path: Ruta del archivo CSV
-            start:       Fecha/hora de inicio
-            end:         Fecha/hora de fin
-        """
-        data = self.get_data_range_between(start, end)
-        self._write_csv(output_path, data)
-
-    # ─────────────────────────────────────────────
-    # Detección de anomalías (sin cambios)
-    # ─────────────────────────────────────────────
-
-    def detect_anomalies(self, hours: int = 24) -> List[Dict]:
-        """
-        Detecta anomalías en los datos
-
-        Args:
-            hours: Número de horas hacia atrás
-
-        Returns:
-            Lista de anomalías detectadas
-        """
-        anomalies = []
-        stats = self.get_stats(hours)
-
-        if not stats:
-            return anomalies
-
-        if stats.get('cpu_avg', 0) > 80:
-            anomalies.append({
-                'type': 'cpu_high',
-                'severity': 'warning',
-                'message': f"CPU promedio alta: {stats['cpu_avg']:.1f}%"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: CPU promedio {stats['cpu_avg']:.1f}%")
-
-        if stats.get('temp_max', 0) > 80:
-            anomalies.append({
-                'type': 'temp_high',
-                'severity': 'critical',
-                'message': f"Temperatura máxima: {stats['temp_max']:.1f}°C"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: temperatura máxima {stats['temp_max']:.1f}°C")
-
-        if stats.get('ram_avg', 0) > 85:
-            anomalies.append({
-                'type': 'ram_high',
-                'severity': 'warning',
-                'message': f"RAM promedio alta: {stats['ram_avg']:.1f}%"
-            })
-            logger.warning(f"[DataAnalyzer] Anomalía detectada: RAM promedio {stats['ram_avg']:.1f}%")
-
-        return anomalies
-
-    # ─────────────────────────────────────────────
-    # Métodos privados compartidos
-    # ─────────────────────────────────────────────
-
-    def _get_stats_between(self, start: datetime, end: datetime) -> Dict:
-        """Lógica común de estadísticas para cualquier rango start→end."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-            cursor.execute('''
-                SELECT 
-                    AVG(cpu_percent) as cpu_avg,
-                    MAX(cpu_percent) as cpu_max,
-                    MIN(cpu_percent) as cpu_min,
-                    AVG(ram_percent) as ram_avg,
-                    MAX(ram_percent) as ram_max,
-                    MIN(ram_percent) as ram_min,
-                    AVG(temperature) as temp_avg,
-                    MAX(temperature) as temp_max,
-                    MIN(temperature) as temp_min,
-                    AVG(net_download_mb) as down_avg,
-                    MAX(net_download_mb) as down_max,
-                    MIN(net_download_mb) as down_min,
-                    AVG(net_upload_mb) as up_avg,
-                    MAX(net_upload_mb) as up_max,
-                    MIN(net_upload_mb) as up_min,
-                    AVG(disk_read_mb) as disk_read_avg,
-                    MAX(disk_read_mb) as disk_read_max,
-                    MIN(disk_read_mb) as disk_read_min,
-                    AVG(disk_write_mb) as disk_write_avg,
-                    MAX(disk_write_mb) as disk_write_max,
-                    MIN(disk_write_mb) as disk_write_min,
-                    AVG(fan_pwm) as pwm_avg,
-                    MAX(fan_pwm) as pwm_max,
-                    MIN(fan_pwm) as pwm_min,
-                    MAX(updates_available) as updates_available_max,
-                    MIN(updates_available) as updates_available_min,
-                    AVG(updates_available) as updates_available_avg,
-                    COUNT(*) as total_samples
-                FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-            ''', (start, end))
-
-            row = cursor.fetchone()
-            conn.close()
-
-            if row and row[24]:
-                logger.debug(f"[DataAnalyzer] _get_stats_between: {row[24]} muestras")
-                return {
-                    'cpu_avg': round(row[0], 1) if row[0] else 0,
-                    'cpu_max': round(row[1], 1) if row[1] else 0,
-                    'cpu_min': round(row[2], 1) if row[2] else 0,
-                    'ram_avg': round(row[3], 1) if row[3] else 0,
-                    'ram_max': round(row[4], 1) if row[4] else 0,
-                    'ram_min': round(row[5], 1) if row[5] else 0,
-                    'temp_avg': round(row[6], 1) if row[6] else 0,
-                    'temp_max': round(row[7], 1) if row[7] else 0,
-                    'temp_min': round(row[8], 1) if row[8] else 0,
-                    'down_avg': round(row[9], 2) if row[9] else 0,
-                    'down_max': round(row[10], 2) if row[10] else 0,
-                    'down_min': round(row[11], 2) if row[11] else 0,
-                    'up_avg': round(row[12], 2) if row[12] else 0,
-                    'up_max': round(row[13], 2) if row[13] else 0,
-                    'up_min': round(row[14], 2) if row[14] else 0,
-                    'disk_read_avg': round(row[15], 2) if row[15] else 0,
-                    'disk_read_max': round(row[16], 2) if row[16] else 0,
-                    'disk_read_min': round(row[17], 2) if row[17] else 0,
-                    'disk_write_avg': round(row[18], 2) if row[18] else 0,
-                    'disk_write_max': round(row[19], 2) if row[19] else 0,
-                    'disk_write_min': round(row[20], 2) if row[20] else 0,
-                    'pwm_avg': round(row[21], 0) if row[21] else 0,
-                    'pwm_max': round(row[22], 0) if row[22] else 0,
-                    'pwm_min': round(row[23], 0) if row[23] else 0,
-                    'updates_available_max': row[24] if row[24] else 0,
-                    'updates_available_min': row[25] if row[25] else 0,
-                    'updates_available_avg': row[26] if row[26] else 0,
-                    'total_samples': row[27]
-                }
-
-            logger.debug(f"[DataAnalyzer] _get_stats_between: sin datos en el rango")
-            return {}
-
-        except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] _get_stats_between: error de base de datos: {e}")
-            return {}
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] _get_stats_between: error inesperado: {e}")
-            return {}
-
-    def _extract_metric(self, data: List[Dict], metric: str) -> Tuple[List, List]:
-        """Extrae timestamps y valores de una métrica de una lista de registros."""
-        timestamps = []
-        values = []
-        for entry in data:
-            ts = datetime.fromisoformat(entry['timestamp'])
-            timestamps.append(ts)
-            values.append(entry.get(metric, 0))
-        return timestamps, values
-
-    def _write_csv(self, output_path: str, data: List[Dict]):
-        """Escribe una lista de registros a CSV."""
-        try:
-            if not data:
-                logger.warning(f"[DataAnalyzer] _write_csv: sin datos para exportar")
-                return
-
-            with open(output_path, 'w', newline='') as csvfile:
-                fieldnames = data[0].keys()
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in data:
-                    writer.writerow(row)
-
-            logger.info(f"[DataAnalyzer] _write_csv: {len(data)} registros exportados a {output_path}")
-
-        except OSError as e:
-            logger.error(f"[DataAnalyzer] _write_csv: error escribiendo {output_path}: {e}")
-        except Exception as e:
-            logger.error(f"[DataAnalyzer] _write_csv: error inesperado: {e}")
-````
-
 ## File: ui/windows/__init__.py
 ````python
 """
@@ -9958,6 +9603,268 @@ __all__ = [
     'UpdateMonitor',
     'CleanupService',
 ]
+````
+
+## File: core/data_analyzer.py
+````python
+"""
+Análisis de datos históricos
+"""
+import sqlite3
+import csv
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple
+from config.settings import DATA_DIR
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+_FMT = "%Y-%m-%d %H:%M:%S"
+
+
+def _fmt(dt: datetime) -> str:
+    """Convierte datetime a string sin microsegundos, formato que usa la BD."""
+    return dt.strftime(_FMT)
+
+
+class DataAnalyzer:
+    """Analiza datos históricos de la base de datos"""
+
+    def __init__(self, db_path: str = f"{DATA_DIR}/history.db"):
+        self.db_path = db_path
+
+    # ─────────────────────────────────────────────
+    # Métodos basados en horas
+    # ─────────────────────────────────────────────
+
+    def get_data_range(self, hours: int = 24) -> List[Dict]:
+        """Obtiene datos de las últimas X horas"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cutoff = _fmt(datetime.now() - timedelta(hours=hours))
+
+            cursor.execute('''
+                SELECT * FROM metrics
+                WHERE timestamp >= ?
+                ORDER BY timestamp ASC
+            ''', (cutoff,))
+
+            rows = cursor.fetchall()
+            conn.close()
+
+            logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros (últimas {hours}h)")
+            return [dict(row) for row in rows]
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"[DataAnalyzer] get_data_range: error BD: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_data_range: error inesperado: {e}")
+            return []
+
+    def get_stats(self, hours: int = 24) -> Dict:
+        """Obtiene estadísticas de las últimas X horas"""
+        now = datetime.now()
+        start = now - timedelta(hours=hours)
+        return self._get_stats_between(start, now)
+
+    def get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]:
+        """Obtiene datos para gráficas (últimas X horas)"""
+        try:
+            data = self.get_data_range(hours)
+            return self._extract_metric(data, metric)
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_graph_data '{metric}': {e}")
+            return [], []
+
+    def export_to_csv(self, output_path: str, hours: int = 24):
+        """Exporta datos a CSV (últimas X horas)"""
+        data = self.get_data_range(hours)
+        self._write_csv(output_path, data)
+
+    # ─────────────────────────────────────────────
+    # Métodos basados en rango personalizado
+    # ─────────────────────────────────────────────
+
+    def get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]:
+        """Obtiene datos entre dos fechas exactas"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT * FROM metrics
+                WHERE timestamp >= ? AND timestamp <= ?
+                ORDER BY timestamp ASC
+            ''', (_fmt(start), _fmt(end)))
+
+            rows = cursor.fetchall()
+            conn.close()
+
+            logger.debug(
+                f"[DataAnalyzer] get_data_range_between: {len(rows)} registros "
+                f"({_fmt(start)} → {_fmt(end)})"
+            )
+            return [dict(row) for row in rows]
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"[DataAnalyzer] get_data_range_between: error BD: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_data_range_between: error inesperado: {e}")
+            return []
+
+    def get_stats_between(self, start: datetime, end: datetime) -> Dict:
+        """Obtiene estadísticas entre dos fechas exactas"""
+        return self._get_stats_between(start, end)
+
+    def get_graph_data_between(self, metric: str, start: datetime, end: datetime) -> Tuple[List, List]:
+        """Obtiene datos para gráficas entre dos fechas exactas"""
+        try:
+            data = self.get_data_range_between(start, end)
+            return self._extract_metric(data, metric)
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] get_graph_data_between '{metric}': {e}")
+            return [], []
+
+    def export_to_csv_between(self, output_path: str, start: datetime, end: datetime):
+        """Exporta datos a CSV entre dos fechas exactas"""
+        data = self.get_data_range_between(start, end)
+        self._write_csv(output_path, data)
+
+    # ─────────────────────────────────────────────
+    # Detección de anomalías
+    # ─────────────────────────────────────────────
+
+    def detect_anomalies(self, hours: int = 24) -> List[Dict]:
+        """Detecta anomalías en los datos"""
+        anomalies = []
+        stats = self.get_stats(hours)
+
+        if not stats:
+            return anomalies
+
+        if stats.get('cpu_avg', 0) > 80:
+            anomalies.append({'type': 'cpu_high', 'severity': 'warning',
+                               'message': f"CPU promedio alta: {stats['cpu_avg']:.1f}%"})
+            logger.warning(f"[DataAnalyzer] CPU promedio {stats['cpu_avg']:.1f}%")
+
+        if stats.get('temp_max', 0) > 80:
+            anomalies.append({'type': 'temp_high', 'severity': 'critical',
+                               'message': f"Temperatura máxima: {stats['temp_max']:.1f}°C"})
+            logger.warning(f"[DataAnalyzer] Temperatura máxima {stats['temp_max']:.1f}°C")
+
+        if stats.get('ram_avg', 0) > 85:
+            anomalies.append({'type': 'ram_high', 'severity': 'warning',
+                               'message': f"RAM promedio alta: {stats['ram_avg']:.1f}%"})
+            logger.warning(f"[DataAnalyzer] RAM promedio {stats['ram_avg']:.1f}%")
+
+        return anomalies
+
+    # ─────────────────────────────────────────────
+    # Métodos privados
+    # ─────────────────────────────────────────────
+
+    def _get_stats_between(self, start: datetime, end: datetime) -> Dict:
+        """Lógica común de estadísticas para cualquier rango start→end."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT
+                    AVG(cpu_percent), MAX(cpu_percent), MIN(cpu_percent),
+                    AVG(ram_percent), MAX(ram_percent), MIN(ram_percent),
+                    AVG(temperature), MAX(temperature), MIN(temperature),
+                    AVG(net_download_mb), MAX(net_download_mb), MIN(net_download_mb),
+                    AVG(net_upload_mb), MAX(net_upload_mb), MIN(net_upload_mb),
+                    AVG(disk_read_mb), MAX(disk_read_mb), MIN(disk_read_mb),
+                    AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
+                    AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
+                    MAX(updates_available), MIN(updates_available), AVG(updates_available),
+                    COUNT(*)
+                FROM metrics
+                WHERE timestamp >= ? AND timestamp <= ?
+            ''', (_fmt(start), _fmt(end)))
+
+            row = cursor.fetchone()
+            conn.close()
+
+            if row and row[27]:
+                logger.debug(f"[DataAnalyzer] _get_stats_between: {row[27]} muestras")
+                return {
+                    'cpu_avg':   round(row[0],  1) if row[0]  else 0,
+                    'cpu_max':   round(row[1],  1) if row[1]  else 0,
+                    'cpu_min':   round(row[2],  1) if row[2]  else 0,
+                    'ram_avg':   round(row[3],  1) if row[3]  else 0,
+                    'ram_max':   round(row[4],  1) if row[4]  else 0,
+                    'ram_min':   round(row[5],  1) if row[5]  else 0,
+                    'temp_avg':  round(row[6],  1) if row[6]  else 0,
+                    'temp_max':  round(row[7],  1) if row[7]  else 0,
+                    'temp_min':  round(row[8],  1) if row[8]  else 0,
+                    'down_avg':  round(row[9],  2) if row[9]  else 0,
+                    'down_max':  round(row[10], 2) if row[10] else 0,
+                    'down_min':  round(row[11], 2) if row[11] else 0,
+                    'up_avg':    round(row[12], 2) if row[12] else 0,
+                    'up_max':    round(row[13], 2) if row[13] else 0,
+                    'up_min':    round(row[14], 2) if row[14] else 0,
+                    'disk_read_avg':   round(row[15], 2) if row[15] else 0,
+                    'disk_read_max':   round(row[16], 2) if row[16] else 0,
+                    'disk_read_min':   round(row[17], 2) if row[17] else 0,
+                    'disk_write_avg':  round(row[18], 2) if row[18] else 0,
+                    'disk_write_max':  round(row[19], 2) if row[19] else 0,
+                    'disk_write_min':  round(row[20], 2) if row[20] else 0,
+                    'pwm_avg':   round(row[21], 0) if row[21] else 0,
+                    'pwm_max':   round(row[22], 0) if row[22] else 0,
+                    'pwm_min':   round(row[23], 0) if row[23] else 0,
+                    'updates_available_max': row[24] if row[24] else 0,
+                    'updates_available_min': row[25] if row[25] else 0,
+                    'updates_available_avg': row[26] if row[26] else 0,
+                    'total_samples': row[27],
+                }
+
+            logger.debug("[DataAnalyzer] _get_stats_between: sin datos en el rango")
+            return {}
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"[DataAnalyzer] _get_stats_between: error BD: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] _get_stats_between: error inesperado: {e}")
+            return {}
+
+    def _extract_metric(self, data: List[Dict], metric: str) -> Tuple[List, List]:
+        """Extrae timestamps y valores de una métrica."""
+        timestamps, values = [], []
+        for entry in data:
+            try:
+                ts = datetime.strptime(entry['timestamp'], _FMT)
+            except ValueError:
+                # Por si algún registro antiguo tiene microsegundos
+                ts = datetime.fromisoformat(entry['timestamp'])
+            timestamps.append(ts)
+            values.append(entry.get(metric) or 0)
+        return timestamps, values
+
+    def _write_csv(self, output_path: str, data: List[Dict]):
+        """Escribe una lista de registros a CSV."""
+        try:
+            if not data:
+                logger.warning("[DataAnalyzer] _write_csv: sin datos para exportar")
+                return
+            with open(output_path, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            logger.info(f"[DataAnalyzer] _write_csv: {len(data)} registros → {output_path}")
+        except OSError as e:
+            logger.error(f"[DataAnalyzer] _write_csv: error escribiendo {output_path}: {e}")
+        except Exception as e:
+            logger.error(f"[DataAnalyzer] _write_csv: error inesperado: {e}")
 ````
 
 ## File: core/data_collection_service.py
