@@ -4739,334 +4739,6 @@ class UpdateMonitor:
             return {"pending": 0, "status": "Error", "message": str(e)}
 ````
 
-## File: ui/windows/monitor.py
-````python
-"""
-Ventana de monitoreo del sistema
-"""
-import customtkinter as ctk
-from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS,
-                             CPU_WARN, CPU_CRIT, TEMP_WARN, TEMP_CRIT,
-                             RAM_WARN, RAM_CRIT)
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
-from ui.widgets import GraphWidget
-from core.system_monitor import SystemMonitor
-
-
-class MonitorWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo del sistema"""
-    
-    def __init__(self, parent, system_monitor: SystemMonitor):
-        super().__init__(parent)
-        
-        # Referencias
-        self.system_monitor = system_monitor
-        
-        # Widgets para actualización
-        self.widgets = {}
-        self.graphs = {}
-        
-        # Configurar ventana
-        self.title("Monitor del Sistema")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        
-        # Crear interfaz
-        self._create_ui()
-        
-        # Iniciar actualización
-        self._update()
-    
-    def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # ── Header unificado ──────────────────────────────────────────────────
-        self._header = make_window_header(
-            main,
-            title="MONITOR DEL SISTEMA",
-            on_close=self.destroy,
-        )
-        
-        # Área de scroll
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Canvas y scrollbar
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
-        scrollbar.pack(side="right", fill="y")
-        
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        # Secciones de monitoreo
-        self._create_cpu_section(inner)
-        self._create_ram_section(inner)
-        self._create_temp_section(inner)
-        self._create_disk_usage_section(inner)
-        self._create_disk_io_section(inner)
-    
-    def _create_metric_section(self, parent, title: str, metric_key: str,
-                               unit: str, max_val: float = 100):
-        """Crea una sección genérica para una métrica"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Label del título
-        label = ctk.CTkLabel(
-            frame,
-            text=title,
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-        
-        # Valor actual
-        value_label = ctk.CTkLabel(
-            frame,
-            text=f"0.0 {unit}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        # Gráfica
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
-        graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets[f"{metric_key}_label"] = label
-        self.widgets[f"{metric_key}_value"] = value_label
-        self.graphs[metric_key] = {
-            'widget': graph,
-            'max_val': max_val
-        }
-    
-    def _create_cpu_section(self, parent):
-        """Crea la sección de CPU"""
-        self._create_metric_section(parent, "CPU %", "cpu", "%", 100)
-    
-    def _create_ram_section(self, parent):
-        """Crea la sección de RAM"""
-        self._create_metric_section(parent, "RAM %", "ram", "%", 100)
-    
-    def _create_temp_section(self, parent):
-        """Crea la sección de temperatura"""
-        self._create_metric_section(parent, "TEMPERATURA", "temp", "°C", 85)
-    
-    def _create_disk_usage_section(self, parent):
-        """Crea la sección de uso de disco"""
-        self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
-    
-    def _create_disk_io_section(self, parent):
-        """Crea la sección de I/O de disco"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Título
-        title = ctk.CTkLabel(
-            frame,
-            text="I/O DE DISCO",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(5, 10), padx=10)
-        
-        # Escritura
-        write_label = ctk.CTkLabel(
-            frame,
-            text="ESCRITURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        write_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        write_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        write_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        write_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        write_graph.pack(pady=(0, 10))
-        
-        # Lectura
-        read_label = ctk.CTkLabel(
-            frame,
-            text="LECTURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        read_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        read_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        read_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        read_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        read_graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets['disk_write_label'] = write_label
-        self.widgets['disk_write_value'] = write_value
-        self.widgets['disk_read_label'] = read_label
-        self.widgets['disk_read_value'] = read_value
-        
-        self.graphs['disk_write'] = {
-            'widget': write_graph,
-            'max_val': 50
-        }
-        self.graphs['disk_read'] = {
-            'widget': read_graph,
-            'max_val': 50
-        }
-    
-    def _update(self):
-        """Actualiza los datos del sistema"""
-        if not self.winfo_exists():
-            return
-        
-        # Obtener estadísticas actuales
-        stats = self.system_monitor.get_current_stats()
-        self.system_monitor.update_history(stats)
-        history = self.system_monitor.get_history()
-        
-        # Actualizar CPU
-        self._update_metric(
-            'cpu',
-            stats['cpu'],
-            history['cpu'],
-            "%",
-            CPU_WARN,
-            CPU_CRIT
-        )
-        
-        # Actualizar RAM
-        self._update_metric(
-            'ram',
-            stats['ram'],
-            history['ram'],
-            "%",
-            RAM_WARN,
-            RAM_CRIT
-        )
-        
-        # Actualizar Temperatura
-        self._update_metric(
-            'temp',
-            stats['temp'],
-            history['temp'],
-            "°C",
-            TEMP_WARN,
-            TEMP_CRIT
-        )
-        
-        # Actualizar Disco (uso)
-        self._update_metric(
-            'disk',
-            stats['disk_usage'],
-            history['disk'],
-            "%",
-            60,
-            80
-        )
-        
-        # Actualizar Disco I/O
-        self._update_disk_io(
-            'disk_write',
-            stats['disk_write_mb'],
-            history['disk_write']
-        )
-        
-        self._update_disk_io(
-            'disk_read',
-            stats['disk_read_mb'],
-            history['disk_read']
-        )
-
-        # Actualizar status en header
-        cpu  = stats['cpu']
-        ram  = stats['ram']
-        temp = stats['temp']
-        self._header.status_label.configure(
-            text=f"CPU {cpu:.0f}%  ·  RAM {ram:.0f}%  ·  {temp:.0f}°C"
-        )
-        
-        # Programar siguiente actualización
-        self.after(UPDATE_MS, self._update)
-    
-    def _update_metric(self, key: str, value: float, history: list,
-                      unit: str, warn: float, crit: float):
-        """Actualiza una métrica genérica"""
-        # Determinar color
-        color = self.system_monitor.level_color(value, warn, crit)
-        
-        # Actualizar label
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
-            text=f"{value:.1f} {unit}",
-            text_color=color
-        )
-        
-        # Actualizar label de título
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
-    
-    def _update_disk_io(self, key: str, value: float, history: list):
-        """Actualiza métricas de I/O de disco"""
-        # Determinar color (10 MB/s = warning, 50 MB/s = critical)
-        color = self.system_monitor.level_color(value, 10, 50)
-        
-        # Actualizar valor
-        value_widget = self.widgets[f"{key}_value"]
-        value_widget.configure(
-            text=f"{value:.1f} MB/s",
-            text_color=color
-        )
-        
-        # Actualizar label
-        label_widget = self.widgets[f"{key}_label"]
-        label_widget.configure(text_color=color)
-        
-        # Actualizar gráfica
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
-````
-
 ## File: ui/windows/service.py
 ````python
 """
@@ -6869,315 +6541,136 @@ def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=No
     popup.grab_set()
 ````
 
-## File: ui/windows/disk.py
+## File: ui/windows/monitor.py
 ````python
 """
-Ventana de monitoreo de disco
+Ventana de monitoreo del sistema
 """
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS,
+                             CPU_WARN, CPU_CRIT, TEMP_WARN, TEMP_CRIT,
+                             RAM_WARN, RAM_CRIT)
+from ui.styles import StyleManager, make_window_header
 from ui.widgets import GraphWidget
-from core.disk_monitor import DiskMonitor
+from core.system_monitor import SystemMonitor
+
+_COL_W       = (DSI_WIDTH - 70) // 2
+_GRAPH_H_TOP = 90
+_GRAPH_H_BOT = 75
 
 
-class DiskWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo de disco"""
-    
-    def __init__(self, parent, disk_monitor: DiskMonitor):
+class MonitorWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo del sistema"""
+
+    def __init__(self, parent, system_monitor: SystemMonitor):
         super().__init__(parent)
-        
-        # Referencias
-        self.disk_monitor = disk_monitor
-        
-        # Widgets para actualización
+        self.system_monitor = system_monitor
         self.widgets = {}
-        self.graphs = {}
-        
-        # Configurar ventana
-        self.title("Monitor de Disco")
+        self.graphs  = {}
+
+        self.title("Monitor del Sistema")
         self.configure(fg_color=COLORS['bg_medium'])
         self.overrideredirect(True)
         self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
         self.resizable(False, False)
-        
-        # Crear interfaz
+
         self._create_ui()
-        
-        # Iniciar actualización
         self._update()
-    
+
     def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # ── Header unificado ──────────────────────────────────────────────────
+
         self._header = make_window_header(
-            main,
-            title="MONITOR DE DISCO",
-            on_close=self.destroy,
-        )
-        
-        # Área de scroll
+            main, title="MONITOR DEL SISTEMA", on_close=self.destroy)
+
+        # Scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
         scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Canvas y scrollbar
+
         canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
         canvas.pack(side="left", fill="both", expand=True)
-        
+
         scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
         scrollbar.pack(side="right", fill="y")
-        
+
         StyleManager.style_scrollbar_ctk(scrollbar)
-        
         canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
+
         inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
         inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        # Secciones
-        self._create_usage_section(inner)
-        self._create_disk_io_section(inner)
-        self._create_nvme_temp_section(inner)
-        
-    def _create_metric_section(self, parent, title: str, metric_key: str,
-                               unit: str, max_val: float = 100):
-        """Crea una sección genérica para una métrica"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Label del título
-        label = ctk.CTkLabel(
-            frame,
-            text=title,
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-        
-        # Valor actual
-        value_label = ctk.CTkLabel(
-            frame,
-            text=f"0.0 {unit}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        # Gráfica
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
-        graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets[f"{metric_key}_label"] = label
-        self.widgets[f"{metric_key}_value"] = value_label
-        self.graphs[metric_key] = {
-            'widget': graph,
-            'max_val': max_val
-        }    
+                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
-    def _create_usage_section(self, parent):
-        """Crea la sección de uso de disco"""
-        self._create_metric_section(parent, "DISCO %", "disk", "%", 100)
+        # Grid 2 columnas dentro del inner scrollable
+        grid = ctk.CTkFrame(inner, fg_color=COLORS['bg_medium'])
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(0, weight=1)
+        grid.grid_columnconfigure(1, weight=1)
 
-    def _create_disk_io_section(self, parent):
-        """Crea la sección de I/O de disco"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Título
-        title = ctk.CTkLabel(
-            frame,
-            text="I/O DE DISCO",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(5, 10), padx=10)
-        
-        # Escritura
-        write_label = ctk.CTkLabel(
-            frame,
-            text="ESCRITURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        write_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        write_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        write_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        write_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        write_graph.pack(pady=(0, 10))
-        
-        # Lectura
-        read_label = ctk.CTkLabel(
-            frame,
-            text="LECTURA",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
-        )
-        read_label.pack(anchor="w", pady=(0, 0), padx=10)
-        
-        read_value = ctk.CTkLabel(
-            frame,
-            text="0.0 MB/s",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        read_value.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        read_graph = GraphWidget(frame, width=DSI_WIDTH-80, height=80)
-        read_graph.pack(pady=(0, 10))
-        
-        # Guardar referencias
-        self.widgets['disk_write_label'] = write_label
-        self.widgets['disk_write_value'] = write_value
-        self.widgets['disk_read_label'] = read_label
-        self.widgets['disk_read_value'] = read_value
-        
-        self.graphs['disk_write'] = {
-            'widget': write_graph,
-            'max_val': 50
-        }
-        self.graphs['disk_read'] = {
-            'widget': read_graph,
-            'max_val': 50
-        }
-    
-    def _create_nvme_temp_section(self, parent):
-        """Crea la sección de temperatura NVMe"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
+        self._create_cell(grid, 0, 0, "CPU %",    "cpu",        "%",    _GRAPH_H_TOP)
+        self._create_cell(grid, 0, 1, "RAM %",    "ram",        "%",    _GRAPH_H_TOP)
+        self._create_cell(grid, 1, 0, "TEMP °C",  "temp",       "°C",   _GRAPH_H_TOP)
+        self._create_cell(grid, 1, 1, "DISCO %",  "disk",       "%",    _GRAPH_H_TOP)
+        self._create_cell(grid, 2, 0, "ESCRITURA","disk_write", "MB/s", _GRAPH_H_BOT)
+        self._create_cell(grid, 2, 1, "LECTURA",  "disk_read",  "MB/s", _GRAPH_H_BOT)
 
-        # Label
-        label = ctk.CTkLabel(
-            frame,
-            text="TEMPERATURA NVMe",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
+    def _create_cell(self, parent, row, col, title, key, unit, graph_h):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
 
-        # Valor
-        value_label = ctk.CTkLabel(
-            frame,
-            text="0.0 °C",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['xlarge'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
+        lbl = ctk.CTkLabel(cell, text=title, text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w")
+        lbl.pack(anchor="w", padx=8, pady=(6, 0))
 
-        # Gráfica
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=100)
-        graph.pack(pady=(0, 10))
+        val = ctk.CTkLabel(cell, text=f"0.0 {unit}", text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['large'], "bold"), anchor="e")
+        val.pack(anchor="e", padx=8, pady=(0, 2))
 
-        # Guardar referencias
-        self.widgets['nvme_temp_label'] = label
-        self.widgets['nvme_temp_value'] = value_label
-        self.graphs['nvme_temp'] = {
-            'widget': graph,
-            'max_val': 85
-        }
+        graph = GraphWidget(cell, width=_COL_W - 16, height=graph_h)
+        graph.pack(padx=4, pady=(0, 6))
+
+        self.widgets[f"{key}_label"] = lbl
+        self.widgets[f"{key}_value"] = val
+        self.graphs[key] = {'widget': graph, 'max_val': 100 if unit in ('%', '°C') else 50}
 
     def _update(self):
-        """Actualiza los datos del disco"""
         if not self.winfo_exists():
             return
-        
-        # Obtener estadísticas actuales
-        stats = self.disk_monitor.get_current_stats()
-        self.disk_monitor.update_history(stats)
-        history = self.disk_monitor.get_history()
-        
-        # Actualizar Disco (uso)
-        self._update_metric(
-            'disk',
-            stats['disk_usage'],
-            history['disk_usage'],
-            "%",
-            60,
-            80
-        )
-        
-        # Actualizar Disco I/O
-        self._update_disk_io(
-            'disk_write',
-            stats['disk_write_mb'],
-            history['disk_write']
-        )
-        
-        self._update_disk_io(
-            'disk_read',
-            stats['disk_read_mb'],
-            history['disk_read']
-        )
-        
-        # Temperatura NVMe
-        self._update_metric(
-            'nvme_temp',
-            stats['nvme_temp'],
-            history['nvme_temp'],
-            "°C",
-            60,
-            70
-        )
 
-        # Actualizar status en header
-        disk  = stats['disk_usage']
-        nvme  = stats['nvme_temp']
+        stats   = self.system_monitor.get_current_stats()
+        self.system_monitor.update_history(stats)
+        history = self.system_monitor.get_history()
+
+        self._update_metric('cpu',  stats['cpu'],        history['cpu'],   "%",   CPU_WARN,  CPU_CRIT)
+        self._update_metric('ram',  stats['ram'],        history['ram'],   "%",   RAM_WARN,  RAM_CRIT)
+        self._update_metric('temp', stats['temp'],       history['temp'],  "°C",  TEMP_WARN, TEMP_CRIT)
+        self._update_metric('disk', stats['disk_usage'], history['disk'],  "%",   60,        80)
+        self._update_io('disk_write', stats['disk_write_mb'], history['disk_write'])
+        self._update_io('disk_read',  stats['disk_read_mb'],  history['disk_read'])
+
         self._header.status_label.configure(
-            text=f"Uso {disk:.0f}%  ·  NVMe {nvme:.0f}°C"
-        )
-        
-        # Programar siguiente actualización
+            text=f"CPU {stats['cpu']:.0f}%  ·  RAM {stats['ram']:.0f}%  ·  {stats['temp']:.0f}°C")
+
         self.after(UPDATE_MS, self._update)
 
     def _update_metric(self, key, value, history, unit, warn, crit):
-        """Actualiza una métrica genérica"""
-        color = self.disk_monitor.level_color(value, warn, crit)
-        
-        self.widgets[f"{key}_value"].configure(
-            text=f"{value:.1f} {unit}",
-            text_color=color
-        )
+        color = self.system_monitor.level_color(value, warn, crit)
+        self.widgets[f"{key}_value"].configure(text=f"{value:.1f} {unit}", text_color=color)
         self.widgets[f"{key}_label"].configure(text_color=color)
-        
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
-        
-    def _update_disk_io(self, key: str, value: float, history: list):
-        """Actualiza métricas de I/O de disco"""
-        color = self.disk_monitor.level_color(value, 10, 50)
-        
-        self.widgets[f"{key}_value"].configure(
-            text=f"{value:.1f} MB/s",
-            text_color=color
-        )
+        g = self.graphs[key]
+        g['widget'].update(history, g['max_val'], color)
+
+    def _update_io(self, key, value, history):
+        color = self.system_monitor.level_color(value, 10, 50)
+        self.widgets[f"{key}_value"].configure(text=f"{value:.1f} MB/s", text_color=color)
         self.widgets[f"{key}_label"].configure(text_color=color)
-        
-        graph_info = self.graphs[key]
-        graph_info['widget'].update(history, graph_info['max_val'], color)
+        g = self.graphs[key]
+        g['widget'].update(history, g['max_val'], color)
 ````
 
 ## File: ui/windows/process_window.py
@@ -7982,304 +7475,6 @@ class UpdatesWindow(ctk.CTkToplevel):
             "CONSOLA DE ACTUALIZACIÓN",
             on_close=al_terminar_actualizacion
         )
-````
-
-## File: ui/styles.py
-````python
-"""
-Estilos y temas para la interfaz
-"""
-import tkinter as tk
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
-
-
-class StyleManager:
-    """Gestor centralizado de estilos"""
-    
-    @staticmethod
-    def style_radiobutton_tk(rb: tk.Radiobutton, 
-                            fg: str = None, 
-                            bg: str = None, 
-                            hover_fg: str = None) -> None:
-        """
-        Aplica estilo a radiobutton de tkinter
-        
-        Args:
-            rb: Widget radiobutton
-            fg: Color de texto
-            bg: Color de fondo
-            hover_fg: Color al pasar el mouse
-        """
-        fg = fg or COLORS['primary']
-        bg = bg or COLORS['bg_dark']
-        hover_fg = hover_fg or COLORS['success']
-        
-        rb.config(
-            fg=fg, 
-            bg=bg, 
-            selectcolor=bg, 
-            activeforeground=fg, 
-            activebackground=bg,
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), 
-            indicatoron=True
-        )
-        
-        def on_enter(e): 
-            rb.config(fg=hover_fg)
-        
-        def on_leave(e): 
-            rb.config(fg=fg)
-        
-        rb.bind("<Enter>", on_enter)
-        rb.bind("<Leave>", on_leave)
-    
-    @staticmethod
-    def style_radiobutton_ctk(rb: ctk.CTkRadioButton) -> None:
-        """
-        Aplica estilo a radiobutton de customtkinter
-        
-        Args:
-            rb: Widget radiobutton
-        """
-        rb.configure(
-            radiobutton_width=25,
-            radiobutton_height=25,
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-            fg_color=COLORS['primary'],
-        )
-    
-    @staticmethod
-    def style_slider(slider: tk.Scale, color: str = None) -> None:
-        """
-        Aplica estilo a slider de tkinter
-        
-        Args:
-            slider: Widget slider
-            color: Color personalizado
-        """
-        color = color or COLORS['primary']
-        slider.config(
-            troughcolor=COLORS['secondary'], 
-            sliderrelief="flat", 
-            bd=0,
-            highlightthickness=0, 
-            fg=color, 
-            bg=COLORS['bg_dark'], 
-            activebackground=color
-        )
-    
-    @staticmethod
-    def style_slider_ctk(slider: ctk.CTkSlider, color: str = None) -> None:
-        """
-        Aplica estilo a slider de customtkinter
-        
-        Args:
-            slider: Widget slider
-            color: Color personalizado
-        """
-        color = color or COLORS['primary']  # ✓ Usar tema
-        slider.configure(
-            fg_color=COLORS['bg_light'],
-            progress_color=color,
-            button_color=color,
-            button_hover_color=COLORS['secondary'],
-            height=30
-        )
-    
-    @staticmethod
-    def style_scrollbar(sb: tk.Scrollbar, color: str = None) -> None:
-        """
-        Aplica estilo a scrollbar de tkinter
-        
-        Args:
-            sb: Widget scrollbar
-            color: Color personalizado
-        """
-        color = color or COLORS['bg_dark']
-        sb.config(
-            troughcolor=COLORS['secondary'], 
-            bg=color, 
-            activebackground=color,
-            highlightthickness=0, 
-            relief="flat"
-        )
-    
-    @staticmethod
-    def style_scrollbar_ctk(sb: ctk.CTkScrollbar, color: str = None) -> None:
-        """
-        Aplica estilo a scrollbar de customtkinter
-        
-        Args:
-            sb: Widget scrollbar
-            color: Color personalizado
-        """
-        color = color or COLORS['primary']  # ✓ Usar tema
-        sb.configure(
-            bg_color=COLORS['bg_medium'],
-            button_color=color,
-            button_hover_color=COLORS['secondary']
-        )
-    
-    @staticmethod
-    def style_ctk_scrollbar(scrollable_frame: ctk.CTkScrollableFrame, 
-                           color: str = None) -> None:
-        """
-        Aplica estilo a scrollable frame de customtkinter
-        
-        Args:
-            scrollable_frame: Widget scrollable frame
-            color: Color personalizado
-        """
-        color = color or COLORS['primary']  # ✓ Usar tema
-        scrollable_frame.configure(
-            scrollbar_fg_color=COLORS['bg_medium'],
-            scrollbar_button_color=color,
-            scrollbar_button_hover_color=COLORS['secondary']
-        )
-
-
-def make_futuristic_button(parent, text: str, command=None, 
-                          width: int = None, height: int = None, 
-                          font_size: int = None, state: str = "normal") -> ctk.CTkButton:
-    """
-    Crea un botón con estilo futurista
-    
-    Args:
-        parent: Widget padre
-        text: Texto del botón
-        command: Función a ejecutar al hacer clic
-        width: Ancho en unidades
-        height: Alto en unidades
-        font_size: Tamaño de fuente
-        
-    Returns:
-        Widget CTkButton configurado
-    """
-    width = width or 20
-    height = height or 10
-    font_size = font_size or FONT_SIZES['large']
-    
-    btn = ctk.CTkButton(
-        parent, 
-        text=text, 
-        command=command,
-        fg_color=COLORS['bg_dark'], 
-        hover_color=COLORS['bg_light'],
-        border_width=3, 
-        border_color=COLORS['border'],
-        width=width * 8, 
-        height=height * 8,
-        font=(FONT_FAMILY, font_size, "bold"), 
-        corner_radius=10,
-        state=state
-    )
-    
-    def on_enter(e): 
-        btn.configure(fg_color=COLORS['bg_light'])
-    
-    def on_leave(e): 
-        btn.configure(fg_color=COLORS['bg_dark'])
-    
-    btn.bind("<Enter>", on_enter)
-    btn.bind("<Leave>", on_leave)
-    
-    return btn
-
-
-def make_window_header(parent, title: str, on_close, status_text: str = None) -> ctk.CTkFrame:
-    """
-    Crea una barra de cabecera unificada para ventanas de monitoreo.
-
-    Layout (altura fija 48px):
-    ┌─────────────────────────────────────────────────────────┐
-    │  ● TÍTULO DE VENTANA      status_text opcional   [✕]   │
-    └─────────────────────────────────────────────────────────┘
-
-    El indicador ● usa COLORS['secondary'] para identificar
-    visualmente que es una ventana hija del dashboard.
-
-    Args:
-        parent:      Widget padre (normalmente el frame main de la ventana).
-        title:       Texto del título en mayúsculas (ej. "MONITOR DEL SISTEMA").
-        on_close:    Callable ejecutado al pulsar el botón ✕.
-        status_text: Texto informativo opcional a la derecha del título
-                     (ej. "CPU 12% · RAM 45% · 52°C"). Si es None no se muestra.
-
-    Returns:
-        CTkFrame de cabecera ya empaquetado con pack(fill="x").
-        Guarda referencia al label de estado en frame.status_label
-        para que la ventana pueda actualizarlo dinámicamente.
-    """
-    # ── Contenedor ───────────────────────────────────────────────────────────
-    header = ctk.CTkFrame(
-        parent,
-        fg_color=COLORS['bg_dark'],
-        height=56,
-        corner_radius=8,
-    )
-    header.pack(fill="x", padx=5, pady=(5, 0))
-    header.pack_propagate(False)  # Altura fija
-
-    # Separador inferior (línea decorativa)
-    separator = ctk.CTkFrame(
-        parent,
-        fg_color=COLORS['border'],
-        height=1,
-        corner_radius=0,
-    )
-    separator.pack(fill="x", padx=5, pady=(0, 4))
-
-    # ── Indicador de color (pastilla izquierda) ───────────────────────────
-    dot = ctk.CTkLabel(
-        header,
-        text="●",
-        text_color=COLORS['secondary'],
-        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
-        width=28,
-    )
-    dot.pack(side="left", padx=(10, 2))
-
-    # ── Título ────────────────────────────────────────────────────────────
-    title_lbl = ctk.CTkLabel(
-        header,
-        text=title,
-        text_color=COLORS['secondary'],
-        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
-        anchor="w",
-    )
-    title_lbl.pack(side="left", padx=(0, 10))
-
-    # ── Botón cerrar (derecha) ────────────────────────────────────────────
-    close_btn = ctk.CTkButton(
-        header,
-        text="✕",
-        command=on_close,
-        width=52,
-        height=42,
-        fg_color=COLORS['bg_medium'],
-        hover_color=COLORS['danger'],
-        border_width=1,
-        border_color=COLORS['border'],
-        font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-        corner_radius=6,
-    )
-    close_btn.pack(side="right", padx=(0, 8))
-
-    # ── Status label (derecha del título, izquierda del botón) ───────────
-    status_lbl = ctk.CTkLabel(
-        header,
-        text=status_text or "",
-        text_color=COLORS['text_dim'],
-        font=(FONT_FAMILY, FONT_SIZES['small']),
-        anchor="e",
-    )
-    status_lbl.pack(side="right", padx=(0, 12), expand=True, fill="x")
-
-    # Referencia pública para actualizaciones dinámicas
-    header.status_label = status_lbl
-
-    return header
 ````
 
 ## File: utils/system_utils.py
@@ -9206,372 +8401,427 @@ class NetworkMonitor:
             return COLORS['primary']
 ````
 
-## File: ui/windows/network.py
+## File: ui/windows/disk.py
 ````python
 """
-Ventana de monitoreo de red
+Ventana de monitoreo de disco
 """
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
+from ui.styles import StyleManager, make_window_header
 from ui.widgets import GraphWidget
-from core.network_monitor import NetworkMonitor
-from utils.system_utils import SystemUtils
+from core.disk_monitor import DiskMonitor
+
+_COL_W   = (DSI_WIDTH - 70) // 2
+_GRAPH_H = 95
 
 
-class NetworkWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo de red"""
-    
-    def __init__(self, parent, network_monitor: NetworkMonitor):
+class DiskWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo de disco"""
+
+    def __init__(self, parent, disk_monitor: DiskMonitor):
         super().__init__(parent)
-        
-        # Referencias
-        self.network_monitor = network_monitor
-        
-        # Widgets para actualización
+        self.disk_monitor = disk_monitor
         self.widgets = {}
-        self.graphs = {}
-        
-        # Configurar ventana
-        self.title("Monitor de Red")
+        self.graphs  = {}
+
+        self.title("Monitor de Disco")
         self.configure(fg_color=COLORS['bg_medium'])
         self.overrideredirect(True)
         self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
         self.resizable(False, False)
-        
-        # Crear interfaz
+
         self._create_ui()
-        
-        # Iniciar actualización
         self._update()
-    
+
     def _create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # ── Header unificado ──────────────────────────────────────────────────
-        # El status mostrará interfaz activa + velocidades en tiempo real
+
         self._header = make_window_header(
-            main,
-            title="MONITOR DE RED",
-            on_close=self.destroy,
-            status_text="Detectando interfaz...",
-        )
-        
-        # Área de scroll
+            main, title="MONITOR DE DISCO", on_close=self.destroy)
+
+        # Scroll
         scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
         scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Canvas y scrollbar
+
         canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0
-        )
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
         canvas.pack(side="left", fill="both", expand=True)
-        
+
         scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30
-        )
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
         scrollbar.pack(side="right", fill="y")
 
         StyleManager.style_scrollbar_ctk(scrollbar)
-        
         canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Frame interno
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
-        inner.bind("<Configure>",
-                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        # Secciones
-        self._create_interfaces_section(inner)
-        self._create_download_section(inner)
-        self._create_upload_section(inner)
-        self._create_speedtest_section(inner)
-        
 
-    
-    def _create_interfaces_section(self, parent):
-        """Crea la sección de interfaces e IPs"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        # Título
-        title = ctk.CTkLabel(
-            frame,
-            text="INTERFACES Y IPs",
-            text_color=COLORS['success'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(10, 10), padx=10)
-        
-        # Contenedor para las interfaces
-        self.interfaces_container = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
-        self.interfaces_container.pack(fill="x", padx=10, pady=(0, 10))
-        
-        # Obtener y mostrar interfaces
-        self._update_interfaces()
-    
-    def _update_interfaces(self):
-        """Actualiza la lista de interfaces e IPs"""
-        # Limpiar widgets anteriores
-        for widget in self.interfaces_container.winfo_children():
-            widget.destroy()
-        
-        # Obtener IPs
-        interfaces = SystemUtils.get_interfaces_ips()
-        
-        if not interfaces:
-            no_iface = ctk.CTkLabel(
-                self.interfaces_container,
-                text="No se detectaron interfaces",
-                text_color=COLORS['warning'],
-                font=(FONT_FAMILY, FONT_SIZES['small'])
-            )
-            no_iface.pack(pady=5)
-            return
-        
-        # Mostrar cada interfaz
-        for iface, ip in sorted(interfaces.items()):
-            if iface.startswith('tun'):
-                text_color = COLORS['success']
-                icon = "🔒"
-            elif iface.startswith(('eth', 'enp')):
-                text_color = COLORS['primary']
-                icon = "🌐"
-            elif iface.startswith(('wlan', 'wlp')):
-                text_color = COLORS['warning']
-                icon = "\uf0eb"  # icono wifi Nerd Font — extraer del repomix con repr()
-            else:
-                text_color = COLORS['text']
-                icon = "•"
-            
-            iface_label = ctk.CTkLabel(
-                self.interfaces_container,
-                text=f"{icon} {iface}: {ip}",
-                text_color=text_color,
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-                anchor="w"
-            )
-            iface_label.pack(anchor="w", pady=2, padx=10)
-    
-    def _create_download_section(self, parent):
-        """Crea la sección de descarga"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        label = ctk.CTkLabel(
-            frame,
-            text="DESCARGA",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-        
-        value_label = ctk.CTkLabel(
-            frame,
-            text="0.00 MB/s | Escala: 10.00",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=120)
-        graph.pack(pady=(0, 10))
-        
-        self.widgets['download_label'] = label
-        self.widgets['download_value'] = value_label
-        self.graphs['download'] = graph
-    
-    def _create_upload_section(self, parent):
-        """Crea la sección de subida"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        label = ctk.CTkLabel(
-            frame,
-            text="SUBIDA",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        label.pack(anchor="w", pady=(5, 0), padx=10)
-        
-        value_label = ctk.CTkLabel(
-            frame,
-            text="0.00 MB/s | Escala: 10.00",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
-        )
-        value_label.pack(anchor="e", pady=(0, 5), padx=10)
-        
-        graph = GraphWidget(frame, width=DSI_WIDTH-80, height=120)
-        graph.pack(pady=(0, 10))
-        
-        self.widgets['upload_label'] = label
-        self.widgets['upload_value'] = value_label
-        self.graphs['upload'] = graph
-    
-    def _create_speedtest_section(self, parent):
-        """Crea la sección de speedtest"""
-        frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'])
-        frame.pack(fill="x", pady=10, padx=10)
-        
-        title = ctk.CTkLabel(
-            frame,
-            text="SPEEDTEST",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'], "bold")
-        )
-        title.pack(anchor="w", pady=(5, 10), padx=10)
-        
-        self.speedtest_result = ctk.CTkLabel(
-            frame,
-            text="Haz clic en 'Ejecutar Test' para comenzar",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium']),
-            justify="left"
-        )
-        self.speedtest_result.pack(pady=(0, 10), padx=10)
-        
-        btn_frame = ctk.CTkFrame(frame, fg_color=COLORS['bg_dark'])
-        btn_frame.pack(pady=(0, 10))
-        
-        self.speedtest_btn = make_futuristic_button(
-            btn_frame,
-            text="Ejecutar Test",
-            command=self._run_speedtest,
-            width=20,
-            height=6
-        )
-        self.speedtest_btn.pack()
-    
-    def _run_speedtest(self):
-        """Ejecuta el speedtest"""
-        result = self.network_monitor.get_speedtest_result()
-        if result['status'] == 'running':
-            return
-        
-        self.network_monitor.reset_speedtest()
-        self.network_monitor.run_speedtest()
-        
-        self.speedtest_btn.configure(state="disabled")
-        self.speedtest_result.configure(
-            text="Ejecutando test...",
-            text_color=COLORS['warning']
-        )
-    
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
+        inner.bind("<Configure>",
+                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Grid 2 columnas dentro del inner scrollable
+        grid = ctk.CTkFrame(inner, fg_color=COLORS['bg_medium'])
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(0, weight=1)
+        grid.grid_columnconfigure(1, weight=1)
+
+        self._create_cell(grid, 0, 0, "DISCO %",  "disk",       "%",    _GRAPH_H)
+        self._create_cell(grid, 0, 1, "NVMe °C",  "nvme_temp",  "°C",   _GRAPH_H)
+        self._create_cell(grid, 1, 0, "ESCRITURA","disk_write", "MB/s", _GRAPH_H)
+        self._create_cell(grid, 1, 1, "LECTURA",  "disk_read",  "MB/s", _GRAPH_H)
+
+    def _create_cell(self, parent, row, col, title, key, unit, graph_h):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        lbl = ctk.CTkLabel(cell, text=title, text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w")
+        lbl.pack(anchor="w", padx=8, pady=(6, 0))
+
+        val = ctk.CTkLabel(cell, text=f"0.0 {unit}", text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['large'], "bold"), anchor="e")
+        val.pack(anchor="e", padx=8, pady=(0, 2))
+
+        graph = GraphWidget(cell, width=_COL_W - 16, height=graph_h)
+        graph.pack(padx=4, pady=(0, 6))
+
+        self.widgets[f"{key}_label"] = lbl
+        self.widgets[f"{key}_value"] = val
+        self.graphs[key] = {'widget': graph, 'max_val': 100 if unit in ('%', '°C') else 50}
+
     def _update(self):
-        """Actualiza los datos de red"""
         if not self.winfo_exists():
             return
-        
-        # Obtener estadísticas
-        stats = self.network_monitor.get_current_stats(NET_INTERFACE)
-        self.network_monitor.update_history(stats)
-        self.network_monitor.update_dynamic_scale()
-        
-        history = self.network_monitor.get_history()
-        
-        # Actualizar status del header con interfaz activa + velocidades
-        dl = stats['download_mb']
-        ul = stats['upload_mb']
-        iface = stats['interface']
+
+        stats   = self.disk_monitor.get_current_stats()
+        self.disk_monitor.update_history(stats)
+        history = self.disk_monitor.get_history()
+
+        self._update_metric('disk',      stats['disk_usage'],   history['disk_usage'], "%",   60, 80)
+        self._update_metric('nvme_temp', stats['nvme_temp'],    history['nvme_temp'],  "°C",  60, 70)
+        self._update_io('disk_write',    stats['disk_write_mb'], history['disk_write'])
+        self._update_io('disk_read',     stats['disk_read_mb'],  history['disk_read'])
+
         self._header.status_label.configure(
-            text=f"{iface}  ·  ↓{dl:.2f}  ↑{ul:.2f} MB/s"
-        )
-        
-        # Actualizar descarga
-        dl_color = self.network_monitor.net_color(stats['download_mb'])
-        self.widgets['download_label'].configure(text_color=dl_color)
-        self.widgets['download_value'].configure(
-            text=f"{stats['download_mb']:.2f} MB/s | Escala: {history['dynamic_max']:.2f}",
-            text_color=dl_color
-        )
-        self.graphs['download'].update(
-            history['download'],
-            history['dynamic_max'],
-            dl_color
-        )
-        
-        # Actualizar subida
-        ul_color = self.network_monitor.net_color(stats['upload_mb'])
-        self.widgets['upload_label'].configure(text_color=ul_color)
-        self.widgets['upload_value'].configure(
-            text=f"{stats['upload_mb']:.2f} MB/s | Escala: {history['dynamic_max']:.2f}",
-            text_color=ul_color
-        )
-        self.graphs['upload'].update(
-            history['upload'],
-            history['dynamic_max'],
-            ul_color
-        )
-        
-        # Actualizar speedtest
-        self._update_speedtest()
-        
-        # Actualizar interfaces cada 5 ciclos
-        if not hasattr(self, '_interface_update_counter'):
-            self._interface_update_counter = 0
-        
-        self._interface_update_counter += 1
-        if self._interface_update_counter >= 5:
-            self._update_interfaces()
-            self._interface_update_counter = 0
-        
-        # Programar siguiente actualización
+            text=f"Uso {stats['disk_usage']:.0f}%  ·  NVMe {stats['nvme_temp']:.0f}°C")
+
         self.after(UPDATE_MS, self._update)
+
+    def _update_metric(self, key, value, history, unit, warn, crit):
+        color = self.disk_monitor.level_color(value, warn, crit)
+        self.widgets[f"{key}_value"].configure(text=f"{value:.1f} {unit}", text_color=color)
+        self.widgets[f"{key}_label"].configure(text_color=color)
+        g = self.graphs[key]
+        g['widget'].update(history, g['max_val'], color)
+
+    def _update_io(self, key, value, history):
+        color = self.disk_monitor.level_color(value, 10, 50)
+        self.widgets[f"{key}_value"].configure(text=f"{value:.1f} MB/s", text_color=color)
+        self.widgets[f"{key}_label"].configure(text_color=color)
+        g = self.graphs[key]
+        g['widget'].update(history, g['max_val'], color)
+````
+
+## File: ui/styles.py
+````python
+"""
+Estilos y temas para la interfaz
+"""
+import tkinter as tk
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
+
+
+class StyleManager:
+    """Gestor centralizado de estilos"""
     
-    def _update_speedtest(self):
-        """Actualiza el resultado del speedtest"""
-        result = self.network_monitor.get_speedtest_result()
-        status = result['status']
+    @staticmethod
+    def style_radiobutton_tk(rb: tk.Radiobutton, 
+                            fg: str = None, 
+                            bg: str = None, 
+                            hover_fg: str = None) -> None:
+        """
+        Aplica estilo a radiobutton de tkinter
         
-        if status == 'idle':
-            self.speedtest_result.configure(
-                text="Haz clic en 'Ejecutar Test' para comenzar",
-                text_color=COLORS['text']
-            )
-            self.speedtest_btn.configure(state="normal")
+        Args:
+            rb: Widget radiobutton
+            fg: Color de texto
+            bg: Color de fondo
+            hover_fg: Color al pasar el mouse
+        """
+        fg = fg or COLORS['primary']
+        bg = bg or COLORS['bg_dark']
+        hover_fg = hover_fg or COLORS['success']
         
-        elif status == 'running':
-            self.speedtest_result.configure(
-                text="Ejecutando test de velocidad...",
-                text_color=COLORS['warning']
-            )
-            self.speedtest_btn.configure(state="disabled")
+        rb.config(
+            fg=fg, 
+            bg=bg, 
+            selectcolor=bg, 
+            activeforeground=fg, 
+            activebackground=bg,
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), 
+            indicatoron=True
+        )
         
-        elif status == 'done':
-            ping     = result['ping']
-            download = result['download']
-            upload   = result['upload']
-            
-            self.speedtest_result.configure(
-                text=f"Ping: {ping} ms\n↓ {download:.2f} MB/s\n↑ {upload:.2f} MB/s",
-                text_color=COLORS['success']
-            )
-            self.speedtest_btn.configure(state="normal")
+        def on_enter(e): 
+            rb.config(fg=hover_fg)
         
-        elif status == 'timeout':
-            self.speedtest_result.configure(
-                text="Timeout: El test tardó demasiado",
-                text_color=COLORS['danger']
-            )
-            self.speedtest_btn.configure(state="normal")
+        def on_leave(e): 
+            rb.config(fg=fg)
         
-        elif status == 'error':
-            self.speedtest_result.configure(
-                text="Error ejecutando el test\nVerifica que speedtest-cli esté instalado",
-                text_color=COLORS['danger']
-            )
-            self.speedtest_btn.configure(state="normal")
+        rb.bind("<Enter>", on_enter)
+        rb.bind("<Leave>", on_leave)
+    
+    @staticmethod
+    def style_radiobutton_ctk(rb: ctk.CTkRadioButton) -> None:
+        """
+        Aplica estilo a radiobutton de customtkinter
+        
+        Args:
+            rb: Widget radiobutton
+        """
+        rb.configure(
+            radiobutton_width=25,
+            radiobutton_height=25,
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
+            fg_color=COLORS['primary'],
+        )
+    
+    @staticmethod
+    def style_slider(slider: tk.Scale, color: str = None) -> None:
+        """
+        Aplica estilo a slider de tkinter
+        
+        Args:
+            slider: Widget slider
+            color: Color personalizado
+        """
+        color = color or COLORS['primary']
+        slider.config(
+            troughcolor=COLORS['secondary'], 
+            sliderrelief="flat", 
+            bd=0,
+            highlightthickness=0, 
+            fg=color, 
+            bg=COLORS['bg_dark'], 
+            activebackground=color
+        )
+    
+    @staticmethod
+    def style_slider_ctk(slider: ctk.CTkSlider, color: str = None) -> None:
+        """
+        Aplica estilo a slider de customtkinter
+        
+        Args:
+            slider: Widget slider
+            color: Color personalizado
+        """
+        color = color or COLORS['primary']  # ✓ Usar tema
+        slider.configure(
+            fg_color=COLORS['bg_light'],
+            progress_color=color,
+            button_color=color,
+            button_hover_color=COLORS['secondary'],
+            height=30
+        )
+    
+    @staticmethod
+    def style_scrollbar(sb: tk.Scrollbar, color: str = None) -> None:
+        """
+        Aplica estilo a scrollbar de tkinter
+        
+        Args:
+            sb: Widget scrollbar
+            color: Color personalizado
+        """
+        color = color or COLORS['bg_dark']
+        sb.config(
+            troughcolor=COLORS['secondary'], 
+            bg=color, 
+            activebackground=color,
+            highlightthickness=0, 
+            relief="flat"
+        )
+    
+    @staticmethod
+    def style_scrollbar_ctk(sb: ctk.CTkScrollbar, color: str = None) -> None:
+        """
+        Aplica estilo a scrollbar de customtkinter
+        
+        Args:
+            sb: Widget scrollbar
+            color: Color personalizado
+        """
+        color = color or COLORS['primary']  # ✓ Usar tema
+        sb.configure(
+            bg_color=COLORS['bg_medium'],
+            button_color=color,
+            button_hover_color=COLORS['secondary']
+        )
+    
+    @staticmethod
+    def style_ctk_scrollbar(scrollable_frame: ctk.CTkScrollableFrame, 
+                           color: str = None) -> None:
+        """
+        Aplica estilo a scrollable frame de customtkinter
+        
+        Args:
+            scrollable_frame: Widget scrollable frame
+            color: Color personalizado
+        """
+        color = color or COLORS['primary']  # ✓ Usar tema
+        scrollable_frame.configure(
+            scrollbar_fg_color=COLORS['bg_medium'],
+            scrollbar_button_color=color,
+            scrollbar_button_hover_color=COLORS['secondary']
+        )
+
+
+def make_futuristic_button(parent, text: str, command=None, 
+                          width: int = None, height: int = None, 
+                          font_size: int = None, state: str = "normal") -> ctk.CTkButton:
+    """
+    Crea un botón con estilo futurista
+    
+    Args:
+        parent: Widget padre
+        text: Texto del botón
+        command: Función a ejecutar al hacer clic
+        width: Ancho en unidades
+        height: Alto en unidades
+        font_size: Tamaño de fuente
+        
+    Returns:
+        Widget CTkButton configurado
+    """
+    width = width or 20
+    height = height or 10
+    font_size = font_size or FONT_SIZES['large']
+    
+    btn = ctk.CTkButton(
+        parent, 
+        text=text, 
+        command=command,
+        fg_color=COLORS['bg_dark'], 
+        hover_color=COLORS['bg_light'],
+        border_width=3, 
+        border_color=COLORS['border'],
+        width=width * 8, 
+        height=height * 8,
+        font=(FONT_FAMILY, font_size, "bold"), 
+        corner_radius=10,
+        state=state
+    )
+    
+    def on_enter(e): 
+        btn.configure(fg_color=COLORS['bg_light'])
+    
+    def on_leave(e): 
+        btn.configure(fg_color=COLORS['bg_dark'])
+    
+    btn.bind("<Enter>", on_enter)
+    btn.bind("<Leave>", on_leave)
+    
+    return btn
+
+
+def make_window_header(parent, title: str, on_close, status_text: str = None) -> ctk.CTkFrame:
+    """
+    Crea una barra de cabecera unificada para ventanas de monitoreo.
+
+    Layout (altura fija 48px):
+    ┌─────────────────────────────────────────────────────────┐
+    │  ● TÍTULO DE VENTANA      status_text opcional   [✕]   │
+    └─────────────────────────────────────────────────────────┘
+
+    El indicador ● usa COLORS['secondary'] para identificar
+    visualmente que es una ventana hija del dashboard.
+
+    Args:
+        parent:      Widget padre (normalmente el frame main de la ventana).
+        title:       Texto del título en mayúsculas (ej. "MONITOR DEL SISTEMA").
+        on_close:    Callable ejecutado al pulsar el botón ✕.
+        status_text: Texto informativo opcional a la derecha del título
+                     (ej. "CPU 12% · RAM 45% · 52°C"). Si es None no se muestra.
+
+    Returns:
+        CTkFrame de cabecera ya empaquetado con pack(fill="x").
+        Guarda referencia al label de estado en frame.status_label
+        para que la ventana pueda actualizarlo dinámicamente.
+    """
+    # ── Contenedor ───────────────────────────────────────────────────────────
+    header = ctk.CTkFrame(
+        parent,
+        fg_color=COLORS['bg_dark'],
+        height=56,
+        corner_radius=8,
+    )
+    header.pack(fill="x", padx=5, pady=(5, 0))
+    header.pack_propagate(False)  # Altura fija
+
+    # Separador inferior (línea decorativa)
+    separator = ctk.CTkFrame(
+        parent,
+        fg_color=COLORS['border'],
+        height=1,
+        corner_radius=0,
+    )
+    separator.pack(fill="x", padx=5, pady=(0, 4))
+
+    # ── Indicador de color (pastilla izquierda) ───────────────────────────
+    dot = ctk.CTkLabel(
+        header,
+        text="●",
+        text_color=COLORS['secondary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+        width=28,
+    )
+    dot.pack(side="left", padx=(10, 2))
+
+    # ── Título ────────────────────────────────────────────────────────────
+    title_lbl = ctk.CTkLabel(
+        header,
+        text=title,
+        text_color=COLORS['secondary'],
+        font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+        anchor="w",
+    )
+    title_lbl.pack(side="left", padx=(0, 10))
+
+    # ── Botón cerrar (derecha) ────────────────────────────────────────────
+    close_btn = ctk.CTkButton(
+        header,
+        text="✕",
+        command=on_close,
+        width=52,
+        height=42,
+        fg_color=COLORS['bg_medium'],
+        hover_color=COLORS['danger'],
+        border_width=3,
+        border_color=COLORS['border'],
+        font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
+        corner_radius=6,
+    )
+    close_btn.pack(side="right", padx=(0, 8))
+
+    # ── Status label (derecha del título, izquierda del botón) ───────────
+    status_lbl = ctk.CTkLabel(
+        header,
+        text=status_text or "",
+        text_color=COLORS['text_dim'],
+        font=(FONT_FAMILY, FONT_SIZES['small']),
+        anchor="e",
+    )
+    status_lbl.pack(side="right", padx=(0, 12), expand=True, fill="x")
+
+    # Referencia pública para actualizaciones dinámicas
+    header.status_label = status_lbl
+
+    return header
 ````
 
 ## File: INDEX.md
@@ -10210,6 +9460,237 @@ __all__ = [
     'HistoryWindow',
     'ThemeSelector'
 ]
+````
+
+## File: ui/windows/network.py
+````python
+"""
+Ventana de monitoreo de red
+"""
+import customtkinter as ctk
+from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
+from ui.widgets import GraphWidget
+from core.network_monitor import NetworkMonitor
+from utils.system_utils import SystemUtils
+
+_COL_W   = (DSI_WIDTH - 70) // 2
+_GRAPH_H = 110
+
+
+class NetworkWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo de red"""
+
+    def __init__(self, parent, network_monitor: NetworkMonitor):
+        super().__init__(parent)
+        self.network_monitor = network_monitor
+        self.widgets = {}
+        self.graphs  = {}
+        self._interface_update_counter = 0
+
+        self.title("Monitor de Red")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+
+        self._create_ui()
+        self._update()
+
+    def _create_ui(self):
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self._header = make_window_header(
+            main, title="MONITOR DE RED", on_close=self.destroy,
+            status_text="Detectando interfaz...")
+
+        # Scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        canvas = ctk.CTkCanvas(
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
+        scrollbar.pack(side="right", fill="y")
+
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
+        inner.bind("<Configure>",
+                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Grid 2 columnas dentro del inner scrollable
+        grid = ctk.CTkFrame(inner, fg_color=COLORS['bg_medium'])
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(0, weight=1)
+        grid.grid_columnconfigure(1, weight=1)
+
+        # Fila 0: DESCARGA | SUBIDA  (con gráfica)
+        self._create_traffic_cell(grid, 0, 0, "DESCARGA", "download")
+        self._create_traffic_cell(grid, 0, 1, "SUBIDA",   "upload")
+
+        # Fila 1: INTERFACES | SPEEDTEST  (informativas)
+        self._create_interfaces_cell(grid, 1, 0)
+        self._create_speedtest_cell(grid,  1, 1)
+
+    # ── Celdas ───────────────────────────────────────────────────────────────
+
+    def _create_traffic_cell(self, parent, row, col, title, key):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        lbl = ctk.CTkLabel(cell, text=title, text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w")
+        lbl.pack(anchor="w", padx=8, pady=(6, 0))
+
+        val = ctk.CTkLabel(cell, text="0.00 MB/s", text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"), anchor="e")
+        val.pack(anchor="e", padx=8, pady=(0, 2))
+
+        graph = GraphWidget(cell, width=_COL_W - 16, height=_GRAPH_H)
+        graph.pack(padx=4, pady=(0, 6))
+
+        self.widgets[f"{key}_label"] = lbl
+        self.widgets[f"{key}_value"] = val
+        self.graphs[key] = graph
+
+    def _create_interfaces_cell(self, parent, row, col):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        ctk.CTkLabel(cell, text="INTERFACES", text_color=COLORS['success'],
+                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
+                     ).pack(anchor="w", padx=8, pady=(6, 4))
+
+        self.interfaces_container = ctk.CTkFrame(cell, fg_color="transparent")
+        self.interfaces_container.pack(fill="both", expand=True, padx=4, pady=(0, 6))
+        self._update_interfaces()
+
+    def _create_speedtest_cell(self, parent, row, col):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        ctk.CTkLabel(cell, text="SPEEDTEST", text_color=COLORS['primary'],
+                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
+                     ).pack(anchor="w", padx=8, pady=(6, 4))
+
+        self.speedtest_result = ctk.CTkLabel(
+            cell, text="Pulsa 'Test' para\ncomenzar",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            justify="left", wraplength=_COL_W - 20)
+        self.speedtest_result.pack(anchor="w", padx=8, pady=(0, 4))
+
+        self.speedtest_btn = make_futuristic_button(
+            cell, text="Ejecutar Test", command=self._run_speedtest, width=15, height=5)
+        self.speedtest_btn.pack(pady=(0, 8))
+
+    # ── Interfaces ───────────────────────────────────────────────────────────
+
+    def _update_interfaces(self):
+        for w in self.interfaces_container.winfo_children():
+            w.destroy()
+
+        interfaces = SystemUtils.get_interfaces_ips()
+        if not interfaces:
+            ctk.CTkLabel(self.interfaces_container, text="Sin interfaces",
+                         text_color=COLORS['warning'],
+                         font=(FONT_FAMILY, FONT_SIZES['small'])).pack(pady=5)
+            return
+
+        for iface, ip in sorted(interfaces.items()):
+            if iface.startswith('tun'):
+                color, icon = COLORS['success'], "🔒"
+            elif iface.startswith(('eth', 'enp')):
+                color, icon = COLORS['primary'], "🌐"
+            elif iface.startswith(('wlan', 'wlp')):
+                color, icon = COLORS['warning'], "\uf0eb"
+            else:
+                color, icon = COLORS['text'], "•"
+
+            ctk.CTkLabel(self.interfaces_container,
+                         text=f"{icon} {iface}: {ip}",
+                         text_color=color,
+                         font=(FONT_FAMILY, FONT_SIZES['small']),
+                         anchor="w", wraplength=_COL_W - 20
+                         ).pack(anchor="w", pady=1, padx=4)
+
+    # ── Speedtest ─────────────────────────────────────────────────────────────
+
+    def _run_speedtest(self):
+        result = self.network_monitor.get_speedtest_result()
+        if result['status'] == 'running':
+            return
+        self.network_monitor.reset_speedtest()
+        self.network_monitor.run_speedtest()
+        self.speedtest_btn.configure(state="disabled")
+        self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
+
+    def _update_speedtest(self):
+        result = self.network_monitor.get_speedtest_result()
+        status = result['status']
+        if status == 'idle':
+            self.speedtest_result.configure(
+                text="Pulsa 'Test' para\ncomenzar", text_color=COLORS['text'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'running':
+            self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
+            self.speedtest_btn.configure(state="disabled")
+        elif status == 'done':
+            self.speedtest_result.configure(
+                text=f"Ping: {result['ping']} ms\n↓ {result['download']:.1f} MB/s\n↑ {result['upload']:.1f} MB/s",
+                text_color=COLORS['success'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'timeout':
+            self.speedtest_result.configure(text="Timeout", text_color=COLORS['danger'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'error':
+            self.speedtest_result.configure(
+                text="Error al ejecutar\nel test", text_color=COLORS['danger'])
+            self.speedtest_btn.configure(state="normal")
+
+    # ── Update loop ───────────────────────────────────────────────────────────
+
+    def _update(self):
+        if not self.winfo_exists():
+            return
+
+        stats = self.network_monitor.get_current_stats(NET_INTERFACE)
+        self.network_monitor.update_history(stats)
+        self.network_monitor.update_dynamic_scale()
+        history = self.network_monitor.get_history()
+
+        self._header.status_label.configure(
+            text=f"{stats['interface']}  ·  ↓{stats['download_mb']:.2f}  ↑{stats['upload_mb']:.2f} MB/s")
+
+        dl_color = self.network_monitor.net_color(stats['download_mb'])
+        self.widgets['download_label'].configure(text_color=dl_color)
+        self.widgets['download_value'].configure(
+            text=f"{stats['download_mb']:.2f} MB/s", text_color=dl_color)
+        self.graphs['download'].update(history['download'], history['dynamic_max'], dl_color)
+
+        ul_color = self.network_monitor.net_color(stats['upload_mb'])
+        self.widgets['upload_label'].configure(text_color=ul_color)
+        self.widgets['upload_value'].configure(
+            text=f"{stats['upload_mb']:.2f} MB/s", text_color=ul_color)
+        self.graphs['upload'].update(history['upload'], history['dynamic_max'], ul_color)
+
+        self._update_speedtest()
+
+        self._interface_update_counter += 1
+        if self._interface_update_counter >= 5:
+            self._update_interfaces()
+            self._interface_update_counter = 0
+
+        self.after(UPDATE_MS, self._update)
 ````
 
 ## File: IDEAS_EXPANSION.md
@@ -11684,9 +11165,10 @@ class HistoryWindow(ctk.CTkToplevel):
             title="HISTÓRICO DE DATOS",
             on_close=self.destroy,
         )
-        # toolbar_container vive en el header para los botones de gráfica
-        self.toolbar_container = ctk.CTkFrame(self._header, fg_color="transparent")
-        self.toolbar_container.pack(side="left", padx=(10, 0))
+        # Barra de herramientas en línea propia debajo del header
+        self.toolbar_container = ctk.CTkFrame(self._main, fg_color=COLORS["bg_dark"])
+        self.toolbar_container.pack(fill="x", padx=5, pady=(0, 4))
+        self.toolbar_container.pack_configure(anchor="center")
         self._create_period_controls(self._main)
         self._create_range_panel(self._main)   # fila oculta de OptionMenus
 
@@ -11829,6 +11311,10 @@ class HistoryWindow(ctk.CTkToplevel):
         self.toolbar = NavigationToolbar2Tk(self.canvas, self)
         self.toolbar.pack_forget()
 
+        # Sub-frame centrado dentro de la barra de herramientas
+        _btn_row = ctk.CTkFrame(self.toolbar_container, fg_color="transparent")
+        _btn_row.pack(expand=True)
+
         for text, cmd, w in [
             ("🏠 Inicio",  self.toolbar.home,          12),
             ("🔍 Zoom",    self.toolbar.zoom,           12),
@@ -11836,8 +11322,8 @@ class HistoryWindow(ctk.CTkToplevel):
             (" Guardar",  self._export_figure_image,   12),
         ]:
             make_futuristic_button(
-                self.toolbar_container, text=text, command=cmd, height=6, width=w
-            ).pack(side="left", padx=5)
+                _btn_row, text=text, command=cmd, height=6, width=w
+            ).pack(side="left", padx=5, pady=4)
 
         self.canvas.mpl_connect('button_press_event',   self._on_click)
         self.canvas.mpl_connect('button_release_event', self._on_release)
@@ -12269,6 +11755,7 @@ from utils.system_utils import SystemUtils
 from utils.logger import get_logger
 import sys
 import os
+from datetime import datetime
 logger = get_logger(__name__)
 
 
@@ -12294,6 +11781,9 @@ class MainWindow:
         # Referencias a badges (canvas item ids)
         self._badges = {}  # key -> (canvas, oval_id, text_id)
 
+        # Referencias a botones del menú para feedback visual
+        self._menu_btns = {}  # label_key -> CTkButton
+
         # Referencias a ventanas secundarias
         self.fan_window = None
         self.monitor_window = None
@@ -12305,6 +11795,7 @@ class MainWindow:
         self.service_window = None
         self.history_window = None
         self.update_window = None
+        self.theme_window = None
 
         logger.info(f"[MainWindow] Dashboard iniciado en {self.system_utils.get_hostname()}")
 
@@ -12316,22 +11807,39 @@ class MainWindow:
         main_frame = ctk.CTkFrame(self.root, fg_color=COLORS['bg_medium'])
         main_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
-        title = ctk.CTkLabel(
-            main_frame,
+        # ── Barra de cabecera: hostname (izq) + título (centro) + reloj (der) ──
+        header_bar = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_dark'], height=56)
+        header_bar.pack(fill="x", padx=5, pady=(5, 0))
+        header_bar.pack_propagate(False)
+
+        hostname = self.system_utils.get_hostname()
+        ctk.CTkLabel(
+            header_bar,
+            text=f"  {hostname}",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
+            anchor="w",
+        ).pack(side="left", padx=12)
+
+        ctk.CTkLabel(
+            header_bar,
             text="SISTEMA DE MONITOREO",
             text_color=COLORS['secondary'],
-            font=(FONT_FAMILY, FONT_SIZES['xxlarge'], "bold")
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+            anchor="center",
+        ).pack(side="left", expand=True)
+
+        self._clock_label = ctk.CTkLabel(
+            header_bar,
+            text="00:00:00",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
+            anchor="e",
         )
-        title.pack(pady=(20, 10))
-        
-        hostname = self.system_utils.get_hostname()
-        info_label = ctk.CTkLabel(
-            main_frame,
-            text=f"Host: {hostname}",
-            text_color=COLORS['primary'],
-            font=(FONT_FAMILY, FONT_SIZES['large'])
-        )
-        info_label.pack(pady=5)
+        self._clock_label.pack(side="right", padx=12)
+
+        # Separador
+        ctk.CTkFrame(main_frame, fg_color=COLORS['border'], height=1, corner_radius=0).pack(fill="x", padx=5, pady=(0, 4))
         
         menu_container = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_medium'])
         menu_container.pack(fill="both", expand=True, padx=5, pady=5)
@@ -12407,6 +11915,9 @@ class MainWindow:
             )
             btn.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
+            # Guardar referencia para feedback visual
+            self._menu_btns[text] = btn
+
             # Múltiples badges por botón, colocados de derecha a izquierda
             for j, key in enumerate(badge_keys):
                 self._create_badge(btn, key, offset_index=j)
@@ -12415,6 +11926,26 @@ class MainWindow:
             self.menu_inner.grid_columnconfigure(c, weight=1)
 
     # ── Badges ────────────────────────────────────────────────────────────────
+
+    # ── Feedback visual de botones ───────────────────────────────────────────
+
+    def _btn_active(self, text_key):
+        """Oscurece el botón mientras su ventana está abierta"""
+        btn = self._menu_btns.get(text_key)
+        if btn:
+            try:
+                btn.configure(fg_color=COLORS['bg_light'], border_color=COLORS['primary'], border_width=2)
+            except Exception:
+                pass
+
+    def _btn_idle(self, text_key):
+        """Restaura el botón a su estado normal"""
+        btn = self._menu_btns.get(text_key)
+        if btn:
+            try:
+                btn.configure(fg_color=COLORS['bg_dark'], border_color=COLORS['border'], border_width=1)
+            except Exception:
+                pass
 
     def _create_badge(self, btn, key, offset_index=0):
         """Crea un badge circular en la esquina superior-derecha del botón.
@@ -12483,7 +12014,9 @@ class MainWindow:
         """Abre la ventana de control de ventiladores"""
         if self.fan_window is None or not self.fan_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Control Ventiladores")
+            self._btn_active("󰈐  Control Ventiladores")
             self.fan_window = FanControlWindow(self.root, self.fan_controller, self.system_monitor)
+            self.fan_window.bind("<Destroy>", lambda e: self._btn_idle("󰈐  Control Ventiladores"))
         else:
             self.fan_window.lift()
     
@@ -12491,7 +12024,9 @@ class MainWindow:
         """Abre la ventana de monitoreo del sistema"""
         if self.monitor_window is None or not self.monitor_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Placa")
+            self._btn_active("󰚗  Monitor Placa")
             self.monitor_window = MonitorWindow(self.root, self.system_monitor)
+            self.monitor_window.bind("<Destroy>", lambda e: self._btn_idle("󰚗  Monitor Placa"))
         else:
             self.monitor_window.lift()
     
@@ -12499,7 +12034,9 @@ class MainWindow:
         """Abre la ventana de monitoreo de red"""
         if self.network_window is None or not self.network_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Red")
+            self._btn_active("  Monitor Red")
             self.network_window = NetworkWindow(self.root, self.network_monitor)
+            self.network_window.bind("<Destroy>", lambda e: self._btn_idle("  Monitor Red"))
         else:
             self.network_window.lift()
     
@@ -12507,7 +12044,9 @@ class MainWindow:
         """Abre la ventana de monitoreo USB"""
         if self.usb_window is None or not self.usb_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor USB")
+            self._btn_active("󱇰 Monitor USB")
             self.usb_window = USBWindow(self.root)
+            self.usb_window.bind("<Destroy>", lambda e: self._btn_idle("󱇰 Monitor USB"))
         else:
             self.usb_window.lift()
     
@@ -12515,7 +12054,9 @@ class MainWindow:
         """Abre el monitor de procesos"""
         if self.process_window is None or not self.process_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Procesos")
+            self._btn_active("⚙️ Monitor Procesos")
             self.process_window = ProcessWindow(self.root, self.process_monitor)
+            self.process_window.bind("<Destroy>", lambda e: self._btn_idle("⚙️ Monitor Procesos"))
         else:
             self.process_window.lift()
     
@@ -12523,7 +12064,9 @@ class MainWindow:
         """Abre el monitor de servicios"""
         if self.service_window is None or not self.service_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Servicios")
+            self._btn_active("⚙️ Monitor Servicios")
             self.service_window = ServiceWindow(self.root, self.service_monitor)
+            self.service_window.bind("<Destroy>", lambda e: self._btn_idle("⚙️ Monitor Servicios"))
         else:
             self.service_window.lift()
     
@@ -12531,7 +12074,9 @@ class MainWindow:
         """Abre la ventana de histórico"""
         if self.history_window is None or not self.history_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Histórico Datos")
+            self._btn_active("󱘿  Histórico Datos")
             self.history_window = HistoryWindow(self.root, self.cleanup_service)
+            self.history_window.bind("<Destroy>", lambda e: self._btn_idle("󱘿  Histórico Datos"))
         else:
             self.history_window.lift()
     
@@ -12539,21 +12084,29 @@ class MainWindow:
         """Abre la ventana de lanzadores"""
         if self.launchers_window is None or not self.launchers_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Lanzadores")
+            self._btn_active("󱓞  Lanzadores")
             self.launchers_window = LaunchersWindow(self.root)
+            self.launchers_window.bind("<Destroy>", lambda e: self._btn_idle("󱓞  Lanzadores"))
         else:
             self.launchers_window.lift()
     
     def open_theme_selector(self):
         """Abre el selector de temas"""
-        logger.debug("[MainWindow] Abriendo: Cambiar Tema")
-        theme_window = ThemeSelector(self.root)
-        theme_window.lift()
+        if self.theme_window is None or not self.theme_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Cambiar Tema")
+            self._btn_active("󰔎  Cambiar Tema")
+            self.theme_window = ThemeSelector(self.root)
+            self.theme_window.bind("<Destroy>", lambda e: self._btn_idle("󰔎  Cambiar Tema"))
+        else:
+            self.theme_window.lift()
     
     def open_disk_window(self):
         """Abre la ventana de monitor de disco"""
         if self.disk_window is None or not self.disk_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Disco")
+            self._btn_active("  Monitor Disco")
             self.disk_window = DiskWindow(self.root, self.disk_monitor)
+            self.disk_window.bind("<Destroy>", lambda e: self._btn_idle("  Monitor Disco"))
         else:
             self.disk_window.lift()
     
@@ -12561,7 +12114,9 @@ class MainWindow:
         """Abre la ventana de actualizaciones"""
         if self.update_window is None or not self.update_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Actualizaciones")
+            self._btn_active("󰆧  Actualizaciones")
             self.update_window = UpdatesWindow(self.root, self.update_monitor)
+            self.update_window.bind("<Destroy>", lambda e: self._btn_idle("󰆧  Actualizaciones"))
         else:
             self.update_window.lift()
     
@@ -12707,8 +12262,14 @@ class MainWindow:
     
     # ── Loop de actualización ─────────────────────────────────────────────────
 
+    def _tick_clock(self):
+        """Actualiza el reloj cada segundo"""
+        self._clock_label.configure(text=datetime.now().strftime("%H:%M:%S"))
+        self.root.after(1000, self._tick_clock)
+
     def _start_update_loop(self):
         """Inicia el bucle de actualización"""
+        self._tick_clock()
         self._update()
     
     def _update(self):
