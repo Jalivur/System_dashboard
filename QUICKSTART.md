@@ -1,4 +1,4 @@
-# 🚀 Inicio Rápido - Dashboard v2.5.1
+# 🚀 Inicio Rápido - Dashboard v2.7
 
 ---
 
@@ -12,7 +12,7 @@ sudo ./install_system.sh
 python3 main.py
 ```
 
-El script instala automáticamente las dependencias del sistema y Python, y pregunta si quieres configurar sensores y speedtest.
+El script instala automáticamente las dependencias del sistema y Python, la CLI oficial de Ookla para speedtest, y pregunta si quieres configurar sensores de temperatura.
 
 ---
 
@@ -69,19 +69,19 @@ python3 main.py
 
 ## 🖥️ Las 13 Ventanas
 
-**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real con gráficas
+**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real (status en header)
 
-**2. Monitor Red** — Download/Upload en vivo, speedtest, lista de IPs
+**2. Monitor Red** — Download/Upload en vivo, speedtest Ookla, lista de IPs (status en header)
 
 **3. Monitor USB** — Dispositivos conectados, expulsión segura
 
-**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O
+**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O (status en header)
 
 **5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
 
 **6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
 
-**7. Histórico Datos** — Gráficas CPU/RAM/Temp en 24h, 7d, 30d, exportar CSV
+**7. Histórico Datos** — 8 gráficas CPU/RAM/Temp/Red/Disco/PWM en 24h, 7d, 30d, exportar CSV
 
 **8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
 
@@ -94,6 +94,8 @@ python3 main.py
 **12. Reiniciar** — Reinicia el dashboard aplicando cambios de código
 
 **13. Salir** — Salir de la app o apagar el sistema
+
+> **Todas las ventanas** incluyen header unificado con título, status en tiempo real y botón ✕ táctil (52×42px) optimizado para pantalla DSI.
 
 ---
 
@@ -133,19 +135,17 @@ grep ERROR data/logs/dashboard.log
 | No arranca | `pip3 install --break-system-packages -r requirements.txt` |
 | Temperatura 0 | `sudo sensors-detect --auto` |
 | NVMe temp 0 | `sudo apt install smartmontools` |
-| Speedtest falla | `sudo apt install speedtest-cli` |
+| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
 | USB no expulsa | `sudo apt install udisks2` |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 🆕 Novedades v2.5.1
+## 🆕 Novedades v2.7
 
-✅ **Logging completo** — Todos los módulos loguean eventos y errores  
-✅ **Ventana Actualizaciones** — Terminal integrada para instalar paquetes  
-✅ **Caché de actualizaciones** — `apt update` solo al arranque y al pedir  
-✅ **Fix arranque** — Servicio de datos ya no se detiene a los 3 segundos  
-✅ **Terminal de apagado** — Visualiza el proceso de shutdown  
+✅ **Header unificado** — Todas las ventanas con título + status + botón ✕ táctil 52×42px  
+✅ **Status en tiempo real** — CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades en el header  
+✅ **Speedtest Ookla CLI** — CLI oficial con resultados en MB/s reales  
 
 ---
 
@@ -157,4 +157,4 @@ grep ERROR data/logs/dashboard.log
 
 ---
 
-**Dashboard v2.5.1** 🚀✨
+**Dashboard v2.7** 🚀✨

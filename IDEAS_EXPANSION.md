@@ -1,7 +1,5 @@
 # 💡 Ideas de Expansión - Dashboard v2.7
 
-Roadmap de funcionalidades y estado real de implementación.
-
 ---
 
 ## ✅ Implementado
@@ -108,7 +106,7 @@ Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
-### **10. Notificaciones Visuales en el Menú**
+### ~~**10. Notificaciones Visuales en el Menú**~~ ✅ Implementado en v2.6
 **Implementado en v2.6**
 - ✅ Badge en "Actualizaciones" con paquetes pendientes (naranja)
 - ✅ Badge en "Monitor Servicios" con servicios fallidos (rojo)
@@ -121,32 +119,29 @@ Roadmap de funcionalidades y estado real de implementación.
 
 ---
 
-### **11. Header Unificado y Mejoras UI**
+### ~~**11. Header Unificado con Status Dinámico**~~ ✅ Implementado en v2.7
 **Implementado en v2.7**
-- ✅ `make_window_header()` en `ui/styles.py` — componente reutilizable
-- ✅ Header consistente en las 10 ventanas (título + status + botón ✕)
-- ✅ Botón ✕ táctil (52×42px) apto para pantalla táctil DSI
-- ✅ Status en tiempo real en el header: CPU/RAM/Temp en Monitor, Disco/NVMe en Disco, interfaz/velocidades en Red
-- ✅ Stats label en línea propia para Servicios y Procesos (texto largo)
-- ✅ Eliminados todos los botones "Cerrar" inferiores redundantes
-- ✅ Separador decorativo bajo el header en todas las ventanas
-
----
-
-### **12. Speedtest CLI Oficial de Ookla**
-**Implementado en v2.7**
-- ✅ Migrado de `speedtest-cli` a `speedtest` (CLI oficial de Ookla)
-- ✅ Salida en JSON — más robusto que parsear texto
-- ✅ Conversión correcta bytes/s → MB/s
-- ✅ Timeout ampliado a 90s
-- ✅ Captura de errores JSON y KeyError
+- ✅ `make_window_header()` centralizado en `ui/styles.py`
+- ✅ Header en todas las ventanas: título + status + botón ✕ táctil
+- ✅ Botón ✕ de 52×42px, optimizado para uso táctil en pantalla DSI 4,5"
+- ✅ Status dinámico en Monitor Placa: CPU%, RAM%, temperatura en tiempo real
+- ✅ Status dinámico en Monitor Disco: espacio disponible + temperatura NVMe
+- ✅ Status dinámico en Monitor Red: interfaz activa + velocidades de red
+- ✅ Speedtest migrado a CLI oficial de Ookla (`--format=json`, MB/s reales)
 
 ---
 
 ## 🔄 En Evaluación
 
 ### **Monitor de Contenedores Docker**
-**Prioridad**: Descartado — usuario no usa Docker  
+**Prioridad**: Alta si usas Docker en la Pi  
+**Complejidad**: Media
+
+- Start/Stop/Restart contenedores
+- Ver logs en tiempo real
+- Estadísticas de uso por contenedor (CPU, RAM)
+- Ver puertos expuestos
+- Similar a `docker ps` y `docker stats` pero visual
 
 ---
 
@@ -178,8 +173,6 @@ Roadmap de funcionalidades y estado real de implementación.
 
 **API REST**: endpoints para métricas, histórico y control de servicios
 
-**UI**: grid de 2 columnas en ventanas de monitoreo (mejor aprovechamiento de 800×480)
-
 ---
 
 ## 🎯 Roadmap
@@ -198,21 +191,16 @@ Roadmap de funcionalidades y estado real de implementación.
 - ✅ Fan control: entries con placeholder en lugar de sliders
 - ✅ Inyección de dependencias profesional (CleanupService → HistoryWindow)
 
-### **v2.7** ✅ ACTUAL — 2026-02-22
-- ✅ `make_window_header()` — header unificado y consistente en 10 ventanas
-- ✅ Botón ✕ táctil (52×42px) en todas las ventanas
-- ✅ Status en tiempo real en el header de cada ventana
-- ✅ Migración a speedtest CLI oficial de Ookla (JSON, MB/s)
-- ✅ Fix botón Cerrar duplicado en Monitor de Red
-- ✅ Fix import `make_window_header` en ThemeSelector
-
-### **v2.8** (Próximo)
-- [ ] Grid de 2 columnas en ventanas de monitoreo (mejor uso del espacio 800×480)
-- [ ] Mejoras UI adicionales
+### **v2.7** ✅ ACTUAL — 2026-02-23
+- ✅ Header unificado `make_window_header()` en todas las ventanas
+- ✅ Status dinámico en tiempo real en el header
+- ✅ Botón ✕ táctil 52×42px para pantalla DSI
+- ✅ Speedtest migrado a CLI oficial de Ookla (JSON, MB/s reales)
 
 ### **v3.0** (Futuro)
 - [ ] Alertas externas (Telegram/webhook)
 - [ ] API REST básica
+- [ ] Monitor Docker (si aplica)
 
 ---
 
@@ -226,10 +214,11 @@ Roadmap de funcionalidades y estado real de implementación.
 | Actualizaciones del sistema | ✅ 100% |
 | Logging y observabilidad | ✅ 100% |
 | Notificaciones visuales internas | ✅ 100% |
-| Consistencia visual UI | ✅ 100% |
+| UI unificada y táctil | ✅ 100% |
 | Alertas externas | ⏳ 0% |
+| Docker | ⏳ 0% |
 | Automatización | ⏳ 0% |
 
 ---
 
-**Versión actual**: v2.7 — **Última actualización**: 2026-02-22
+**Versión actual**: v2.7 — **Última actualización**: 2026-02-23

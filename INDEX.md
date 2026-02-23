@@ -98,10 +98,10 @@ Guía completa de toda la documentación del proyecto actualizada.
 ### 💡 **Ideas y Expansión**
 
 **[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)**  
-- ✅ Funcionalidades implementadas (12 áreas)
-- 🔄 En evaluación (Alertas, GPU)
-- 💭 Ideas futuras (Automatización, API REST)
-- Roadmap v2.8 y v3.0
+- ✅ Funcionalidades implementadas (Procesos, Servicios, Histórico, Badges, Header unificado)
+- 🔄 En evaluación (Docker, GPU)
+- 💭 Ideas futuras (Alertas, Automatización)
+- Roadmap v3.0
 
 ---
 
@@ -149,7 +149,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 1. README.md - Leer sección "Características"
 2. QUICKSTART.md - Instalar y ejecutar
 3. THEMES_GUIDE.md - Personalizar colores
-4. Explorar las 10 ventanas del dashboard 🎉
+4. Explorar las 13 ventanas del dashboard 🎉
 
 ### **Usuario Avanzado:**
 1. README.md completo
@@ -161,9 +161,9 @@ Guía completa de toda la documentación del proyecto actualizada.
 ### **Desarrollador:**
 1. ARCHITECTURE.md - Estructura del proyecto
 2. README.md sección "Arquitectura"
-3. Código fuente en `core/` y `ui/`
-4. IDEAS_EXPANSION.md - Ver qué se puede añadir
-5. Implementar nuevas funciones
+3. `ui/styles.py` → `make_window_header()` para añadir nuevas ventanas
+4. Código fuente en `core/` y `ui/`
+5. IDEAS_EXPANSION.md - Ver qué se puede añadir
 
 ---
 
@@ -177,13 +177,14 @@ Guía completa de toda la documentación del proyecto actualizada.
 - **Ver histórico** → HISTORICO_DATOS_GUIDE.md
 - **Configurar ventiladores** → FAN_CONTROL_GUIDE.md
 - **Integrar con OLED** → INTEGRATION_GUIDE.md
+- **Añadir nueva ventana con header** → `ui/styles.py` → `make_window_header()`
 - **Añadir funciones** → ARCHITECTURE.md + IDEAS_EXPANSION.md
 
 ### **¿Tengo un problema?**
 - **No arranca** → QUICKSTART.md sección "Problemas Comunes"
 - **Ventiladores no funcionan** → FAN_CONTROL_GUIDE.md
 - **Temperatura no se lee** → INSTALL_GUIDE.md
-- **Speedtest falla** → NETWORK_GUIDE.md
+- **Speedtest falla** → README.md sección "Instalación Manual" (CLI Ookla)
 - **Base de datos crece** → HISTORICO_DATOS_GUIDE.md
 - **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md
 - **Otro problema** → README.md sección "Troubleshooting"
@@ -192,9 +193,9 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ## 📊 Estadísticas del Proyecto v2.7
 
-- **Archivos Python**: 42+
-- **Líneas de código**: ~13,000
-- **Ventanas**: 10 ventanas funcionales
+- **Archivos Python**: 41
+- **Líneas de código**: ~12,500
+- **Ventanas**: 13 ventanas funcionales
 - **Temas**: 15 temas pre-configurados
 - **Documentos**: 12 guías
 - **Servicios background**: 3 (FanAuto + DataCollection + Cleanup)
@@ -204,15 +205,10 @@ Guía completa de toda la documentación del proyecto actualizada.
 ## 🆕 Novedades en v2.7
 
 ### **Funcionalidades Nuevas:**
-- ✅ **Header unificado** (`make_window_header`) en las 10 ventanas
-- ✅ **Botón ✕ táctil** (52×42px) en todas las ventanas
-- ✅ **Status en tiempo real** en el header de cada ventana
-- ✅ **Speedtest** migrado al CLI oficial de Ookla (JSON, MB/s)
-
-### **Fixes:**
-- ✅ Botón Cerrar duplicado en Monitor de Red
-- ✅ Import `make_window_header` en ThemeSelector
-- ✅ Stats label de Servicios y Procesos en línea propia
+- ✅ **Header unificado** `make_window_header()` en todas las ventanas
+- ✅ **Status dinámico** en tiempo real integrado en el header
+- ✅ **Botón ✕ táctil** (52×42px) optimizado para DSI sin teclado
+- ✅ **Speedtest Ookla CLI** oficial (JSON, MB/s reales)
 
 ---
 
@@ -232,14 +228,40 @@ Guía completa de toda la documentación del proyecto actualizada.
 | Tema | Documento |
 |------|-----------|
 | **Inicio Rápido** | [QUICKSTART.md](QUICKSTART.md) |
-| **Características** | [README.md](README.md) |
+| **Características** | [README.md#características](README.md#características-principales) |
 | **Instalación** | [INSTALL_GUIDE.md](INSTALL_GUIDE.md) |
 | **Temas** | [THEMES_GUIDE.md](THEMES_GUIDE.md) |
 | **Procesos** | [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md) |
 | **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) |
 | **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) |
+| **Troubleshooting** | [README.md#troubleshooting](README.md#troubleshooting) |
 | **Ideas Futuras** | [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) |
 
 ---
 
-**Versión actual**: v2.7 — **Última actualización**: 2026-02-22
+## 🎯 Guías de Implementación
+
+Si quieres implementar funciones nuevas, tenemos guías paso a paso:
+
+| Función | Guía | Dificultad |
+|---------|------|------------|
+| **Monitor de Procesos** | PROCESS_MONITOR_GUIDE.md | Media |
+| **Monitor de Servicios** | SERVICE_MONITOR_GUIDE.md | Media |
+| **Histórico de Datos** | HISTORICO_DATOS_GUIDE.md | Alta |
+| **Nueva ventana con header** | `ui/styles.py` → `make_window_header()` | Baja |
+
+---
+
+## 📈 Evolución de la Documentación
+
+| Versión | Documentos | Páginas | Características |
+|---------|------------|---------|-----------------|
+| **v1.0** | 8 | ~50 | Básico |
+| **v2.0** | 10 | ~80 | + Procesos, Temas |
+| **v2.5** | 12 | ~120 | + Servicios, Histórico |
+| **v2.6** | 12 | ~130 | + Badges, CleanupService |
+| **v2.7** | 12 | ~140 | + Header unificado, Speedtest Ookla ⭐ |
+
+---
+
+**¡Toda la información que necesitas está aquí!** 📚✨

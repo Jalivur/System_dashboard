@@ -1,6 +1,6 @@
 # 🖥️ Sistema de Monitoreo y Control - Dashboard v2.7
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, logging completo y UI táctil unificada.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -17,6 +17,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Temperatura**: Monitoreo de CPU con alertas por color
 - **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
 
+### 🪟 **UI Unificada con Header Táctil**
+- **Header en todas las ventanas**: título + status dinámico + botón ✕ (52×42px táctil)
+- **Status en tiempo real** en el header: CPU/RAM/Temp (Monitor Placa), Disco/NVMe (Monitor Disco), interfaz/velocidades (Monitor Red)
+- **Botón ✕ táctil** optimizado para pantalla DSI de 4,5" sin teclado
+- Función `make_window_header()` centralizada en `ui/styles.py`
+
 ### 🌡️ **Control Inteligente de Ventiladores**
 - **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
 - **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
@@ -24,10 +30,11 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Visualización en vivo**: Gráfica de curva activa y PWM actual
 
 ### 🌐 **Monitor de Red Avanzado**
-- **Tráfico en tiempo real**: Download/Upload con gráficas en MB/s
+- **Tráfico en tiempo real**: Download/Upload con gráficas
 - **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
 - **Lista de IPs**: Todas las interfaces con iconos por tipo
-- **Speedtest integrado**: CLI oficial de Ookla, resultados en MB/s
+- **Speedtest integrado**: CLI oficial de Ookla (JSON nativo, resultados en MB/s reales)
+- **Status en header**: interfaz activa + velocidades actuales
 
 ### ⚙️ **Monitor de Procesos**
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
@@ -44,7 +51,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 ### 📊 **Histórico de Datos**
 - **Recolección automática**: Cada 5 minutos en background
 - **Base de datos SQLite**: Ligera y eficiente
-- **8 gráficas**: CPU, RAM, Temperatura, Red ↓/↑, Disco R/W, PWM
+- **Visualización gráfica**: 8 gráficas (CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM)
 - **Periodos**: 24 horas, 7 días, 30 días
 - **Estadísticas**: Promedios, mínimos, máximos
 - **Detección de anomalías**: Alertas automáticas
@@ -59,6 +66,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Particiones**: Uso de espacio de todas las unidades
 - **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
 - **Velocidad I/O**: Lectura/escritura en MB/s
+- **Status en header**: espacio disponible + temperatura NVMe en tiempo real
 
 ### 󱓞 **Lanzadores de Scripts**
 - **Terminal integrada**: Visualiza la ejecución en tiempo real
@@ -71,12 +79,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Terminal integrada**: Instala viendo el output en vivo
 - **Botón Buscar**: Fuerza comprobación manual
 
-### 🎨 **15 Temas Personalizables**
+### 󰆧 **15 Temas Personalizables**
 - **Cambio con un clic**: Reinicio automático
 - **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
 - **Preview en vivo**: Ve los colores antes de aplicar
 
-### **Reinicio y Apagado**
+### /󰿅 **Reinicio y Apagado**
 - **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
 - **Botón Salir**: Salir de la app o apagar el sistema
 - **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
@@ -104,12 +112,6 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Rotación automática**: 2MB máximo con backup
 - **Ubicación**: `data/logs/dashboard.log`
 
-### 👆 **UI Táctil Unificada** *(nuevo en v2.7)*
-- **Header consistente** en todas las ventanas: título + status en tiempo real + botón ✕
-- **Botón ✕ táctil** (52×42px) optimizado para pantalla DSI 4,5"
-- **Status dinámico** en el header: CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades
-- Sin botones "Cerrar" redundantes — un solo punto de cierre por ventana
-
 ---
 
 ## 📦 Instalación
@@ -122,6 +124,8 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 
 ### ⚡ **Instalación Recomendada**
 
+Usa el script de instalación directa (sin entorno virtual):
+
 ```bash
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
@@ -131,20 +135,23 @@ python3 main.py
 ```
 
 El script `install_system.sh` instala automáticamente:
-- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`, `smartmontools`)
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
 - Dependencias Python con `--break-system-packages`
+- CLI oficial de Ookla para speedtest
 - Ofrece configurar sensores de temperatura
 
 ### 🛠️ **Instalación Manual**
+
+Si prefieres instalar paso a paso:
 
 ```bash
 # 1. Dependencias del sistema
 sudo apt-get update
 sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
 
-# 2. Speedtest CLI oficial de Ookla
-sudo apt install speedtest
-speedtest --accept-license --accept-gdpr
+# 2. CLI oficial de Ookla (speedtest)
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest
 
 # 3. Detectar sensores
 sudo sensors-detect --auto
@@ -157,6 +164,8 @@ python3 main.py
 ```
 
 ###  **Alternativa con Entorno Virtual**
+
+Si prefieres aislar las dependencias Python:
 
 ```bash
 chmod +x install.sh
@@ -197,10 +206,10 @@ python3 main.py
 ### **Las 13 Ventanas:**
 
 1. **Control Ventiladores** - Configura modos y curvas PWM
-2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
-3. **Monitor Red** - Tráfico, speedtest, interfaces e IPs
+2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real (status en header)
+3. **Monitor Red** - Tráfico, speedtest Ookla, interfaces e IPs (status en header)
 4. **Monitor USB** - Dispositivos y expulsión segura
-5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
+5. **Monitor Disco** - Espacio, temperatura NVMe, I/O (status en header)
 6. **Lanzadores** - Ejecuta scripts con terminal en vivo
 7. **Monitor Procesos** - Gestión avanzada de procesos
 8. **Monitor Servicios** - Control de servicios systemd
@@ -245,7 +254,7 @@ system_dashboard/
 │   ├── fan_controller.py           # Control PWM y curvas
 │   ├── fan_auto_service.py         # Servicio background ventiladores
 │   ├── system_monitor.py           # CPU, RAM, temperatura
-│   ├── network_monitor.py          # Red, speedtest CLI Ookla, interfaces
+│   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
 │   ├── disk_monitor.py             # Disco, NVMe, I/O
 │   ├── process_monitor.py          # Gestión de procesos
 │   ├── service_monitor.py          # Servicios systemd
@@ -257,22 +266,15 @@ system_dashboard/
 │   └── __init__.py
 ├── ui/
 │   ├── main_window.py              # Ventana principal (13 botones + badges)
-│   ├── styles.py                   # Estilos, botones y make_window_header()
+│   ├── styles.py                   # make_window_header(), make_futuristic_button(), StyleManager
 │   ├── widgets/
 │   │   ├── graphs.py               # Gráficas personalizadas
 │   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
 │   └── windows/
-│       ├── monitor.py              # Monitor placa (CPU/RAM/Temp)
-│       ├── network.py              # Monitor red + speedtest
-│       ├── disk.py                 # Monitor disco + NVMe
-│       ├── usb.py                  # Monitor USB
-│       ├── process_window.py       # Monitor procesos
-│       ├── service.py              # Monitor servicios systemd
-│       ├── history.py              # Histórico de datos
-│       ├── update.py               # Actualizaciones
-│       ├── fan_control.py          # Control ventiladores
-│       ├── launchers.py            # Lanzadores de scripts
-│       ├── theme_selector.py       # Selector de temas
+│       ├── monitor.py, network.py, usb.py, disk.py
+│       ├── process_window.py, service.py, history.py
+│       ├── update.py, fan_control.py
+│       ├── launchers.py, theme_selector.py
 │       └── __init__.py
 ├── utils/
 │   ├── file_manager.py             # Gestión de JSON (escritura atómica)
@@ -285,6 +287,7 @@ system_dashboard/
 ├── scripts/                         # Scripts personalizados del usuario
 ├── install_system.sh               # Instalación directa (recomendada)
 ├── install.sh                      # Instalación con venv (alternativa)
+├── test_logging.py                 # Prueba del sistema de logging
 ├── main.py
 └── requirements.txt
 ```
@@ -348,7 +351,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 | Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
 | NVMe temp 0 | `sudo apt install smartmontools` |
 | Ventiladores no responden | `sudo python3 main.py` |
-| Speedtest falla (403) | `sudo apt remove speedtest-cli && sudo apt install speedtest` |
+| Speedtest falla | Instalar CLI oficial Ookla: ver sección Instalación Manual |
 | USB no expulsa | `sudo apt install udisks2` |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
@@ -380,14 +383,11 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ## Changelog
 
-### **v2.7** - 2026-02-22 ⭐ ACTUAL
-- ✅ **NUEVO**: `make_window_header()` — header unificado y consistente en las 10 ventanas de monitoreo
-- ✅ **NUEVO**: Botón ✕ táctil (52×42px) en todas las ventanas, optimizado para pantalla DSI
-- ✅ **NUEVO**: Status en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
-- ✅ **NUEVO**: Speedtest migrado al CLI oficial de Ookla (JSON, MB/s correcto)
-- ✅ **FIX**: Botón Cerrar duplicado eliminado en Monitor de Red
-- ✅ **FIX**: Import `make_window_header` en ThemeSelector
-- ✅ **FIX**: Stats label de Servicios y Procesos en línea propia (sin superposición)
+### **v2.7** - 2026-02-23 ⭐ ACTUAL
+- ✅ **NUEVO**: Header unificado `make_window_header()` en todas las ventanas (título + status + botón ✕ táctil 52×42px)
+- ✅ **NUEVO**: Status dinámico en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
+- ✅ **MEJORA**: Speedtest migrado a CLI oficial de Ookla (`--format=json`), resultados en MB/s reales
+- ✅ **MEJORA**: Botón ✕ táctil optimizado para pantalla DSI sin teclado
 
 ### **v2.6** - 2026-02-22
 - ✅ **NUEVO**: 6 badges de notificación visual en menú principal
@@ -400,15 +400,15 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
 - ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
 - ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
-- ✅ **FIX**: Bug `atexit` en `DataCollectionService` (se detenía a los 3s del arranque)
-- ✅ **MEJORA**: `update_monitor` con caché 12h y parámetro `force`
+- ✅ **FIX**: Bug `atexit` en `DataCollectionService`
+- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
 
 ### **v2.5** - 2026-02-17
 - ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
 - ✅ Recolección automática background, Exportación CSV, Detección de anomalías
 
 ### **v2.0** - 2026-02-16
-- ✅ Monitor de Procesos, 15 temas
+- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
 
 ### **v1.0** - 2025-01
 - ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
@@ -423,8 +423,8 @@ MIT License
 
 ## Agradecimientos
 
-**CustomTkinter** · **psutil** · **matplotlib** · **Raspberry Pi Foundation**
+**CustomTkinter** · **psutil** · **matplotlib** · **Ookla Speedtest CLI** · **Raspberry Pi Foundation**
 
 ---
 
-**Dashboard v2.7: Profesional, Táctil, Completo y Auto-mantenido**
+**Dashboard v2.7: Profesional, Unificado, Táctil y Auto-mantenido**
