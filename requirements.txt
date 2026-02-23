@@ -22,16 +22,8 @@ psutil>=5.9.0
 # Gráficas históricas (ventana Histórico Datos)
 matplotlib>=3.5.0
 
-
-# === Dependencias Opcionales ===
-
-# ── Entorno y configuración ───────────────────────────────────────────────────
-python-dotenv>=1.0.0          # Carga de variables desde .env (Homebridge, etc.)
-
-
-# Test de velocidad de internet (Monitor Red → Speedtest)
-# Instalar también en sistema: sudo apt install speedtest-cli
-# speedtest-cli>=2.1.3
+# Variables de entorno desde .env (credenciales Homebridge)
+python-dotenv>=1.0.0
 
 
 # ============================================
@@ -50,7 +42,8 @@ python-dotenv>=1.0.0          # Carga de variables desde .env (Homebridge, etc.)
 #   - util-linux:     Comando lsblk (suele venir instalado)
 #   - smartmontools:  Temperatura NVMe (smartctl)
 #
-# Opcional para speedtest (el script pregunta al instalarlo):
-#   sudo apt-get install speedtest-cli
+# Opcional para speedtest (CLI oficial de Ookla, NO speedtest-cli de pip):
+#   curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+#   sudo apt-get install speedtest
 #
 # ============================================
