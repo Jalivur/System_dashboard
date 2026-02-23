@@ -47,6 +47,7 @@ core/
   disk_monitor.py
   fan_auto_service.py
   fan_controller.py
+  homebridge_monitor.py
   network_monitor.py
   process_monitor.py
   service_monitor.py
@@ -62,6 +63,7 @@ ui/
     disk.py
     fan_control.py
     history.py
+    homebridge.py
     launchers.py
     monitor.py
     network.py
@@ -363,6 +365,334 @@ class CleanupService:
         return self._running
 ````
 
+## File: core/homebridge_monitor.py
+````python
+"""
+Monitor de Homebridge
+Integración con la API REST de homebridge-config-ui-x
+Credenciales cargadas desde .env (nunca hardcodeadas)
+
+Incluye sondeo ligero en background cada 30s para mantener
+los badges del menú actualizados sin necesidad de abrir la ventana.
+"""
+import json
+import os
+import threading
+import urllib.request
+import urllib.error
+from pathlib import Path
+from typing import Dict, List, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+# ── Carga de .env ─────────────────────────────────────────────────────────────
+def _load_env():
+    """
+    Carga variables de .env sin dependencias externas.
+    Si python-dotenv está disponible lo usa; si no, parsea el archivo a mano.
+    """
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        logger.warning("[HomebridgeMonitor] No se encontró .env en %s", env_path)
+        return
+
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(env_path, override=False)
+        logger.debug("[HomebridgeMonitor] .env cargado con python-dotenv")
+    except ImportError:
+        logger.debug("[HomebridgeMonitor] python-dotenv no instalado, usando parser manual")
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+
+_load_env()
+
+# ── Configuración leída del entorno ───────────────────────────────────────────
+HOMEBRIDGE_HOST  = os.environ.get("HOMEBRIDGE_HOST", "")
+HOMEBRIDGE_PORT  = int(os.environ.get("HOMEBRIDGE_PORT", "8581"))
+HOMEBRIDGE_USER  = os.environ.get("HOMEBRIDGE_USER", "")
+HOMEBRIDGE_PASS  = os.environ.get("HOMEBRIDGE_PASS", "")
+
+HOMEBRIDGE_URL   = f"http://{HOMEBRIDGE_HOST}:{HOMEBRIDGE_PORT}"
+REQUEST_TIMEOUT  = 5   # segundos por petición HTTP
+POLL_INTERVAL_S  = 30  # segundos entre sondeos en background
+
+
+class HomebridgeMonitor:
+    """
+    Monitor y controlador de dispositivos Homebridge.
+
+    - Sondeo ligero en background cada 30s (1 petición HTTP ~1KB).
+    - La ventana lee self._accessories desde memoria sin petición extra.
+    - Los badges del menú siempre reflejan el estado real.
+    - toggle() fuerza un sondeo inmediato tras el comando.
+    """
+
+    def __init__(self):
+        self._token: Optional[str]      = None
+        self._token_lock                = threading.Lock()
+        self._accessories: List[Dict]   = []
+        self._accessories_lock          = threading.Lock()
+        self._reachable: Optional[bool] = None  # None = aún no consultado
+
+        # Control del thread de background
+        self._running  = False
+        self._stop_evt = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+        if not HOMEBRIDGE_HOST or not HOMEBRIDGE_USER:
+            logger.error(
+                "[HomebridgeMonitor] Faltan variables en .env: "
+                "HOMEBRIDGE_HOST=%r, HOMEBRIDGE_USER=%r",
+                HOMEBRIDGE_HOST, HOMEBRIDGE_USER,
+            )
+        else:
+            logger.info(
+                "[HomebridgeMonitor] Inicializado — %s:%s (usuario: %s)",
+                HOMEBRIDGE_HOST, HOMEBRIDGE_PORT, HOMEBRIDGE_USER,
+            )
+
+    # ── Ciclo de vida ─────────────────────────────────────────────────────────
+
+    def start(self) -> None:
+        """
+        Arranca el sondeo en background.
+        Llamar desde main.py justo después de instanciar.
+        """
+        if self._running:
+            return
+        self._running = True
+        self._stop_evt.clear()
+        self._thread = threading.Thread(
+            target=self._poll_loop,
+            daemon=True,
+            name="HomebridgePoll",
+        )
+        self._thread.start()
+        logger.info(
+            "[HomebridgeMonitor] Sondeo iniciado (cada %ds)", POLL_INTERVAL_S
+        )
+
+    def stop(self) -> None:
+        """
+        Detiene el sondeo limpiamente.
+        Llamar en cleanup() de main.py.
+        """
+        self._running = False
+        self._stop_evt.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=REQUEST_TIMEOUT + 1)
+        logger.info("[HomebridgeMonitor] Sondeo detenido")
+
+    def _poll_loop(self) -> None:
+        """
+        Bucle de background. Primera consulta inmediata al arrancar
+        para poblar los badges lo antes posible.
+        """
+        while self._running:
+            try:
+                self.get_accessories()
+            except Exception as e:
+                logger.error("[HomebridgeMonitor] Error en poll_loop: %s", e)
+
+            # Espera interrumpible: stop() lo despierta al instante
+            self._stop_evt.wait(timeout=POLL_INTERVAL_S)
+            if self._stop_evt.is_set():
+                break
+
+    # ── Autenticación ─────────────────────────────────────────────────────────
+
+    def _authenticate(self) -> bool:
+        """Obtiene un token JWT. Devuelve True si tiene éxito."""
+        if not HOMEBRIDGE_HOST:
+            logger.error("[HomebridgeMonitor] HOMEBRIDGE_HOST no configurado en .env")
+            return False
+
+        payload = json.dumps({
+            "username": HOMEBRIDGE_USER,
+            "password": HOMEBRIDGE_PASS,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            f"{HOMEBRIDGE_URL}/api/auth/login",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode())
+                token = data.get("access_token")
+                if token:
+                    with self._token_lock:
+                        self._token = token
+                    logger.info("[HomebridgeMonitor] Autenticación correcta")
+                    return True
+                logger.warning("[HomebridgeMonitor] Respuesta sin token: %s", data)
+                return False
+        except Exception as e:
+            logger.error("[HomebridgeMonitor] Error de autenticación: %s", e)
+            return False
+
+    def _get_token(self) -> Optional[str]:
+        """Devuelve el token actual; si no existe intenta autenticar."""
+        with self._token_lock:
+            token = self._token
+        if token:
+            return token
+        if self._authenticate():
+            with self._token_lock:
+                return self._token
+        return None
+
+    def _request(self, method: str, path: str, body: Optional[Dict] = None) -> Optional[Dict]:
+        """
+        Petición autenticada. Si el token caduca (401) lo renueva una vez.
+        """
+        for attempt in range(2):
+            token = self._get_token()
+            if not token:
+                return None
+
+            payload = json.dumps(body).encode() if body else None
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            }
+            req = urllib.request.Request(
+                f"{HOMEBRIDGE_URL}{path}",
+                data=payload,
+                headers=headers,
+                method=method,
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                    content = resp.read().decode()
+                    return json.loads(content) if content else {}
+            except urllib.error.HTTPError as e:
+                if e.code == 401 and attempt == 0:
+                    logger.warning("[HomebridgeMonitor] Token caducado, renovando...")
+                    with self._token_lock:
+                        self._token = None
+                    continue
+                logger.error("[HomebridgeMonitor] HTTP %s en %s: %s", e.code, path, e)
+                return None
+            except Exception as e:
+                logger.error("[HomebridgeMonitor] Error en petición %s %s: %s", method, path, e)
+                return None
+        return None
+
+    # ── Accesorios ────────────────────────────────────────────────────────────
+
+    def get_accessories(self) -> List[Dict]:
+        """
+        Consulta Homebridge y actualiza self._accessories.
+        Llamado por el sondeo en background y por la ventana al abrir.
+        Devuelve la lista de enchufes/interruptores (característica 'On').
+        """
+        data = self._request("GET", "/api/accessories")
+        if data is None:
+            self._reachable = False
+            logger.warning("[HomebridgeMonitor] Sin conexión con Homebridge")
+            return []
+
+        self._reachable = True
+        accesorios = data if isinstance(data, list) else data.get("accessories", [])
+
+        switches = []
+        for acc in accesorios:
+            values = acc.get("values", {})
+            if "On" in values:
+                fault  = int(values.get("StatusFault",  0))
+                active = int(values.get("StatusActive", 1))
+                switches.append({
+                    "uniqueId":    acc.get("uniqueId", ""),
+                    "displayName": acc.get("serviceName", acc.get("name", "Desconocido")),
+                    "on":          bool(values["On"]),
+                    "fault":       fault == 1,
+                    "inactive":    active == 0,
+                    "serviceName": acc.get("serviceName", ""),
+                    "room":        acc.get("humanType", ""),
+                })
+
+        with self._accessories_lock:
+            self._accessories = switches
+
+        logger.debug(
+            "[HomebridgeMonitor] Sondeo OK — %d dispositivos, %d ON, %d con fallo",
+            len(switches),
+            sum(1 for a in switches if a["on"]),
+            sum(1 for a in switches if a["fault"]),
+        )
+        return switches
+
+    def get_accessories_cached(self) -> List[Dict]:
+        """
+        Devuelve la lista en memoria sin hacer ninguna petición HTTP.
+        Usar desde la ventana para el refresco visual inmediato.
+        """
+        with self._accessories_lock:
+            return list(self._accessories)
+
+    def toggle(self, unique_id: str, turn_on: bool) -> bool:
+        """
+        Cambia el estado On/Off de un accesorio.
+        Tras el comando lanza un sondeo inmediato para que los badges
+        reflejen el cambio sin esperar los 30s del ciclo normal.
+        """
+        body   = {"characteristicType": "On", "value": turn_on}
+        result = self._request("PUT", f"/api/accessories/{unique_id}", body)
+        if result is not None:
+            logger.info(
+                "[HomebridgeMonitor] %s → %s",
+                unique_id, "ON" if turn_on else "OFF",
+            )
+            # Sondeo inmediato para actualizar badges al instante
+            threading.Thread(
+                target=self.get_accessories,
+                daemon=True,
+                name="HB-PostToggle",
+            ).start()
+            return True
+        logger.error("[HomebridgeMonitor] Fallo al togglear %s", unique_id)
+        return False
+
+    # ── Métodos de badge (lectura desde memoria, sin HTTP) ────────────────────
+
+    def is_reachable(self) -> bool:
+        """True si la última consulta fue exitosa."""
+        return bool(self._reachable)
+
+    def get_offline_count(self) -> int:
+        """1 si Homebridge no respondió en la última consulta. 0 en cualquier otro caso."""
+        if self._reachable is None:
+            return 0  # sin consultar aún — no mostrar badge al arrancar
+        return 0 if self._reachable else 1
+
+    def get_on_count(self) -> int:
+        """Número de enchufes encendidos. Badge naranja en el menú."""
+        if self._reachable is None:
+            return 0
+        with self._accessories_lock:
+            return sum(1 for a in self._accessories if a.get("on", False))
+
+    def get_fault_count(self) -> int:
+        """Número de dispositivos con StatusFault=1. Badge rojo en el menú."""
+        if self._reachable is None:
+            return 0
+        with self._accessories_lock:
+            return sum(1 for a in self._accessories if a.get("fault", False))
+````
+
 ## File: ui/widgets/graphs.py
 ````python
 """
@@ -503,6 +833,294 @@ def recolor_lines(canvas, lines: List, color: str) -> None:
     """
     for line in lines:
         canvas.itemconfig(line, fill=color)
+````
+
+## File: ui/windows/homebridge.py
+````python
+"""
+Ventana de control de dispositivos Homebridge
+Muestra enchufes e interruptores y permite encenderlos / apagarlos
+"""
+import threading
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
+from ui.widgets import custom_msgbox
+from core.homebridge_monitor import HomebridgeMonitor
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+# Intervalo de refresco de la ventana (ms)
+HB_UPDATE_MS = 5000
+
+
+class HomebridgeWindow(ctk.CTkToplevel):
+    """Ventana de control de dispositivos Homebridge."""
+
+    def __init__(self, parent, homebridge_monitor: HomebridgeMonitor):
+        super().__init__(parent)
+        self.hb = homebridge_monitor
+        self._accessories = []
+        self._update_job = None
+        self._busy = False  # evita peticiones simultáneas
+
+        # Configurar ventana
+        self.title("Homebridge")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+
+        self._create_ui()
+        self._schedule_update()
+        logger.info("[HomebridgeWindow] Ventana abierta")
+
+    # ── Interfaz ──────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        """Construye la interfaz completa."""
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
+            main,
+            title="HOMEBRIDGE",
+            on_close=self._on_close,
+            status_text="Conectando...",
+        )
+
+        # ── Barra de estado ───────────────────────────────────────────────────
+        status_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'])
+        status_bar.pack(fill="x", padx=5, pady=(0, 4))
+        self._status_label = ctk.CTkLabel(
+            status_bar,
+            text="",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            anchor="w",
+        )
+        self._status_label.pack(pady=4, padx=10, fill="x")
+
+        # ── Área scrollable de dispositivos ───────────────────────────────────
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        max_height = DSI_HEIGHT - 220
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0,
+            height=max_height,
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30,
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        self._device_frame = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window(
+            (0, 0), window=self._device_frame, anchor="nw", width=DSI_WIDTH - 50
+        )
+        self._device_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+
+        # ── Botón Refrescar ───────────────────────────────────────────────────
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=8, padx=10)
+
+        make_futuristic_button(
+            bottom,
+            text="⟳  Refrescar",
+            command=self._force_refresh,
+            width=15,
+            height=6,
+        ).pack(side="left", padx=5)
+
+    # ── Actualización ─────────────────────────────────────────────────────────
+
+    def _schedule_update(self):
+        """Programa la siguiente actualización."""
+        self._update_job = self.after(100, self._fetch_and_render)
+
+    def _force_refresh(self):
+        """Fuerza un refresco inmediato."""
+        if self._update_job:
+            self.after_cancel(self._update_job)
+        self._fetch_and_render()
+
+    def _fetch_and_render(self):
+        """Lanza la petición en background y actualiza la UI cuando termina."""
+        if self._busy:
+            return
+        self._busy = True
+        self._set_status("Actualizando...")
+
+        def fetch():
+            accessories = self.hb.get_accessories()
+            self.after(0, lambda: self._render(accessories))
+
+        threading.Thread(target=fetch, daemon=True, name="HB-Fetch").start()
+
+    def _render(self, accessories):
+        """Actualiza la lista de dispositivos en el hilo principal."""
+        self._accessories = accessories
+        self._busy = False
+
+        # ── Header status ──────────────────────────────────────────────────────
+        if self.hb.is_reachable():
+            on_count = sum(1 for a in accessories if a["on"])
+            total = len(accessories)
+            header_status = f"{on_count}/{total} encendidos"
+            self._set_status(
+                f"{total} dispositivo{'s' if total != 1 else ''} encontrado{'s' if total != 1 else ''}"
+            )
+        else:
+            header_status = "⚠ Sin conexión"
+            self._set_status("No se pudo conectar con Homebridge — verifica host y credenciales")
+
+        # Actualizar status del header
+        for child in self._header.winfo_children():
+            if hasattr(child, "cget"):
+                try:
+                    if child.cget("text") not in ("HOMEBRIDGE", "✕"):
+                        child.configure(text=header_status)
+                        break
+                except Exception:
+                    pass
+
+        # ── Redibujar grid 2 columnas ──────────────────────────────────────────
+        for widget in self._device_frame.winfo_children():
+            widget.destroy()
+
+        if not accessories:
+            msg = (
+                "Sin conexión con Homebridge" if not self.hb.is_reachable()
+                else "No se encontraron enchufes ni interruptores"
+            )
+            ctk.CTkLabel(
+                self._device_frame,
+                text=msg,
+                text_color=COLORS.get('warning', '#ffaa00'),
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+            ).pack(pady=30)
+        else:
+            self._device_frame.grid_columnconfigure(0, weight=1, uniform="col")
+            self._device_frame.grid_columnconfigure(1, weight=1, uniform="col")
+            for idx, acc in enumerate(accessories):
+                self._create_device_card(acc, idx // 2, idx % 2)
+
+        # Programar siguiente actualización
+        self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
+
+    def _create_device_card(self, acc: dict, grid_row: int, grid_col: int):
+        """Tarjeta estilo Lanzadores: indicador + nombre + botón ON/OFF grande."""
+        is_on    = acc["on"]
+        is_fault = acc.get("fault", False)
+        is_inact = acc.get("inactive", False)
+
+        color_on   = COLORS.get('success', '#00ff88')
+        color_off  = COLORS.get('text_dim', '#555555')
+        color_warn = COLORS.get('danger',  '#ff4444')
+
+        # Color del indicador: rojo si fallo/inactivo, verde si ON, gris si OFF
+        if is_fault or is_inact:
+            dot_color = color_warn
+            dot_text  = "⚠"
+        else:
+            dot_color = color_on if is_on else color_off
+            dot_text  = "●"
+
+        card = ctk.CTkFrame(
+            self._device_frame,
+            fg_color=COLORS['bg_dark'],
+        )
+        card.grid(row=grid_row, column=grid_col, sticky="nsew")
+
+        # Indicador de estado
+        ctk.CTkLabel(
+            card,
+            text=dot_text,
+            text_color=dot_color,
+            font=(FONT_FAMILY, FONT_SIZES['large']),
+        ).pack(pady=(10, 2))
+
+        # Nombre del dispositivo
+        ctk.CTkLabel(
+            card,
+            text=acc["displayName"],
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
+            wraplength=160,
+            justify="center",
+        ).pack(padx=10, pady=(0, 6))
+
+        # Botón ON/OFF — mismo tamaño que Lanzadores
+        # Si hay fallo el botón muestra "FALLO" y está deshabilitado
+        if is_fault or is_inact:
+            btn_text = "FALLO"
+            btn_cmd  = lambda: None
+        else:
+            btn_text = "ENCENDIDO" if is_on else "APAGADO"
+            btn_cmd  = lambda uid=acc["uniqueId"], state=is_on: self._toggle(uid, not state)
+
+        make_futuristic_button(
+            card,
+            text=btn_text,
+            command=btn_cmd,
+            width=40,
+            height=15,
+            font_size=FONT_SIZES['large'],
+        ).pack(pady=(0, 10), padx=10)
+
+
+    # ── Acciones ──────────────────────────────────────────────────────────────
+
+    def _toggle(self, unique_id: str, turn_on: bool):
+        """Envía el comando ON/OFF al dispositivo en background."""
+        def send():
+            ok = self.hb.toggle(unique_id, turn_on)
+            if ok:
+                # Refresca inmediatamente para reflejar el nuevo estado
+                self.after(500, self._force_refresh)
+            else:
+                self.after(
+                    0,
+                    lambda: custom_msgbox(
+                        self, "Error",
+                        "No se pudo enviar el comando al dispositivo.\n"
+                        "Verifica la conexión con Homebridge.",
+                        tipo="error"
+                    )
+                )
+
+        threading.Thread(target=send, daemon=True, name="HB-Toggle").start()
+
+    def _set_status(self, text: str):
+        """Actualiza la barra de estado inferior."""
+        try:
+            self._status_label.configure(text=text)
+        except Exception:
+            pass
+
+    # ── Cierre ────────────────────────────────────────────────────────────────
+
+    def _on_close(self):
+        """Cancela actualizaciones pendientes y cierra la ventana."""
+        if self._update_job:
+            self.after_cancel(self._update_job)
+        logger.info("[HomebridgeWindow] Ventana cerrada")
+        self.destroy()
 ````
 
 ## File: ui/__init__.py
@@ -3683,62 +4301,6 @@ def log_startup_info():
         logger.warning("DISPLAY no configurado - posible problema de GUI")
 ````
 
-## File: requirements.txt
-````
-# ============================================
-# System Dashboard - Python Dependencies
-# ============================================
-#
-# Instalación rápida (recomendada):
-#   sudo ./install_system.sh
-#
-# O manualmente:
-#   pip3 install --break-system-packages -r requirements.txt
-#
-# Versión mínima de Python: 3.8+
-# ============================================
-
-# === Dependencias Obligatorias ===
-
-# Interfaz gráfica moderna con tema oscuro
-customtkinter>=5.2.0
-
-# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
-psutil>=5.9.0
-
-# Gráficas históricas (ventana Histórico Datos)
-matplotlib>=3.5.0
-
-
-# === Dependencias Opcionales ===
-
-# Test de velocidad de internet (Monitor Red → Speedtest)
-# Instalar también en sistema: sudo apt install speedtest-cli
-# speedtest-cli>=2.1.3
-
-
-# ============================================
-# NOTA: Dependencias del Sistema (NO Python)
-# ============================================
-#
-# El script install_system.sh las instala automáticamente.
-# O manualmente con apt-get:
-#
-#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
-#
-# Descripción:
-#   - lm-sensors:     Lectura de temperatura CPU (sensors)
-#   - usbutils:       Comando lsusb (listar USB)
-#   - udisks2:        Expulsar dispositivos USB de forma segura
-#   - util-linux:     Comando lsblk (suele venir instalado)
-#   - smartmontools:  Temperatura NVMe (smartctl)
-#
-# Opcional para speedtest (el script pregunta al instalarlo):
-#   sudo apt-get install speedtest-cli
-#
-# ============================================
-````
-
 ## File: THEMES_GUIDE.md
 ````markdown
 # 🎨 Guía de Temas - System Dashboard
@@ -5766,6 +6328,66 @@ class FileManager:
             raise
 ````
 
+## File: requirements.txt
+````
+# ============================================
+# System Dashboard - Python Dependencies
+# ============================================
+#
+# Instalación rápida (recomendada):
+#   sudo ./install_system.sh
+#
+# O manualmente:
+#   pip3 install --break-system-packages -r requirements.txt
+#
+# Versión mínima de Python: 3.8+
+# ============================================
+
+# === Dependencias Obligatorias ===
+
+# Interfaz gráfica moderna con tema oscuro
+customtkinter>=5.2.0
+
+# Monitor del sistema (CPU, RAM, Disco, Red, Procesos)
+psutil>=5.9.0
+
+# Gráficas históricas (ventana Histórico Datos)
+matplotlib>=3.5.0
+
+
+# === Dependencias Opcionales ===
+
+# ── Entorno y configuración ───────────────────────────────────────────────────
+python-dotenv>=1.0.0          # Carga de variables desde .env (Homebridge, etc.)
+
+
+# Test de velocidad de internet (Monitor Red → Speedtest)
+# Instalar también en sistema: sudo apt install speedtest-cli
+# speedtest-cli>=2.1.3
+
+
+# ============================================
+# NOTA: Dependencias del Sistema (NO Python)
+# ============================================
+#
+# El script install_system.sh las instala automáticamente.
+# O manualmente con apt-get:
+#
+#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
+#
+# Descripción:
+#   - lm-sensors:     Lectura de temperatura CPU (sensors)
+#   - usbutils:       Comando lsusb (listar USB)
+#   - udisks2:        Expulsar dispositivos USB de forma segura
+#   - util-linux:     Comando lsblk (suele venir instalado)
+#   - smartmontools:  Temperatura NVMe (smartctl)
+#
+# Opcional para speedtest (el script pregunta al instalarlo):
+#   sudo apt-get install speedtest-cli
+#
+# ============================================
+````
+
 ## File: core/fan_auto_service.py
 ````python
 """
@@ -7754,170 +8376,6 @@ class SystemUtils:
         return 0.0
 ````
 
-## File: QUICKSTART.md
-````markdown
-# 🚀 Inicio Rápido - Dashboard v2.5.1
-
----
-
-## ⚡ Instalación (2 Comandos)
-
-```bash
-git clone https://github.com/tu-usuario/system-dashboard.git
-cd system-dashboard
-chmod +x install_system.sh
-sudo ./install_system.sh
-python3 main.py
-```
-
-El script instala automáticamente las dependencias del sistema y Python, y pregunta si quieres configurar sensores y speedtest.
-
----
-
-## 🔁 Alternativa con Entorno Virtual
-
-Si prefieres aislar las dependencias:
-
-```bash
-chmod +x install.sh
-./install.sh
-source venv/bin/activate
-python3 main.py
-```
-
-> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
-
----
-
-## 📋 Requisitos Mínimos
-
-- ✅ Raspberry Pi 3/4/5
-- ✅ Raspberry Pi OS (cualquier versión)
-- ✅ Python 3.8+
-- ✅ Conexión a internet (para instalación)
-
----
-
-## 🎯 Menú Principal (13 botones)
-
-```
-┌───────────────────────────────────┐
-│  Control        │  Monitor         │
-│  Ventiladores   │  Placa           │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Red            │  USB             │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Lanzadores      │
-│  Disco          │                  │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Procesos       │  Servicios       │
-├─────────────────┼──────────────────┤
-│  Histórico      │  Actualizaciones │
-│  Datos          │                  │
-├─────────────────┼──────────────────┤
-│  Cambiar Tema   │  Reiniciar       │
-├─────────────────┼──────────────────┤
-│  Salir          │                  │
-└─────────────────┴──────────────────┘
-```
-
----
-
-## 🖥️ Las 13 Ventanas
-
-**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real con gráficas
-
-**2. Monitor Red** — Download/Upload en vivo, speedtest, lista de IPs
-
-**3. Monitor USB** — Dispositivos conectados, expulsión segura
-
-**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O
-
-**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
-
-**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
-
-**7. Histórico Datos** — Gráficas CPU/RAM/Temp en 24h, 7d, 30d, exportar CSV
-
-**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
-
-**9. Lanzadores** — Scripts personalizados con terminal en vivo
-
-**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
-
-**11. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
-
-**12. Reiniciar** — Reinicia el dashboard aplicando cambios de código
-
-**13. Salir** — Salir de la app o apagar el sistema
-
----
-
-## 🔧 Configuración Básica
-
-### Ajustar posición en pantalla DSI (`config/settings.py`):
-```python
-DSI_X = 0     # Posición horizontal
-DSI_Y = 0     # Posición vertical
-```
-
-### Añadir scripts en Lanzadores:
-```python
-LAUNCHERS = [
-    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
-]
-```
-
----
-
-## 📋 Ver Logs del Sistema
-
-```bash
-# En tiempo real
-tail -f data/logs/dashboard.log
-
-# Solo errores
-grep ERROR data/logs/dashboard.log
-```
-
----
-
-## ❓ Problemas Comunes
-
-| Problema | Solución |
-|----------|----------|
-| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
-| Temperatura 0 | `sudo sensors-detect --auto` |
-| NVMe temp 0 | `sudo apt install smartmontools` |
-| Speedtest falla | `sudo apt install speedtest-cli` |
-| USB no expulsa | `sudo apt install udisks2` |
-| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
-
----
-
-## 🆕 Novedades v2.5.1
-
-✅ **Logging completo** — Todos los módulos loguean eventos y errores  
-✅ **Ventana Actualizaciones** — Terminal integrada para instalar paquetes  
-✅ **Caché de actualizaciones** — `apt update` solo al arranque y al pedir  
-✅ **Fix arranque** — Servicio de datos ya no se detiene a los 3 segundos  
-✅ **Terminal de apagado** — Visualiza el proceso de shutdown  
-
----
-
-## 📚 Más Información
-
-**[README.md](README.md)** — Documentación completa  
-**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
-**[INDEX.md](INDEX.md)** — Índice de toda la documentación
-
----
-
-**Dashboard v2.5.1** 🚀✨
-````
-
 ## File: config/settings.py
 ````python
 """
@@ -8826,285 +9284,168 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     return header
 ````
 
-## File: INDEX.md
+## File: QUICKSTART.md
 ````markdown
-# 📚 Índice de Documentación - System Dashboard v2.7
-
-Guía completa de toda la documentación del proyecto actualizada.
+# 🚀 Inicio Rápido - Dashboard v2.7
 
 ---
 
-## 🚀 Documentos Esenciales
+## ⚡ Instalación (2 Comandos)
 
-### **Para Empezar:**
-1. **[README.md](README.md)** ⭐  
-   Documentación completa del proyecto v2.7. **Empieza aquí.**
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
 
-2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
-   Instalación y ejecución en 5 minutos.
-
----
-
-## 📖 Guías por Tema
-
-### 🎨 **Personalización**
-
-**[THEMES_GUIDE.md](THEMES_GUIDE.md)**  
-- Lista completa de 15 temas
-- Cómo crear temas personalizados
-- Paletas de colores de cada tema
-- Cambiar tema desde código
+El script instala automáticamente las dependencias del sistema y Python, la CLI oficial de Ookla para speedtest, y pregunta si quieres configurar sensores de temperatura.
 
 ---
 
-### 🔧 **Instalación**
+## 🔁 Alternativa con Entorno Virtual
 
-**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**  
-- Instalación en Raspberry Pi OS
-- Instalación en Kali Linux
-- Instalación en otros Linux
-- Solución de problemas comunes
-- Métodos: venv, sin venv, script automático
+Si prefieres aislar las dependencias:
 
----
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
 
-### ⚙️ **Características Avanzadas**
-
-**[PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md)**  
-- Monitor de procesos completo
-- Búsqueda y filtrado
-- Terminación de procesos
-- Personalización de columnas
-
-**[SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)**  
-- Monitor de servicios systemd
-- Start/Stop/Restart servicios
-- Enable/Disable autostart
-- Ver logs en tiempo real
-- Implementación paso a paso
-
-**[HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)**  
-- Sistema de histórico completo
-- Base de datos SQLite
-- Visualización con matplotlib
-- Recolección automática
-- Exportación CSV
-- Implementación paso a paso
-
-**[FAN_CONTROL_GUIDE.md](FAN_CONTROL_GUIDE.md)** (si existe)  
-- Configuración de ventiladores PWM
-- Crear curvas personalizadas
-- Modos de operación
-- Servicio background
-
-**[NETWORK_GUIDE.md](NETWORK_GUIDE.md)** (si existe)  
-- Monitor de tráfico de red
-- Speedtest integrado (CLI oficial Ookla)
-- Auto-detección de interfaz
-- Lista de IPs
+> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
 
 ---
 
-### 🏗️ **Arquitectura**
+## 📋 Requisitos Mínimos
 
-**[ARCHITECTURE.md](ARCHITECTURE.md)** (si existe)  
-- Estructura del proyecto
-- Patrones de diseño
-- Flujo de datos
-- Cómo extender funcionalidad
-
----
-
-### 🤝 **Integración**
-
-**[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**  
-- Integrar con fase1.py (OLED)
-- Compartir estado de ventiladores
-- API de archivos JSON
-- Sincronización entre procesos
+- ✅ Raspberry Pi 3/4/5
+- ✅ Raspberry Pi OS (cualquier versión)
+- ✅ Python 3.8+
+- ✅ Conexión a internet (para instalación)
 
 ---
 
-### 💡 **Ideas y Expansión**
-
-**[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)**  
-- ✅ Funcionalidades implementadas (12 áreas)
-- 🔄 En evaluación (Alertas, GPU)
-- 💭 Ideas futuras (Automatización, API REST)
-- Roadmap v2.8 y v3.0
-
----
-
-## 📋 Archivos de Soporte
-
-### **Configuración:**
-- `requirements.txt` - Dependencias Python
-- `install.sh` - Script de instalación automática
-- `config/settings.py` - Configuración global
-- `config/themes.py` - Definición de 15 temas
-
-### **Scripts:**
-- `main.py` - Punto de entrada
-- `scripts/` - Scripts personalizados
-
-### **Compatibilidad:**
-- `COMPATIBILIDAD.md` - Sistemas soportados
-- `REQUIREMENTS.md` - Requisitos detallados
-
----
-
-## 🗂️ Estructura de Documentos v2.7
+## 🎯 Menú Principal (13 botones)
 
 ```
-📚 Documentación/
-├── README.md                    ⭐ Documento principal v2.7
-├── QUICKSTART.md                ⚡ Inicio rápido
-├── INDEX.md                     📑 Este archivo
-├── INSTALL_GUIDE.md             🔧 Instalación
-├── THEMES_GUIDE.md              🎨 Guía de temas
-├── PROCESS_MONITOR_GUIDE.md     ⚙️ Monitor de procesos
-├── SERVICE_MONITOR_GUIDE.md     🔧 Monitor de servicios
-├── HISTORICO_DATOS_GUIDE.md     📊 Histórico de datos
-├── INTEGRATION_GUIDE.md         🤝 Integración
-├── IDEAS_EXPANSION.md           💡 Ideas futuras
-├── COMPATIBILIDAD.md            🌐 Compatibilidad
-└── REQUIREMENTS.md              📋 Requisitos
+┌───────────────────────────────────┐
+│  Control        │  Monitor         │
+│  Ventiladores   │  Placa           │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Red            │  USB             │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Lanzadores      │
+│  Disco          │                  │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Procesos       │  Servicios       │
+├─────────────────┼──────────────────┤
+│  Histórico      │  Actualizaciones │
+│  Datos          │                  │
+├─────────────────┼──────────────────┤
+│  Cambiar Tema   │  Reiniciar       │
+├─────────────────┼──────────────────┤
+│  Salir          │                  │
+└─────────────────┴──────────────────┘
 ```
 
 ---
 
-## 🎯 Flujo de Lectura Recomendado
+## 🖥️ Las 13 Ventanas
 
-### **Usuario Nuevo:**
-1. README.md - Leer sección "Características"
-2. QUICKSTART.md - Instalar y ejecutar
-3. THEMES_GUIDE.md - Personalizar colores
-4. Explorar las 10 ventanas del dashboard 🎉
+**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real (status en header)
 
-### **Usuario Avanzado:**
-1. README.md completo
-2. PROCESS_MONITOR_GUIDE.md - Gestión avanzada
-3. SERVICE_MONITOR_GUIDE.md - Control de servicios
-4. HISTORICO_DATOS_GUIDE.md - Análisis de datos
-5. Personalizar configuración
+**2. Monitor Red** — Download/Upload en vivo, speedtest Ookla, lista de IPs (status en header)
 
-### **Desarrollador:**
-1. ARCHITECTURE.md - Estructura del proyecto
-2. README.md sección "Arquitectura"
-3. Código fuente en `core/` y `ui/`
-4. IDEAS_EXPANSION.md - Ver qué se puede añadir
-5. Implementar nuevas funciones
+**3. Monitor USB** — Dispositivos conectados, expulsión segura
 
----
+**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O (status en header)
 
-## 🔍 Buscar por Tema
+**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
 
-### **¿Cómo hacer X?**
-- **Cambiar tema** → THEMES_GUIDE.md
-- **Instalar** → QUICKSTART.md o INSTALL_GUIDE.md
-- **Ver procesos** → PROCESS_MONITOR_GUIDE.md
-- **Gestionar servicios** → SERVICE_MONITOR_GUIDE.md
-- **Ver histórico** → HISTORICO_DATOS_GUIDE.md
-- **Configurar ventiladores** → FAN_CONTROL_GUIDE.md
-- **Integrar con OLED** → INTEGRATION_GUIDE.md
-- **Añadir funciones** → ARCHITECTURE.md + IDEAS_EXPANSION.md
+**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
 
-### **¿Tengo un problema?**
-- **No arranca** → QUICKSTART.md sección "Problemas Comunes"
-- **Ventiladores no funcionan** → FAN_CONTROL_GUIDE.md
-- **Temperatura no se lee** → INSTALL_GUIDE.md
-- **Speedtest falla** → NETWORK_GUIDE.md
-- **Base de datos crece** → HISTORICO_DATOS_GUIDE.md
-- **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md
-- **Otro problema** → README.md sección "Troubleshooting"
+**7. Histórico Datos** — 8 gráficas CPU/RAM/Temp/Red/Disco/PWM en 24h, 7d, 30d, exportar CSV
+
+**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
+
+**9. Lanzadores** — Scripts personalizados con terminal en vivo
+
+**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
+
+**11. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
+
+**12. Reiniciar** — Reinicia el dashboard aplicando cambios de código
+
+**13. Salir** — Salir de la app o apagar el sistema
+
+> **Todas las ventanas** incluyen header unificado con título, status en tiempo real y botón ✕ táctil (52×42px) optimizado para pantalla DSI.
 
 ---
 
-## 📊 Estadísticas del Proyecto v2.7
+## 🔧 Configuración Básica
 
-- **Archivos Python**: 42+
-- **Líneas de código**: ~13,000
-- **Ventanas**: 10 ventanas funcionales
-- **Temas**: 15 temas pre-configurados
-- **Documentos**: 12 guías
-- **Servicios background**: 3 (FanAuto + DataCollection + Cleanup)
+### Ajustar posición en pantalla DSI (`config/settings.py`):
+```python
+DSI_X = 0     # Posición horizontal
+DSI_Y = 0     # Posición vertical
+```
 
----
-
-## 🆕 Novedades en v2.7
-
-### **Funcionalidades Nuevas:**
-- ✅ **Header unificado** (`make_window_header`) en las 10 ventanas
-- ✅ **Botón ✕ táctil** (52×42px) en todas las ventanas
-- ✅ **Status en tiempo real** en el header de cada ventana
-- ✅ **Speedtest** migrado al CLI oficial de Ookla (JSON, MB/s)
-
-### **Fixes:**
-- ✅ Botón Cerrar duplicado en Monitor de Red
-- ✅ Import `make_window_header` en ThemeSelector
-- ✅ Stats label de Servicios y Procesos en línea propia
-
----
-
-## 📧 Ayuda Adicional
-
-**¿No encuentras lo que buscas?**
-
-1. Busca en README.md (Ctrl+F)
-2. Revisa los ejemplos en las guías
-3. Abre un Issue en GitHub
-4. Revisa el código fuente (está comentado)
-
----
-
-## 🔗 Enlaces Rápidos
-
-| Tema | Documento |
-|------|-----------|
-| **Inicio Rápido** | [QUICKSTART.md](QUICKSTART.md) |
-| **Características** | [README.md](README.md) |
-| **Instalación** | [INSTALL_GUIDE.md](INSTALL_GUIDE.md) |
-| **Temas** | [THEMES_GUIDE.md](THEMES_GUIDE.md) |
-| **Procesos** | [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md) |
-| **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) |
-| **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) |
-| **Ideas Futuras** | [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) |
-
----
-
-**Versión actual**: v2.7 — **Última actualización**: 2026-02-22
-````
-
-## File: ui/windows/__init__.py
-````python
-"""
-Paquete de ventanas secundarias
-"""
-from .fan_control import FanControlWindow
-from .monitor import MonitorWindow
-from .network import NetworkWindow
-from .usb import USBWindow
-from .launchers import LaunchersWindow
-from .disk import DiskWindow
-from .process_window import ProcessWindow
-from .service import ServiceWindow
-from .update import UpdatesWindow
-from .history import HistoryWindow
-from .theme_selector import ThemeSelector
-
-__all__ = [
-    'FanControlWindow',
-    'MonitorWindow', 
-    'NetworkWindow',
-    'USBWindow',
-    'LaunchersWindow',
-    'DiskWindow',
-    'ProcessWindow',
-    'ServiceWindow',
-    'UpdatesWindow',
-    'HistoryWindow',
-    'ThemeSelector'
+### Añadir scripts en Lanzadores:
+```python
+LAUNCHERS = [
+    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
 ]
+```
+
+---
+
+## 📋 Ver Logs del Sistema
+
+```bash
+# En tiempo real
+tail -f data/logs/dashboard.log
+
+# Solo errores
+grep ERROR data/logs/dashboard.log
+```
+
+---
+
+## ❓ Problemas Comunes
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 🆕 Novedades v2.7
+
+✅ **Header unificado** — Todas las ventanas con título + status + botón ✕ táctil 52×42px  
+✅ **Status en tiempo real** — CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades en el header  
+✅ **Speedtest Ookla CLI** — CLI oficial con resultados en MB/s reales  
+
+---
+
+## 📚 Más Información
+
+**[README.md](README.md)** — Documentación completa  
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
+**[INDEX.md](INDEX.md)** — Índice de toda la documentación
+
+---
+
+**Dashboard v2.7** 🚀✨
 ````
 
 ## File: ui/windows/network.py
@@ -9338,271 +9679,275 @@ class NetworkWindow(ctk.CTkToplevel):
         self.after(UPDATE_MS, self._update)
 ````
 
-## File: IDEAS_EXPANSION.md
+## File: INDEX.md
 ````markdown
-# 💡 Ideas de Expansión - Dashboard v2.7
+# 📚 Índice de Documentación - System Dashboard v2.7
 
-Roadmap de funcionalidades y estado real de implementación.
-
----
-
-## ✅ Implementado
-
-### **1. Monitor de Procesos en Tiempo Real**
-**Implementado en v2.0**
-- ✅ Lista en tiempo real (Top 20) con PID, comando, usuario, CPU%, RAM%
-- ✅ Búsqueda por nombre o comando
-- ✅ Filtros: Todos / Usuario / Sistema
-- ✅ Ordenar por PID, Nombre, CPU%, RAM%
-- ✅ Matar procesos con confirmación
-- ✅ Colores dinámicos según uso
-- ✅ Pausa inteligente durante interacciones
-- ✅ Estadísticas: procesos totales, CPU, RAM, uptime
+Guía completa de toda la documentación del proyecto actualizada.
 
 ---
 
-### **2. Monitor de Servicios systemd**
-**Implementado en v2.5**
-- ✅ Lista completa de servicios systemd
-- ✅ Estados: active, inactive, failed con iconos
-- ✅ Start/Stop/Restart con confirmación
-- ✅ Ver logs en tiempo real (últimas 50 líneas)
-- ✅ Enable/Disable autostart
-- ✅ Búsqueda y filtros (Todos / Activos / Inactivos / Fallidos)
-- ✅ Estadísticas: total, activos, fallidos, enabled
+## 🚀 Documentos Esenciales
+
+### **Para Empezar:**
+1. **[README.md](README.md)** ⭐  
+   Documentación completa del proyecto v2.7. **Empieza aquí.**
+
+2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
+   Instalación y ejecución en 5 minutos.
 
 ---
 
-### **3. Histórico de Datos**
-**Implementado en v2.5 — ampliado en v2.5.1**
-- ✅ Base de datos SQLite (~5MB/10k registros)
-- ✅ Recolección automática cada 5 minutos en background
-- ✅ Métricas guardadas: CPU, RAM, Temp, Disco I/O, Red, PWM, actualizaciones
-- ✅ **8 gráficas**: CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM
-- ✅ Periodos: 24h, 7d, 30d
-- ✅ Estadísticas completas: promedios, mínimos, máximos de todas las métricas
-- ✅ Detección de anomalías automática
-- ✅ Exportación a CSV
-- ✅ Exportación de gráficas como imagen PNG
-- ✅ Limpieza de datos antiguos configurable
-- ✅ **Zoom, pan y navegación** sobre las gráficas (toolbar matplotlib)
-- ✅ Registro de eventos críticos en BD separada
+## 📖 Guías por Tema
+
+### 🎨 **Personalización**
+
+**[THEMES_GUIDE.md](THEMES_GUIDE.md)**  
+- Lista completa de 15 temas
+- Cómo crear temas personalizados
+- Paletas de colores de cada tema
+- Cambiar tema desde código
 
 ---
 
-### **4. Sistema de Temas**
-**Implementado en v2.0**
-- ✅ 15 temas pre-configurados
-- ✅ Cambio con un clic y reinicio automático
-- ✅ Preview visual antes de aplicar
-- ✅ Persistencia entre reinicios
-- ✅ Todos los componentes usan colores del tema (sliders, scrollbars, radiobuttons)
+### 🔧 **Instalación**
+
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**  
+- Instalación en Raspberry Pi OS
+- Instalación en Kali Linux
+- Instalación en otros Linux
+- Solución de problemas comunes
+- Métodos: venv, sin venv, script automático
 
 ---
 
-### **5. Reinicio y Apagado**
-**Implementado en v2.5**
-- ✅ Botón Reiniciar con confirmación (aplica cambios de código)
-- ✅ Botón Salir con opción de apagar el sistema
-- ✅ Terminal de apagado (visualiza apagado.sh en vivo)
+### ⚙️ **Características Avanzadas**
+
+**[PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md)**  
+- Monitor de procesos completo
+- Búsqueda y filtrado
+- Terminación de procesos
+- Personalización de columnas
+
+**[SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)**  
+- Monitor de servicios systemd
+- Start/Stop/Restart servicios
+- Enable/Disable autostart
+- Ver logs en tiempo real
+- Implementación paso a paso
+
+**[HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)**  
+- Sistema de histórico completo
+- Base de datos SQLite
+- Visualización con matplotlib
+- Recolección automática
+- Exportación CSV
+- Implementación paso a paso
+
+**[FAN_CONTROL_GUIDE.md](FAN_CONTROL_GUIDE.md)** (si existe)  
+- Configuración de ventiladores PWM
+- Crear curvas personalizadas
+- Modos de operación
+- Servicio background
+
+**[NETWORK_GUIDE.md](NETWORK_GUIDE.md)** (si existe)  
+- Monitor de tráfico de red
+- Speedtest integrado (CLI oficial Ookla)
+- Auto-detección de interfaz
+- Lista de IPs
 
 ---
 
-### **6. Actualizaciones del Sistema**
-**Implementado en v2.5.1**
-- ✅ Verificación al arranque en background (no bloquea la UI)
-- ✅ Sistema de caché 12h (no repite apt update innecesariamente)
-- ✅ Ventana dedicada con estado visual
-- ✅ Instalación con terminal integrada en vivo
-- ✅ Botón Buscar para forzar comprobación manual
-- ✅ Refresco automático del estado tras instalar
+### 🏗️ **Arquitectura**
+
+**[ARCHITECTURE.md](ARCHITECTURE.md)** (si existe)  
+- Estructura del proyecto
+- Patrones de diseño
+- Flujo de datos
+- Cómo extender funcionalidad
 
 ---
 
-### **7. Sistema de Logging Completo**
-**Implementado en v2.5.1**
-- ✅ Cobertura 100% en módulos core y UI
-- ✅ Niveles diferenciados: DEBUG, INFO, WARNING, ERROR
-- ✅ Rotación automática 2MB con backup
-- ✅ Archivo fijo `data/logs/dashboard.log`
+### 🤝 **Integración**
+
+**[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**  
+- Integrar con fase1.py (OLED)
+- Compartir estado de ventiladores
+- API de archivos JSON
+- Sincronización entre procesos
 
 ---
 
-### **8. Lanzadores de Scripts**
-**Implementado desde v1.0 — mejorado en v2.5.1**
-- ✅ Scripts personalizados configurables en `settings.py`
-- ✅ Terminal integrada que muestra el output en vivo
-- ✅ Confirmación previa a ejecución
-- ✅ Layout en grid configurable
+### 💡 **Ideas y Expansión**
+
+**[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)**  
+- ✅ Funcionalidades implementadas (Procesos, Servicios, Histórico, Badges, Header unificado)
+- 🔄 En evaluación (Docker, GPU)
+- 💭 Ideas futuras (Alertas, Automatización)
+- Roadmap v3.0
 
 ---
 
-### **9. Servicio de Limpieza Automática**
-**Implementado en v2.6**
-- ✅ `CleanupService` en `core/` — singleton, daemon thread
-- ✅ Limpieza automática de CSV exportados (máx. 10)
-- ✅ Limpieza automática de PNG exportados (máx. 10)
-- ✅ Limpieza periódica de BD SQLite (registros >30 días, cada 24h)
-- ✅ `force_cleanup()` para limpieza manual desde la UI
-- ✅ Inyección de dependencias en `HistoryWindow`
-- ✅ Botón "Limpiar Antiguos" delega en el servicio
-- ✅ Red de seguridad por tamaño en `DataLogger` (>5MB → limpia a 7 días)
+## 📋 Archivos de Soporte
+
+### **Configuración:**
+- `requirements.txt` - Dependencias Python
+- `install.sh` - Script de instalación automática
+- `config/settings.py` - Configuración global
+- `config/themes.py` - Definición de 15 temas
+
+### **Scripts:**
+- `main.py` - Punto de entrada
+- `scripts/` - Scripts personalizados
+
+### **Compatibilidad:**
+- `COMPATIBILIDAD.md` - Sistemas soportados
+- `REQUIREMENTS.md` - Requisitos detallados
 
 ---
 
-### **10. Notificaciones Visuales en el Menú**
-**Implementado en v2.6**
-- ✅ Badge en "Actualizaciones" con paquetes pendientes (naranja)
-- ✅ Badge en "Monitor Servicios" con servicios fallidos (rojo)
-- ✅ Badge en "Control Ventiladores" y "Monitor Placa" con temperatura (naranja >60°C, rojo >70°C)
-- ✅ Badge en "Monitor Placa" con CPU (naranja >75%, rojo >90%)
-- ✅ Badge en "Monitor Placa" con RAM (naranja >75%, rojo >90%)
-- ✅ Badge en "Monitor Disco" con uso de disco (naranja >80%, rojo >90%)
-- ✅ Texto dinámico en badge (valor real: temperatura en °C, porcentaje)
-- ✅ Color de texto adaptativo (negro sobre amarillo, blanco sobre rojo)
+## 🗂️ Estructura de Documentos v2.7
+
+```
+📚 Documentación/
+├── README.md                    ⭐ Documento principal v2.7
+├── QUICKSTART.md                ⚡ Inicio rápido
+├── INDEX.md                     📑 Este archivo
+├── INSTALL_GUIDE.md             🔧 Instalación
+├── THEMES_GUIDE.md              🎨 Guía de temas
+├── PROCESS_MONITOR_GUIDE.md     ⚙️ Monitor de procesos
+├── SERVICE_MONITOR_GUIDE.md     🔧 Monitor de servicios
+├── HISTORICO_DATOS_GUIDE.md     📊 Histórico de datos
+├── INTEGRATION_GUIDE.md         🤝 Integración
+├── IDEAS_EXPANSION.md           💡 Ideas futuras
+├── COMPATIBILIDAD.md            🌐 Compatibilidad
+└── REQUIREMENTS.md              📋 Requisitos
+```
 
 ---
 
-### **11. Header Unificado y Mejoras UI**
-**Implementado en v2.7**
-- ✅ `make_window_header()` en `ui/styles.py` — componente reutilizable
-- ✅ Header consistente en las 10 ventanas (título + status + botón ✕)
-- ✅ Botón ✕ táctil (52×42px) apto para pantalla táctil DSI
-- ✅ Status en tiempo real en el header: CPU/RAM/Temp en Monitor, Disco/NVMe en Disco, interfaz/velocidades en Red
-- ✅ Stats label en línea propia para Servicios y Procesos (texto largo)
-- ✅ Eliminados todos los botones "Cerrar" inferiores redundantes
-- ✅ Separador decorativo bajo el header en todas las ventanas
+## 🎯 Flujo de Lectura Recomendado
+
+### **Usuario Nuevo:**
+1. README.md - Leer sección "Características"
+2. QUICKSTART.md - Instalar y ejecutar
+3. THEMES_GUIDE.md - Personalizar colores
+4. Explorar las 13 ventanas del dashboard 🎉
+
+### **Usuario Avanzado:**
+1. README.md completo
+2. PROCESS_MONITOR_GUIDE.md - Gestión avanzada
+3. SERVICE_MONITOR_GUIDE.md - Control de servicios
+4. HISTORICO_DATOS_GUIDE.md - Análisis de datos
+5. Personalizar configuración
+
+### **Desarrollador:**
+1. ARCHITECTURE.md - Estructura del proyecto
+2. README.md sección "Arquitectura"
+3. `ui/styles.py` → `make_window_header()` para añadir nuevas ventanas
+4. Código fuente en `core/` y `ui/`
+5. IDEAS_EXPANSION.md - Ver qué se puede añadir
 
 ---
 
-### **12. Speedtest CLI Oficial de Ookla**
-**Implementado en v2.7**
-- ✅ Migrado de `speedtest-cli` a `speedtest` (CLI oficial de Ookla)
-- ✅ Salida en JSON — más robusto que parsear texto
-- ✅ Conversión correcta bytes/s → MB/s
-- ✅ Timeout ampliado a 90s
-- ✅ Captura de errores JSON y KeyError
+## 🔍 Buscar por Tema
+
+### **¿Cómo hacer X?**
+- **Cambiar tema** → THEMES_GUIDE.md
+- **Instalar** → QUICKSTART.md o INSTALL_GUIDE.md
+- **Ver procesos** → PROCESS_MONITOR_GUIDE.md
+- **Gestionar servicios** → SERVICE_MONITOR_GUIDE.md
+- **Ver histórico** → HISTORICO_DATOS_GUIDE.md
+- **Configurar ventiladores** → FAN_CONTROL_GUIDE.md
+- **Integrar con OLED** → INTEGRATION_GUIDE.md
+- **Añadir nueva ventana con header** → `ui/styles.py` → `make_window_header()`
+- **Añadir funciones** → ARCHITECTURE.md + IDEAS_EXPANSION.md
+
+### **¿Tengo un problema?**
+- **No arranca** → QUICKSTART.md sección "Problemas Comunes"
+- **Ventiladores no funcionan** → FAN_CONTROL_GUIDE.md
+- **Temperatura no se lee** → INSTALL_GUIDE.md
+- **Speedtest falla** → README.md sección "Instalación Manual" (CLI Ookla)
+- **Base de datos crece** → HISTORICO_DATOS_GUIDE.md
+- **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md
+- **Otro problema** → README.md sección "Troubleshooting"
 
 ---
 
-## 🔄 En Evaluación
+## 📊 Estadísticas del Proyecto v2.7
 
-### **Monitor de Contenedores Docker**
-**Prioridad**: Descartado — usuario no usa Docker  
-
----
-
-### **Alertas Externas**
-**Prioridad**: Baja  
-**Complejidad**: Media
-
-- Notificaciones por Telegram o webhook
-- Alertas por temperatura alta sostenida, CPU, disco lleno, servicios caídos
-- Configurable por umbral y duración
+- **Archivos Python**: 41
+- **Líneas de código**: ~12,500
+- **Ventanas**: 13 ventanas funcionales
+- **Temas**: 15 temas pre-configurados
+- **Documentos**: 12 guías
+- **Servicios background**: 3 (FanAuto + DataCollection + Cleanup)
 
 ---
 
-### **Monitor de GPU**
-**Prioridad**: Muy baja (Raspberry Pi sin GPU dedicada)  
-**Complejidad**: Media
+## 🆕 Novedades en v2.7
+
+### **Funcionalidades Nuevas:**
+- ✅ **Header unificado** `make_window_header()` en todas las ventanas
+- ✅ **Status dinámico** en tiempo real integrado en el header
+- ✅ **Botón ✕ táctil** (52×42px) optimizado para DSI sin teclado
+- ✅ **Speedtest Ookla CLI** oficial (JSON, MB/s reales)
 
 ---
 
-## 🚀 Ideas Futuras (Backlog)
+## 📧 Ayuda Adicional
 
-**Automatización**: cron visual, profiles de ventiladores por hora, auto-reinicio de servicios caídos
+**¿No encuentras lo que buscas?**
 
-**Red avanzada**: monitor de dispositivos en red (nmap), Pi-hole stats, VPN panel
-
-**Backup**: programar backups, estado con progreso, sincronización cloud
-
-**Seguridad**: intentos de login fallidos, logs de seguridad, firewall status
-
-**API REST**: endpoints para métricas, histórico y control de servicios
-
-**UI**: grid de 2 columnas en ventanas de monitoreo (mejor aprovechamiento de 800×480)
+1. Busca en README.md (Ctrl+F)
+2. Revisa los ejemplos en las guías
+3. Abre un Issue en GitHub
+4. Revisa el código fuente (está comentado)
 
 ---
 
-## 🎯 Roadmap
+## 🔗 Enlaces Rápidos
 
-### **v2.5.1** ✅ — 2026-02-20
-- ✅ Logging completo en todos los módulos
-- ✅ Ventana Actualizaciones con caché y terminal
-- ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
-- ✅ Zoom y navegación en gráficas
-- ✅ Fix bug atexit en DataCollectionService
-- ✅ Paso correcto de dependencias (update_monitor inyectado)
-
-### **v2.6** ✅ — 2026-02-22
-- ✅ Badges de notificación visual en menú principal (6 badges, 5 botones)
-- ✅ CleanupService — limpieza automática background de CSV, PNG y BD
-- ✅ Fan control: entries con placeholder en lugar de sliders
-- ✅ Inyección de dependencias profesional (CleanupService → HistoryWindow)
-
-### **v2.7** ✅ ACTUAL — 2026-02-22
-- ✅ `make_window_header()` — header unificado y consistente en 10 ventanas
-- ✅ Botón ✕ táctil (52×42px) en todas las ventanas
-- ✅ Status en tiempo real en el header de cada ventana
-- ✅ Migración a speedtest CLI oficial de Ookla (JSON, MB/s)
-- ✅ Fix botón Cerrar duplicado en Monitor de Red
-- ✅ Fix import `make_window_header` en ThemeSelector
-
-### **v2.8** (Próximo)
-- [ ] Grid de 2 columnas en ventanas de monitoreo (mejor uso del espacio 800×480)
-- [ ] Mejoras UI adicionales
-
-### **v3.0** (Futuro)
-- [ ] Alertas externas (Telegram/webhook)
-- [ ] API REST básica
+| Tema | Documento |
+|------|-----------|
+| **Inicio Rápido** | [QUICKSTART.md](QUICKSTART.md) |
+| **Características** | [README.md#características](README.md#características-principales) |
+| **Instalación** | [INSTALL_GUIDE.md](INSTALL_GUIDE.md) |
+| **Temas** | [THEMES_GUIDE.md](THEMES_GUIDE.md) |
+| **Procesos** | [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md) |
+| **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) |
+| **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) |
+| **Troubleshooting** | [README.md#troubleshooting](README.md#troubleshooting) |
+| **Ideas Futuras** | [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) |
 
 ---
 
-## 📈 Cobertura actual
+## 🎯 Guías de Implementación
 
-| Área | Estado |
-|------|--------|
-| Monitoreo básico (CPU, RAM, Temp, Disco, Red) | ✅ 100% |
-| Control avanzado (Ventiladores, Procesos, Servicios) | ✅ 100% |
-| Histórico y análisis | ✅ 100% |
-| Actualizaciones del sistema | ✅ 100% |
-| Logging y observabilidad | ✅ 100% |
-| Notificaciones visuales internas | ✅ 100% |
-| Consistencia visual UI | ✅ 100% |
-| Alertas externas | ⏳ 0% |
-| Automatización | ⏳ 0% |
+Si quieres implementar funciones nuevas, tenemos guías paso a paso:
+
+| Función | Guía | Dificultad |
+|---------|------|------------|
+| **Monitor de Procesos** | PROCESS_MONITOR_GUIDE.md | Media |
+| **Monitor de Servicios** | SERVICE_MONITOR_GUIDE.md | Media |
+| **Histórico de Datos** | HISTORICO_DATOS_GUIDE.md | Alta |
+| **Nueva ventana con header** | `ui/styles.py` → `make_window_header()` | Baja |
 
 ---
 
-**Versión actual**: v2.7 — **Última actualización**: 2026-02-22
-````
+## 📈 Evolución de la Documentación
 
-## File: core/__init__.py
-````python
-"""
-Paquete core con lógica de negocio
-"""
-from .fan_controller import FanController
-from .system_monitor import SystemMonitor
-from .network_monitor import NetworkMonitor
-from .fan_auto_service import FanAutoService
-from .disk_monitor import DiskMonitor
-from .process_monitor import ProcessMonitor
-from .service_monitor import ServiceMonitor
-from .update_monitor import UpdateMonitor
-from .cleanup_service import CleanupService
+| Versión | Documentos | Páginas | Características |
+|---------|------------|---------|-----------------|
+| **v1.0** | 8 | ~50 | Básico |
+| **v2.0** | 10 | ~80 | + Procesos, Temas |
+| **v2.5** | 12 | ~120 | + Servicios, Histórico |
+| **v2.6** | 12 | ~130 | + Badges, CleanupService |
+| **v2.7** | 12 | ~140 | + Header unificado, Speedtest Ookla ⭐ |
 
-__all__ = [
-    'FanController',
-    'SystemMonitor',
-    'NetworkMonitor',
-    'FanAutoService',
-    'DiskMonitor',
-    'ProcessMonitor',
-    'ServiceMonitor',
-    'UpdateMonitor',
-    'CleanupService',
-]
+---
+
+**¡Toda la información que necesitas está aquí!** 📚✨
 ````
 
 ## File: core/data_analyzer.py
@@ -9997,6 +10342,40 @@ class DataCollectionService:
         self._collect_and_save()
 ````
 
+## File: ui/windows/__init__.py
+````python
+"""
+Paquete de ventanas secundarias
+"""
+from .fan_control import FanControlWindow
+from .monitor import MonitorWindow
+from .network import NetworkWindow
+from .usb import USBWindow
+from .launchers import LaunchersWindow
+from .disk import DiskWindow
+from .process_window import ProcessWindow
+from .service import ServiceWindow
+from .update import UpdatesWindow
+from .history import HistoryWindow
+from .theme_selector import ThemeSelector
+from .homebridge import HomebridgeWindow
+
+__all__ = [
+    'FanControlWindow',
+    'MonitorWindow', 
+    'NetworkWindow',
+    'USBWindow',
+    'LaunchersWindow',
+    'DiskWindow',
+    'ProcessWindow',
+    'ServiceWindow',
+    'UpdatesWindow',
+    'HistoryWindow',
+    'ThemeSelector',
+    'HomebridgeWindow'
+]
+````
+
 ## File: ui/windows/launchers.py
 ````python
 """
@@ -10133,6 +10512,264 @@ class LaunchersWindow(ctk.CTkToplevel):
             title="⚠️ Lanzador de Sistema",
             on_confirm=do_execute
         )
+````
+
+## File: IDEAS_EXPANSION.md
+````markdown
+# 💡 Ideas de Expansión - Dashboard v2.7
+
+---
+
+## ✅ Implementado
+
+### **1. Monitor de Procesos en Tiempo Real**
+**Implementado en v2.0**
+- ✅ Lista en tiempo real (Top 20) con PID, comando, usuario, CPU%, RAM%
+- ✅ Búsqueda por nombre o comando
+- ✅ Filtros: Todos / Usuario / Sistema
+- ✅ Ordenar por PID, Nombre, CPU%, RAM%
+- ✅ Matar procesos con confirmación
+- ✅ Colores dinámicos según uso
+- ✅ Pausa inteligente durante interacciones
+- ✅ Estadísticas: procesos totales, CPU, RAM, uptime
+
+---
+
+### **2. Monitor de Servicios systemd**
+**Implementado en v2.5**
+- ✅ Lista completa de servicios systemd
+- ✅ Estados: active, inactive, failed con iconos
+- ✅ Start/Stop/Restart con confirmación
+- ✅ Ver logs en tiempo real (últimas 50 líneas)
+- ✅ Enable/Disable autostart
+- ✅ Búsqueda y filtros (Todos / Activos / Inactivos / Fallidos)
+- ✅ Estadísticas: total, activos, fallidos, enabled
+
+---
+
+### **3. Histórico de Datos**
+**Implementado en v2.5 — ampliado en v2.5.1**
+- ✅ Base de datos SQLite (~5MB/10k registros)
+- ✅ Recolección automática cada 5 minutos en background
+- ✅ Métricas guardadas: CPU, RAM, Temp, Disco I/O, Red, PWM, actualizaciones
+- ✅ **8 gráficas**: CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM
+- ✅ Periodos: 24h, 7d, 30d
+- ✅ Estadísticas completas: promedios, mínimos, máximos de todas las métricas
+- ✅ Detección de anomalías automática
+- ✅ Exportación a CSV
+- ✅ Exportación de gráficas como imagen PNG
+- ✅ Limpieza de datos antiguos configurable
+- ✅ **Zoom, pan y navegación** sobre las gráficas (toolbar matplotlib)
+- ✅ Registro de eventos críticos en BD separada
+
+---
+
+### **4. Sistema de Temas**
+**Implementado en v2.0**
+- ✅ 15 temas pre-configurados
+- ✅ Cambio con un clic y reinicio automático
+- ✅ Preview visual antes de aplicar
+- ✅ Persistencia entre reinicios
+- ✅ Todos los componentes usan colores del tema (sliders, scrollbars, radiobuttons)
+
+---
+
+### **5. Reinicio y Apagado**
+**Implementado en v2.5**
+- ✅ Botón Reiniciar con confirmación (aplica cambios de código)
+- ✅ Botón Salir con opción de apagar el sistema
+- ✅ Terminal de apagado (visualiza apagado.sh en vivo)
+
+---
+
+### **6. Actualizaciones del Sistema**
+**Implementado en v2.5.1**
+- ✅ Verificación al arranque en background (no bloquea la UI)
+- ✅ Sistema de caché 12h (no repite apt update innecesariamente)
+- ✅ Ventana dedicada con estado visual
+- ✅ Instalación con terminal integrada en vivo
+- ✅ Botón Buscar para forzar comprobación manual
+- ✅ Refresco automático del estado tras instalar
+
+---
+
+### **7. Sistema de Logging Completo**
+**Implementado en v2.5.1**
+- ✅ Cobertura 100% en módulos core y UI
+- ✅ Niveles diferenciados: DEBUG, INFO, WARNING, ERROR
+- ✅ Rotación automática 2MB con backup
+- ✅ Archivo fijo `data/logs/dashboard.log`
+
+---
+
+### **8. Lanzadores de Scripts**
+**Implementado desde v1.0 — mejorado en v2.5.1**
+- ✅ Scripts personalizados configurables en `settings.py`
+- ✅ Terminal integrada que muestra el output en vivo
+- ✅ Confirmación previa a ejecución
+- ✅ Layout en grid configurable
+
+---
+
+### **9. Servicio de Limpieza Automática**
+**Implementado en v2.6**
+- ✅ `CleanupService` en `core/` — singleton, daemon thread
+- ✅ Limpieza automática de CSV exportados (máx. 10)
+- ✅ Limpieza automática de PNG exportados (máx. 10)
+- ✅ Limpieza periódica de BD SQLite (registros >30 días, cada 24h)
+- ✅ `force_cleanup()` para limpieza manual desde la UI
+- ✅ Inyección de dependencias en `HistoryWindow`
+- ✅ Botón "Limpiar Antiguos" delega en el servicio
+- ✅ Red de seguridad por tamaño en `DataLogger` (>5MB → limpia a 7 días)
+
+---
+
+### ~~**10. Notificaciones Visuales en el Menú**~~ ✅ Implementado en v2.6
+**Implementado en v2.6**
+- ✅ Badge en "Actualizaciones" con paquetes pendientes (naranja)
+- ✅ Badge en "Monitor Servicios" con servicios fallidos (rojo)
+- ✅ Badge en "Control Ventiladores" y "Monitor Placa" con temperatura (naranja >60°C, rojo >70°C)
+- ✅ Badge en "Monitor Placa" con CPU (naranja >75%, rojo >90%)
+- ✅ Badge en "Monitor Placa" con RAM (naranja >75%, rojo >90%)
+- ✅ Badge en "Monitor Disco" con uso de disco (naranja >80%, rojo >90%)
+- ✅ Texto dinámico en badge (valor real: temperatura en °C, porcentaje)
+- ✅ Color de texto adaptativo (negro sobre amarillo, blanco sobre rojo)
+
+---
+
+### ~~**11. Header Unificado con Status Dinámico**~~ ✅ Implementado en v2.7
+**Implementado en v2.7**
+- ✅ `make_window_header()` centralizado en `ui/styles.py`
+- ✅ Header en todas las ventanas: título + status + botón ✕ táctil
+- ✅ Botón ✕ de 52×42px, optimizado para uso táctil en pantalla DSI 4,5"
+- ✅ Status dinámico en Monitor Placa: CPU%, RAM%, temperatura en tiempo real
+- ✅ Status dinámico en Monitor Disco: espacio disponible + temperatura NVMe
+- ✅ Status dinámico en Monitor Red: interfaz activa + velocidades de red
+- ✅ Speedtest migrado a CLI oficial de Ookla (`--format=json`, MB/s reales)
+
+---
+
+## 🔄 En Evaluación
+
+### **Monitor de Contenedores Docker**
+**Prioridad**: Alta si usas Docker en la Pi  
+**Complejidad**: Media
+
+- Start/Stop/Restart contenedores
+- Ver logs en tiempo real
+- Estadísticas de uso por contenedor (CPU, RAM)
+- Ver puertos expuestos
+- Similar a `docker ps` y `docker stats` pero visual
+
+---
+
+### **Alertas Externas**
+**Prioridad**: Baja  
+**Complejidad**: Media
+
+- Notificaciones por Telegram o webhook
+- Alertas por temperatura alta sostenida, CPU, disco lleno, servicios caídos
+- Configurable por umbral y duración
+
+---
+
+### **Monitor de GPU**
+**Prioridad**: Muy baja (Raspberry Pi sin GPU dedicada)  
+**Complejidad**: Media
+
+---
+
+## 🚀 Ideas Futuras (Backlog)
+
+**Automatización**: cron visual, profiles de ventiladores por hora, auto-reinicio de servicios caídos
+
+**Red avanzada**: monitor de dispositivos en red (nmap), Pi-hole stats, VPN panel
+
+**Backup**: programar backups, estado con progreso, sincronización cloud
+
+**Seguridad**: intentos de login fallidos, logs de seguridad, firewall status
+
+**API REST**: endpoints para métricas, histórico y control de servicios
+
+---
+
+## 🎯 Roadmap
+
+### **v2.5.1** ✅ — 2026-02-20
+- ✅ Logging completo en todos los módulos
+- ✅ Ventana Actualizaciones con caché y terminal
+- ✅ 8 gráficas en Histórico (Red, Disco, PWM añadidas)
+- ✅ Zoom y navegación en gráficas
+- ✅ Fix bug atexit en DataCollectionService
+- ✅ Paso correcto de dependencias (update_monitor inyectado)
+
+### **v2.6** ✅ — 2026-02-22
+- ✅ Badges de notificación visual en menú principal (6 badges, 5 botones)
+- ✅ CleanupService — limpieza automática background de CSV, PNG y BD
+- ✅ Fan control: entries con placeholder en lugar de sliders
+- ✅ Inyección de dependencias profesional (CleanupService → HistoryWindow)
+
+### **v2.7** ✅ ACTUAL — 2026-02-23
+- ✅ Header unificado `make_window_header()` en todas las ventanas
+- ✅ Status dinámico en tiempo real en el header
+- ✅ Botón ✕ táctil 52×42px para pantalla DSI
+- ✅ Speedtest migrado a CLI oficial de Ookla (JSON, MB/s reales)
+
+### **v3.0** (Futuro)
+- [ ] Alertas externas (Telegram/webhook)
+- [ ] API REST básica
+- [ ] Monitor Docker (si aplica)
+
+---
+
+## 📈 Cobertura actual
+
+| Área | Estado |
+|------|--------|
+| Monitoreo básico (CPU, RAM, Temp, Disco, Red) | ✅ 100% |
+| Control avanzado (Ventiladores, Procesos, Servicios) | ✅ 100% |
+| Histórico y análisis | ✅ 100% |
+| Actualizaciones del sistema | ✅ 100% |
+| Logging y observabilidad | ✅ 100% |
+| Notificaciones visuales internas | ✅ 100% |
+| UI unificada y táctil | ✅ 100% |
+| Alertas externas | ⏳ 0% |
+| Docker | ⏳ 0% |
+| Automatización | ⏳ 0% |
+
+---
+
+**Versión actual**: v2.7 — **Última actualización**: 2026-02-23
+````
+
+## File: core/__init__.py
+````python
+"""
+Paquete core con lógica de negocio
+"""
+from .fan_controller import FanController
+from .system_monitor import SystemMonitor
+from .network_monitor import NetworkMonitor
+from .fan_auto_service import FanAutoService
+from .disk_monitor import DiskMonitor
+from .process_monitor import ProcessMonitor
+from .service_monitor import ServiceMonitor
+from .update_monitor import UpdateMonitor
+from .cleanup_service import CleanupService
+from .homebridge_monitor import HomebridgeMonitor          
+
+__all__ = [
+    'FanController',
+    'SystemMonitor',
+    'NetworkMonitor',
+    'FanAutoService',
+    'DiskMonitor',
+    'ProcessMonitor',
+    'ServiceMonitor',
+    'UpdateMonitor',
+    'CleanupService',
+    'HomebridgeMonitor',                                 
+]
 ````
 
 ## File: ui/windows/fan_control.py
@@ -10572,7 +11209,7 @@ class FanControlWindow(ctk.CTkToplevel):
 ````markdown
 # 🖥️ Sistema de Monitoreo y Control - Dashboard v2.7
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, logging completo y UI táctil unificada.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema y logging completo.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -10589,6 +11226,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Temperatura**: Monitoreo de CPU con alertas por color
 - **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
 
+### 🪟 **UI Unificada con Header Táctil**
+- **Header en todas las ventanas**: título + status dinámico + botón ✕ (52×42px táctil)
+- **Status en tiempo real** en el header: CPU/RAM/Temp (Monitor Placa), Disco/NVMe (Monitor Disco), interfaz/velocidades (Monitor Red)
+- **Botón ✕ táctil** optimizado para pantalla DSI de 4,5" sin teclado
+- Función `make_window_header()` centralizada en `ui/styles.py`
+
 ### 🌡️ **Control Inteligente de Ventiladores**
 - **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
 - **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
@@ -10596,10 +11239,11 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Visualización en vivo**: Gráfica de curva activa y PWM actual
 
 ### 🌐 **Monitor de Red Avanzado**
-- **Tráfico en tiempo real**: Download/Upload con gráficas en MB/s
+- **Tráfico en tiempo real**: Download/Upload con gráficas
 - **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
 - **Lista de IPs**: Todas las interfaces con iconos por tipo
-- **Speedtest integrado**: CLI oficial de Ookla, resultados en MB/s
+- **Speedtest integrado**: CLI oficial de Ookla (JSON nativo, resultados en MB/s reales)
+- **Status en header**: interfaz activa + velocidades actuales
 
 ### ⚙️ **Monitor de Procesos**
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
@@ -10616,7 +11260,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 ### 📊 **Histórico de Datos**
 - **Recolección automática**: Cada 5 minutos en background
 - **Base de datos SQLite**: Ligera y eficiente
-- **8 gráficas**: CPU, RAM, Temperatura, Red ↓/↑, Disco R/W, PWM
+- **Visualización gráfica**: 8 gráficas (CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM)
 - **Periodos**: 24 horas, 7 días, 30 días
 - **Estadísticas**: Promedios, mínimos, máximos
 - **Detección de anomalías**: Alertas automáticas
@@ -10631,6 +11275,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Particiones**: Uso de espacio de todas las unidades
 - **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
 - **Velocidad I/O**: Lectura/escritura en MB/s
+- **Status en header**: espacio disponible + temperatura NVMe en tiempo real
 
 ### 󱓞 **Lanzadores de Scripts**
 - **Terminal integrada**: Visualiza la ejecución en tiempo real
@@ -10643,12 +11288,12 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Terminal integrada**: Instala viendo el output en vivo
 - **Botón Buscar**: Fuerza comprobación manual
 
-### 🎨 **15 Temas Personalizables**
+### 󰆧 **15 Temas Personalizables**
 - **Cambio con un clic**: Reinicio automático
 - **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
 - **Preview en vivo**: Ve los colores antes de aplicar
 
-### **Reinicio y Apagado**
+### /󰿅 **Reinicio y Apagado**
 - **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
 - **Botón Salir**: Salir de la app o apagar el sistema
 - **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
@@ -10676,12 +11321,6 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Rotación automática**: 2MB máximo con backup
 - **Ubicación**: `data/logs/dashboard.log`
 
-### 👆 **UI Táctil Unificada** *(nuevo en v2.7)*
-- **Header consistente** en todas las ventanas: título + status en tiempo real + botón ✕
-- **Botón ✕ táctil** (52×42px) optimizado para pantalla DSI 4,5"
-- **Status dinámico** en el header: CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades
-- Sin botones "Cerrar" redundantes — un solo punto de cierre por ventana
-
 ---
 
 ## 📦 Instalación
@@ -10694,6 +11333,8 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 
 ### ⚡ **Instalación Recomendada**
 
+Usa el script de instalación directa (sin entorno virtual):
+
 ```bash
 git clone https://github.com/tu-usuario/system-dashboard.git
 cd system-dashboard
@@ -10703,20 +11344,23 @@ python3 main.py
 ```
 
 El script `install_system.sh` instala automáticamente:
-- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`, `smartmontools`)
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
 - Dependencias Python con `--break-system-packages`
+- CLI oficial de Ookla para speedtest
 - Ofrece configurar sensores de temperatura
 
 ### 🛠️ **Instalación Manual**
+
+Si prefieres instalar paso a paso:
 
 ```bash
 # 1. Dependencias del sistema
 sudo apt-get update
 sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
 
-# 2. Speedtest CLI oficial de Ookla
-sudo apt install speedtest
-speedtest --accept-license --accept-gdpr
+# 2. CLI oficial de Ookla (speedtest)
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest
 
 # 3. Detectar sensores
 sudo sensors-detect --auto
@@ -10729,6 +11373,8 @@ python3 main.py
 ```
 
 ###  **Alternativa con Entorno Virtual**
+
+Si prefieres aislar las dependencias Python:
 
 ```bash
 chmod +x install.sh
@@ -10769,10 +11415,10 @@ python3 main.py
 ### **Las 13 Ventanas:**
 
 1. **Control Ventiladores** - Configura modos y curvas PWM
-2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real
-3. **Monitor Red** - Tráfico, speedtest, interfaces e IPs
+2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real (status en header)
+3. **Monitor Red** - Tráfico, speedtest Ookla, interfaces e IPs (status en header)
 4. **Monitor USB** - Dispositivos y expulsión segura
-5. **Monitor Disco** - Espacio, temperatura NVMe, I/O
+5. **Monitor Disco** - Espacio, temperatura NVMe, I/O (status en header)
 6. **Lanzadores** - Ejecuta scripts con terminal en vivo
 7. **Monitor Procesos** - Gestión avanzada de procesos
 8. **Monitor Servicios** - Control de servicios systemd
@@ -10817,7 +11463,7 @@ system_dashboard/
 │   ├── fan_controller.py           # Control PWM y curvas
 │   ├── fan_auto_service.py         # Servicio background ventiladores
 │   ├── system_monitor.py           # CPU, RAM, temperatura
-│   ├── network_monitor.py          # Red, speedtest CLI Ookla, interfaces
+│   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
 │   ├── disk_monitor.py             # Disco, NVMe, I/O
 │   ├── process_monitor.py          # Gestión de procesos
 │   ├── service_monitor.py          # Servicios systemd
@@ -10829,22 +11475,15 @@ system_dashboard/
 │   └── __init__.py
 ├── ui/
 │   ├── main_window.py              # Ventana principal (13 botones + badges)
-│   ├── styles.py                   # Estilos, botones y make_window_header()
+│   ├── styles.py                   # make_window_header(), make_futuristic_button(), StyleManager
 │   ├── widgets/
 │   │   ├── graphs.py               # Gráficas personalizadas
 │   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
 │   └── windows/
-│       ├── monitor.py              # Monitor placa (CPU/RAM/Temp)
-│       ├── network.py              # Monitor red + speedtest
-│       ├── disk.py                 # Monitor disco + NVMe
-│       ├── usb.py                  # Monitor USB
-│       ├── process_window.py       # Monitor procesos
-│       ├── service.py              # Monitor servicios systemd
-│       ├── history.py              # Histórico de datos
-│       ├── update.py               # Actualizaciones
-│       ├── fan_control.py          # Control ventiladores
-│       ├── launchers.py            # Lanzadores de scripts
-│       ├── theme_selector.py       # Selector de temas
+│       ├── monitor.py, network.py, usb.py, disk.py
+│       ├── process_window.py, service.py, history.py
+│       ├── update.py, fan_control.py
+│       ├── launchers.py, theme_selector.py
 │       └── __init__.py
 ├── utils/
 │   ├── file_manager.py             # Gestión de JSON (escritura atómica)
@@ -10857,6 +11496,7 @@ system_dashboard/
 ├── scripts/                         # Scripts personalizados del usuario
 ├── install_system.sh               # Instalación directa (recomendada)
 ├── install.sh                      # Instalación con venv (alternativa)
+├── test_logging.py                 # Prueba del sistema de logging
 ├── main.py
 └── requirements.txt
 ```
@@ -10920,7 +11560,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 | Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
 | NVMe temp 0 | `sudo apt install smartmontools` |
 | Ventiladores no responden | `sudo python3 main.py` |
-| Speedtest falla (403) | `sudo apt remove speedtest-cli && sudo apt install speedtest` |
+| Speedtest falla | Instalar CLI oficial Ookla: ver sección Instalación Manual |
 | USB no expulsa | `sudo apt install udisks2` |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
@@ -10952,14 +11592,11 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ## Changelog
 
-### **v2.7** - 2026-02-22 ⭐ ACTUAL
-- ✅ **NUEVO**: `make_window_header()` — header unificado y consistente en las 10 ventanas de monitoreo
-- ✅ **NUEVO**: Botón ✕ táctil (52×42px) en todas las ventanas, optimizado para pantalla DSI
-- ✅ **NUEVO**: Status en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
-- ✅ **NUEVO**: Speedtest migrado al CLI oficial de Ookla (JSON, MB/s correcto)
-- ✅ **FIX**: Botón Cerrar duplicado eliminado en Monitor de Red
-- ✅ **FIX**: Import `make_window_header` en ThemeSelector
-- ✅ **FIX**: Stats label de Servicios y Procesos en línea propia (sin superposición)
+### **v2.7** - 2026-02-23 ⭐ ACTUAL
+- ✅ **NUEVO**: Header unificado `make_window_header()` en todas las ventanas (título + status + botón ✕ táctil 52×42px)
+- ✅ **NUEVO**: Status dinámico en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
+- ✅ **MEJORA**: Speedtest migrado a CLI oficial de Ookla (`--format=json`), resultados en MB/s reales
+- ✅ **MEJORA**: Botón ✕ táctil optimizado para pantalla DSI sin teclado
 
 ### **v2.6** - 2026-02-22
 - ✅ **NUEVO**: 6 badges de notificación visual en menú principal
@@ -10972,15 +11609,15 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
 - ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
 - ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
-- ✅ **FIX**: Bug `atexit` en `DataCollectionService` (se detenía a los 3s del arranque)
-- ✅ **MEJORA**: `update_monitor` con caché 12h y parámetro `force`
+- ✅ **FIX**: Bug `atexit` en `DataCollectionService`
+- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
 
 ### **v2.5** - 2026-02-17
 - ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
 - ✅ Recolección automática background, Exportación CSV, Detección de anomalías
 
 ### **v2.0** - 2026-02-16
-- ✅ Monitor de Procesos, 15 temas
+- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
 
 ### **v1.0** - 2025-01
 - ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
@@ -10995,11 +11632,11 @@ MIT License
 
 ## Agradecimientos
 
-**CustomTkinter** · **psutil** · **matplotlib** · **Raspberry Pi Foundation**
+**CustomTkinter** · **psutil** · **matplotlib** · **Ookla Speedtest CLI** · **Raspberry Pi Foundation**
 
 ---
 
-**Dashboard v2.7: Profesional, Táctil, Completo y Auto-mantenido**
+**Dashboard v2.7: Profesional, Unificado, Táctil y Auto-mantenido**
 ````
 
 ## File: ui/windows/history.py
@@ -11545,7 +12182,7 @@ import atexit
 import threading
 import customtkinter as ctk
 from config import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor, CleanupService
+from core import SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, ServiceMonitor, UpdateMonitor, CleanupService, HomebridgeMonitor
 from core.data_collection_service import DataCollectionService
 from core.data_logger import DataLogger
 from ui.main_window import MainWindow
@@ -11580,6 +12217,8 @@ def main():
     process_monitor = ProcessMonitor()
     service_monitor = ServiceMonitor()
     update_monitor = UpdateMonitor()
+    homebridge_monitor = HomebridgeMonitor()
+    homebridge_monitor.start()
 
     # Comprobación inicial de actualizaciones en background
     # No bloquea el arranque y llena el caché para toda la sesión
@@ -11620,6 +12259,7 @@ def main():
         fan_service.stop()
         data_service.stop()
         cleanup_service.stop()
+        homebridge_monitor.stop() 
     
     atexit.register(cleanup)
     
@@ -11634,7 +12274,8 @@ def main():
         process_monitor=process_monitor,
         service_monitor=service_monitor,
         update_monitor=update_monitor,
-        cleanup_service=cleanup_service
+        cleanup_service=cleanup_service,
+        homebridge_monitor=homebridge_monitor
     )
 
     try:
@@ -11656,7 +12297,7 @@ import tkinter as tk
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import StyleManager, make_futuristic_button
-from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow
+from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
@@ -11670,7 +12311,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -11681,6 +12322,7 @@ class MainWindow:
         self.service_monitor = service_monitor
         self.update_monitor = update_monitor
         self.cleanup_service = cleanup_service
+        self.homebridge_monitor = homebridge_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -11703,6 +12345,7 @@ class MainWindow:
         self.history_window = None
         self.update_window = None
         self.theme_window = None
+        self.homebridge_window = None
 
         logger.info(f"[MainWindow] Dashboard iniciado en {self.system_utils.get_hostname()}")
 
@@ -11801,6 +12444,7 @@ class MainWindow:
             ("⚙️ Monitor Servicios",    self.open_service_window,  ["services"]),
             ("󱘿  Histórico Datos",       self.open_history_window,  []),
             ("󰆧  Actualizaciones",       self.open_update_window,   ["updates"]),
+            ("󰟐  Homebridge",        self.open_homebridge,     ["hb_offline", "hb_on", "hb_fault"]),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -12027,6 +12671,15 @@ class MainWindow:
         else:
             self.update_window.lift()
     
+    def open_homebridge(self):
+        """Abre la ventana de control de Homebridge"""
+        if self.homebridge_window is None or not self.homebridge_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Homebridge")
+            self.homebridge_window = HomebridgeWindow(self.root, self.homebridge_monitor)
+        else:
+            self.homebridge_window.lift()
+
+    
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
 
     def exit_application(self):
@@ -12184,6 +12837,18 @@ class MainWindow:
         try:
             pending = self.update_monitor.cached_result.get('pending', 0)
             self._update_badge("updates", pending)
+            #rojo falla conexion
+            self._update_badge("hb_offline", self.homebridge_monitor.get_offline_count())
+            #naranja n echufes encendidos
+            self._update_badge(
+                "hb_on",
+                self.homebridge_monitor.get_on_count(),
+                color=COLORS.get('warning', '#ffaa00'),
+            )
+            #enchufe con fallo
+            self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
+
+
         except Exception:
             pass
 
