@@ -86,7 +86,9 @@ def main():
         fan_service.stop()
         data_service.stop()
         cleanup_service.stop()
-        homebridge_monitor.stop() 
+        homebridge_monitor.stop()
+        system_monitor.stop()
+        service_monitor.stop()
     
     atexit.register(cleanup)
     

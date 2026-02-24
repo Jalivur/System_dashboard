@@ -541,45 +541,46 @@ class MainWindow:
         self._update()
     
     def _update(self):
-        """Actualiza los datos del sistema y los badges"""
+        """Actualiza los badges del menú. Solo lee cachés — nunca bloquea la UI."""
         try:
             pending = self.update_monitor.cached_result.get('pending', 0)
             self._update_badge("updates", pending)
-            #rojo falla conexion
+
+            # Homebridge — lectura desde memoria, sin HTTP
             self._update_badge("hb_offline", self.homebridge_monitor.get_offline_count())
-            #naranja n echufes encendidos
             self._update_badge(
                 "hb_on",
                 self.homebridge_monitor.get_on_count(),
                 color=COLORS.get('warning', '#ffaa00'),
             )
-            #enchufe con fallo
             self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
-
 
         except Exception:
             pass
 
         try:
-            stats = self.service_monitor.get_stats()
+            # get_stats() ahora es lectura de caché — no lanza systemctl
+            stats  = self.service_monitor.get_stats()
             failed = stats.get('failed', 0)
             self._update_badge("services", failed)
         except Exception:
             pass
 
         try:
+            # get_current_stats() ahora es lectura de caché — no llama psutil
             sys_stats = self.system_monitor.get_current_stats()
 
             # Temperatura
             temp = sys_stats['temp']
             if temp >= self._TEMP_CRIT:
                 temp_color = COLORS['danger']
-                show_temp = True
+                show_temp  = True
             elif temp >= self._TEMP_WARN:
                 temp_color = COLORS.get('warning', '#ffaa00')
-                show_temp = True
+                show_temp  = True
             else:
                 show_temp = False
+
             if show_temp:
                 self._update_badge_temp("temp_fan",     int(temp), temp_color)
                 self._update_badge_temp("temp_monitor", int(temp), temp_color)
@@ -618,6 +619,7 @@ class MainWindow:
             pass
 
         self.root.after(self.update_interval, self._update)
+
 
     def _update_badge_temp(self, key, temp, color):
         """Muestra la temperatura en el badge con el color indicado."""

@@ -71,6 +71,7 @@ class FanAutoService:
             name="FanAutoService"
         )
         self._thread.start()
+        logger.info("[FanAutoService] Servicio iniciado")
     
     def stop(self):
         """Detiene el servicio"""
@@ -82,6 +83,8 @@ class FanAutoService:
         
         if self._thread:
             self._thread.join(timeout=5)
+        logger.info("[FanAutoService] Servicio detenido")
+
     
     def _run(self):
         """Bucle principal del servicio (ejecuta en thread separado)"""

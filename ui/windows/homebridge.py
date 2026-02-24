@@ -5,7 +5,7 @@ Muestra enchufes e interruptores y permite encenderlos / apagarlos
 import threading
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
+from ui.styles import StyleManager, make_futuristic_button, make_window_header, make_homebridge_switch
 from ui.widgets import custom_msgbox
 from core.homebridge_monitor import HomebridgeMonitor
 from utils.logger import get_logger
@@ -151,14 +151,10 @@ class HomebridgeWindow(ctk.CTkToplevel):
             self._set_status("No se pudo conectar con Homebridge — verifica host y credenciales")
 
         # Actualizar status del header
-        for child in self._header.winfo_children():
-            if hasattr(child, "cget"):
-                try:
-                    if child.cget("text") not in ("HOMEBRIDGE", "✕"):
-                        child.configure(text=header_status)
-                        break
-                except Exception:
-                    pass
+        try:
+            self._header.status_label.configure(text=header_status)
+        except Exception:
+            pass
 
         # ── Redibujar grid 2 columnas ──────────────────────────────────────────
         for widget in self._device_frame.winfo_children():
@@ -185,65 +181,43 @@ class HomebridgeWindow(ctk.CTkToplevel):
         self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
 
     def _create_device_card(self, acc: dict, grid_row: int, grid_col: int):
-        """Tarjeta estilo Lanzadores: indicador + nombre + botón ON/OFF grande."""
+        """Tarjeta con switch táctil para encender / apagar el dispositivo."""
         is_on    = acc["on"]
         is_fault = acc.get("fault", False)
         is_inact = acc.get("inactive", False)
-
-        color_on   = COLORS.get('success', '#00ff88')
-        color_off  = COLORS.get('text_dim', '#555555')
-        color_warn = COLORS.get('danger',  '#ff4444')
-
-        # Color del indicador: rojo si fallo/inactivo, verde si ON, gris si OFF
-        if is_fault or is_inact:
-            dot_color = color_warn
-            dot_text  = "⚠"
-        else:
-            dot_color = color_on if is_on else color_off
-            dot_text  = "●"
+        disabled = is_fault or is_inact
 
         card = ctk.CTkFrame(
             self._device_frame,
             fg_color=COLORS['bg_dark'],
+            corner_radius=8,
         )
-        card.grid(row=grid_row, column=grid_col, sticky="nsew")
+        card.grid(row=grid_row, column=grid_col, sticky="nsew", padx=4, pady=4)
 
-        # Indicador de estado
-        ctk.CTkLabel(
-            card,
-            text=dot_text,
-            text_color=dot_color,
-            font=(FONT_FAMILY, FONT_SIZES['large']),
-        ).pack(pady=(10, 2))
+        # ── Indicador de fallo (solo visible si hay problema) ─────────────────
+        if disabled:
+            ctk.CTkLabel(
+                card,
+                text="⚠  FALLO",
+                text_color=COLORS.get('danger', '#ff4444'),
+                font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
+            ).pack(pady=(10, 0))
+        else:
+            # Espaciado superior equivalente para mantener altura uniforme
+            ctk.CTkFrame(card, fg_color="transparent", height=10).pack()
 
-        # Nombre del dispositivo
-        ctk.CTkLabel(
+        # ── Switch ────────────────────────────────────────────────────────────
+        def on_toggle(new_state, uid=acc["uniqueId"]):
+            self._toggle(uid, new_state)
+
+        sw = make_homebridge_switch(
             card,
             text=acc["displayName"],
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium']),
-            wraplength=160,
-            justify="center",
-        ).pack(padx=10, pady=(0, 6))
-
-        # Botón ON/OFF — mismo tamaño que Lanzadores
-        # Si hay fallo el botón muestra "FALLO" y está deshabilitado
-        if is_fault or is_inact:
-            btn_text = "FALLO"
-            btn_cmd  = lambda: None
-        else:
-            btn_text = "ENCENDIDO" if is_on else "APAGADO"
-            btn_cmd  = lambda uid=acc["uniqueId"], state=is_on: self._toggle(uid, not state)
-
-        make_futuristic_button(
-            card,
-            text=btn_text,
-            command=btn_cmd,
-            width=40,
-            height=15,
-            font_size=FONT_SIZES['large'],
-        ).pack(pady=(0, 10), padx=10)
-
+            command=on_toggle,
+            is_on=is_on,
+            disabled=disabled,
+        )
+        sw.pack(padx=16, pady=(8, 18))
 
     # ── Acciones ──────────────────────────────────────────────────────────────
 

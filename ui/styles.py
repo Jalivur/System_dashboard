@@ -292,3 +292,83 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     header.status_label = status_lbl
 
     return header
+
+
+def make_homebridge_switch(
+    parent,
+    text: str,
+    command=None,
+    is_on: bool = False,
+    disabled: bool = False,
+) -> ctk.CTkSwitch:
+    """
+    Crea un CTkSwitch estilado para el control de accesorios Homebridge.
+
+    Layout dentro de la tarjeta de dispositivo:
+    ┌─────────────────────────────────────────┐
+    │   NOMBRE DEL DISPOSITIVO   [══ ●]       │
+    └─────────────────────────────────────────┘
+
+    El switch usa los colores del tema activo:
+    - ON  → COLORS['success']  (verde por defecto)
+    - OFF → COLORS['bg_light'] (gris oscuro)
+    - Deshabilitado (fallo/inactivo) → COLORS['danger'] fijo, no interactivo
+
+    Args:
+        parent:   Widget padre (normalmente la tarjeta CTkFrame).
+        text:     Etiqueta del switch (nombre del dispositivo).
+        command:  Callable ejecutado al cambiar el estado.
+                  Recibe el nuevo valor como booleano (True=ON, False=OFF).
+        is_on:    Estado inicial del switch.
+        disabled: Si True, el switch se muestra bloqueado en rojo (fallo/inactivo).
+
+    Returns:
+        CTkSwitch configurado y listo para empaquetar.
+    """
+    color_on   = COLORS.get('success', '#00ff88')
+    color_off  = COLORS.get('bg_light', '#333333')
+    color_fault = COLORS.get('danger', '#ff4444')
+
+    if disabled:
+        # Fallo o inactivo: switch bloqueado, color de aviso
+        sw = ctk.CTkSwitch(
+            parent,
+            text=text,
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+            text_color=COLORS.get('text_dim', '#888888'),
+            progress_color=color_fault,
+            button_color=color_fault,
+            button_hover_color=color_fault,
+            fg_color=color_off,
+            switch_width=90,
+            switch_height=46,
+            state="disabled",
+        )
+        # Fijar visualmente en OFF aunque haya fallo
+        sw.deselect()
+    else:
+        def _on_toggle():
+            # El switch ya cambió internamente; leemos su valor
+            if command:
+                command(bool(sw.get()))
+
+        sw = ctk.CTkSwitch(
+            parent,
+            text=text,
+            command=_on_toggle,
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+            text_color=COLORS['text'],
+            progress_color=color_on,
+            button_color=COLORS['secondary'],
+            button_hover_color=COLORS['primary'],
+            fg_color=color_off,
+            switch_width=90,
+            switch_height=46,
+        )
+        # Establecer estado inicial
+        if is_on:
+            sw.select()
+        else:
+            sw.deselect()
+
+    return sw
