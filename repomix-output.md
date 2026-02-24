@@ -1,9 +1,9 @@
-This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
 
 # File Summary
 
 ## Purpose
-This file contains a packed representation of the entire repository's contents.
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
 
@@ -28,6 +28,7 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: /home/jalivur/Documents/system_dashboard/fix_timestamps.py, /home/jalivur/Documents/system_dashboard/test_logging.py
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -83,7 +84,6 @@ utils/
 .gitignore
 COMPATIBILIDAD.md
 create_desktop_launcher.sh
-fix_timestamps.py
 IDEAS_EXPANSION.md
 INDEX.md
 INSTALL_GUIDE.md
@@ -98,7 +98,6 @@ README.md
 REQUIREMENTS.md
 requirements.txt
 setup.py
-test_logging.py
 THEMES_GUIDE.md
 ```
 
@@ -835,294 +834,6 @@ def recolor_lines(canvas, lines: List, color: str) -> None:
         canvas.itemconfig(line, fill=color)
 ````
 
-## File: ui/windows/homebridge.py
-````python
-"""
-Ventana de control de dispositivos Homebridge
-Muestra enchufes e interruptores y permite encenderlos / apagarlos
-"""
-import threading
-import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
-from ui.widgets import custom_msgbox
-from core.homebridge_monitor import HomebridgeMonitor
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-# Intervalo de refresco de la ventana (ms)
-HB_UPDATE_MS = 5000
-
-
-class HomebridgeWindow(ctk.CTkToplevel):
-    """Ventana de control de dispositivos Homebridge."""
-
-    def __init__(self, parent, homebridge_monitor: HomebridgeMonitor):
-        super().__init__(parent)
-        self.hb = homebridge_monitor
-        self._accessories = []
-        self._update_job = None
-        self._busy = False  # evita peticiones simultáneas
-
-        # Configurar ventana
-        self.title("Homebridge")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-
-        self._create_ui()
-        self._schedule_update()
-        logger.info("[HomebridgeWindow] Ventana abierta")
-
-    # ── Interfaz ──────────────────────────────────────────────────────────────
-
-    def _create_ui(self):
-        """Construye la interfaz completa."""
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-
-        # ── Header unificado ──────────────────────────────────────────────────
-        self._header = make_window_header(
-            main,
-            title="HOMEBRIDGE",
-            on_close=self._on_close,
-            status_text="Conectando...",
-        )
-
-        # ── Barra de estado ───────────────────────────────────────────────────
-        status_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'])
-        status_bar.pack(fill="x", padx=5, pady=(0, 4))
-        self._status_label = ctk.CTkLabel(
-            status_bar,
-            text="",
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            anchor="w",
-        )
-        self._status_label.pack(pady=4, padx=10, fill="x")
-
-        # ── Área scrollable de dispositivos ───────────────────────────────────
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-
-        max_height = DSI_HEIGHT - 220
-        canvas = ctk.CTkCanvas(
-            scroll_container,
-            bg=COLORS['bg_medium'],
-            highlightthickness=0,
-            height=max_height,
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container,
-            orientation="vertical",
-            command=canvas.yview,
-            width=30,
-        )
-        scrollbar.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        self._device_frame = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window(
-            (0, 0), window=self._device_frame, anchor="nw", width=DSI_WIDTH - 50
-        )
-        self._device_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
-        )
-
-        # ── Botón Refrescar ───────────────────────────────────────────────────
-        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        bottom.pack(fill="x", pady=8, padx=10)
-
-        make_futuristic_button(
-            bottom,
-            text="⟳  Refrescar",
-            command=self._force_refresh,
-            width=15,
-            height=6,
-        ).pack(side="left", padx=5)
-
-    # ── Actualización ─────────────────────────────────────────────────────────
-
-    def _schedule_update(self):
-        """Programa la siguiente actualización."""
-        self._update_job = self.after(100, self._fetch_and_render)
-
-    def _force_refresh(self):
-        """Fuerza un refresco inmediato."""
-        if self._update_job:
-            self.after_cancel(self._update_job)
-        self._fetch_and_render()
-
-    def _fetch_and_render(self):
-        """Lanza la petición en background y actualiza la UI cuando termina."""
-        if self._busy:
-            return
-        self._busy = True
-        self._set_status("Actualizando...")
-
-        def fetch():
-            accessories = self.hb.get_accessories()
-            self.after(0, lambda: self._render(accessories))
-
-        threading.Thread(target=fetch, daemon=True, name="HB-Fetch").start()
-
-    def _render(self, accessories):
-        """Actualiza la lista de dispositivos en el hilo principal."""
-        self._accessories = accessories
-        self._busy = False
-
-        # ── Header status ──────────────────────────────────────────────────────
-        if self.hb.is_reachable():
-            on_count = sum(1 for a in accessories if a["on"])
-            total = len(accessories)
-            header_status = f"{on_count}/{total} encendidos"
-            self._set_status(
-                f"{total} dispositivo{'s' if total != 1 else ''} encontrado{'s' if total != 1 else ''}"
-            )
-        else:
-            header_status = "⚠ Sin conexión"
-            self._set_status("No se pudo conectar con Homebridge — verifica host y credenciales")
-
-        # Actualizar status del header
-        for child in self._header.winfo_children():
-            if hasattr(child, "cget"):
-                try:
-                    if child.cget("text") not in ("HOMEBRIDGE", "✕"):
-                        child.configure(text=header_status)
-                        break
-                except Exception:
-                    pass
-
-        # ── Redibujar grid 2 columnas ──────────────────────────────────────────
-        for widget in self._device_frame.winfo_children():
-            widget.destroy()
-
-        if not accessories:
-            msg = (
-                "Sin conexión con Homebridge" if not self.hb.is_reachable()
-                else "No se encontraron enchufes ni interruptores"
-            )
-            ctk.CTkLabel(
-                self._device_frame,
-                text=msg,
-                text_color=COLORS.get('warning', '#ffaa00'),
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-            ).pack(pady=30)
-        else:
-            self._device_frame.grid_columnconfigure(0, weight=1, uniform="col")
-            self._device_frame.grid_columnconfigure(1, weight=1, uniform="col")
-            for idx, acc in enumerate(accessories):
-                self._create_device_card(acc, idx // 2, idx % 2)
-
-        # Programar siguiente actualización
-        self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
-
-    def _create_device_card(self, acc: dict, grid_row: int, grid_col: int):
-        """Tarjeta estilo Lanzadores: indicador + nombre + botón ON/OFF grande."""
-        is_on    = acc["on"]
-        is_fault = acc.get("fault", False)
-        is_inact = acc.get("inactive", False)
-
-        color_on   = COLORS.get('success', '#00ff88')
-        color_off  = COLORS.get('text_dim', '#555555')
-        color_warn = COLORS.get('danger',  '#ff4444')
-
-        # Color del indicador: rojo si fallo/inactivo, verde si ON, gris si OFF
-        if is_fault or is_inact:
-            dot_color = color_warn
-            dot_text  = "⚠"
-        else:
-            dot_color = color_on if is_on else color_off
-            dot_text  = "●"
-
-        card = ctk.CTkFrame(
-            self._device_frame,
-            fg_color=COLORS['bg_dark'],
-        )
-        card.grid(row=grid_row, column=grid_col, sticky="nsew")
-
-        # Indicador de estado
-        ctk.CTkLabel(
-            card,
-            text=dot_text,
-            text_color=dot_color,
-            font=(FONT_FAMILY, FONT_SIZES['large']),
-        ).pack(pady=(10, 2))
-
-        # Nombre del dispositivo
-        ctk.CTkLabel(
-            card,
-            text=acc["displayName"],
-            text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium']),
-            wraplength=160,
-            justify="center",
-        ).pack(padx=10, pady=(0, 6))
-
-        # Botón ON/OFF — mismo tamaño que Lanzadores
-        # Si hay fallo el botón muestra "FALLO" y está deshabilitado
-        if is_fault or is_inact:
-            btn_text = "FALLO"
-            btn_cmd  = lambda: None
-        else:
-            btn_text = "ENCENDIDO" if is_on else "APAGADO"
-            btn_cmd  = lambda uid=acc["uniqueId"], state=is_on: self._toggle(uid, not state)
-
-        make_futuristic_button(
-            card,
-            text=btn_text,
-            command=btn_cmd,
-            width=40,
-            height=15,
-            font_size=FONT_SIZES['large'],
-        ).pack(pady=(0, 10), padx=10)
-
-
-    # ── Acciones ──────────────────────────────────────────────────────────────
-
-    def _toggle(self, unique_id: str, turn_on: bool):
-        """Envía el comando ON/OFF al dispositivo en background."""
-        def send():
-            ok = self.hb.toggle(unique_id, turn_on)
-            if ok:
-                # Refresca inmediatamente para reflejar el nuevo estado
-                self.after(500, self._force_refresh)
-            else:
-                self.after(
-                    0,
-                    lambda: custom_msgbox(
-                        self, "Error",
-                        "No se pudo enviar el comando al dispositivo.\n"
-                        "Verifica la conexión con Homebridge.",
-                        tipo="error"
-                    )
-                )
-
-        threading.Thread(target=send, daemon=True, name="HB-Toggle").start()
-
-    def _set_status(self, text: str):
-        """Actualiza la barra de estado inferior."""
-        try:
-            self._status_label.configure(text=text)
-        except Exception:
-            pass
-
-    # ── Cierre ────────────────────────────────────────────────────────────────
-
-    def _on_close(self):
-        """Cancela actualizaciones pendientes y cierra la ventana."""
-        if self._update_job:
-            self.after_cancel(self._update_job)
-        logger.info("[HomebridgeWindow] Ventana cerrada")
-        self.destroy()
-````
-
 ## File: ui/__init__.py
 ````python
 
@@ -1687,54 +1398,6 @@ fi
 
 echo ""
 echo "¡Listo! 🎉"
-````
-
-## File: fix_timestamps.py
-````python
-"""
-Script puntual para corregir el desfase UTC en los registros históricos.
-Suma 1 hora a todos los timestamps de las tablas metrics y events.
-
-Uso: python3 fix_timestamps.py
-"""
-import sqlite3
-from datetime import datetime
-
-DB_PATH = "data/history.db"
-
-conn = sqlite3.connect(DB_PATH)
-cursor = conn.cursor()
-
-# Contar registros antes
-cursor.execute("SELECT COUNT(*) FROM metrics")
-n_metrics = cursor.fetchone()[0]
-cursor.execute("SELECT COUNT(*) FROM events")
-n_events = cursor.fetchone()[0]
-
-print(f"Registros encontrados: {n_metrics} métricas, {n_events} eventos")
-print("Aplicando corrección +1h...")
-
-# Sumar 1 hora a todos los timestamps
-cursor.execute("""
-    UPDATE metrics
-    SET timestamp = datetime(timestamp, '+1 hour')
-""")
-cursor.execute("""
-    UPDATE events
-    SET timestamp = datetime(timestamp, '+1 hour')
-""")
-
-conn.commit()
-
-# Verificar un par de registros para confirmar
-cursor.execute("SELECT timestamp FROM metrics ORDER BY timestamp DESC LIMIT 3")
-rows = cursor.fetchall()
-print("\nÚltimos timestamps tras la corrección:")
-for r in rows:
-    print(f"  {r[0]}")
-
-conn.close()
-print("\nHecho. Todos los registros corregidos.")
 ````
 
 ## File: INSTALL_GUIDE.md
@@ -3190,280 +2853,6 @@ setup(
 )
 ````
 
-## File: test_logging.py
-````python
-#!/usr/bin/env python3
-"""
-Script de prueba manual del sistema de logging
-Ejecutar desde la raíz del proyecto: python3 test_logging.py
-Ver logs en tiempo real con: tail -f data/logs/dashboard.log
-"""
-import sys
-import os
-import json
-import time
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from utils.logger import get_logger
-
-logger = get_logger("test")
-
-def separador(titulo):
-    print(f"\n{'='*60}")
-    print(f"  {titulo}")
-    print(f"{'='*60}")
-
-def ok(msg):
-    print(f"  ✅ {msg}")
-
-def info(msg):
-    print(f"  ℹ️  {msg}")
-
-
-# ============================================================
-# TEST FILE_MANAGER
-# ============================================================
-def test_file_manager():
-    separador("FILE MANAGER")
-    from config.settings import STATE_FILE, CURVE_FILE
-    from utils.file_manager import FileManager
-
-    # --- Test 1: load_state cuando no existe el archivo ---
-    print("\n[1] load_state con archivo inexistente:")
-    backup = None
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE) as f:
-            backup = f.read()
-        os.remove(STATE_FILE)
-
-    state = FileManager.load_state()
-    ok(f"Retornó estado por defecto: {state}")
-    info("Debe aparecer en log: [DEBUG] load_state: no existe, usando estado por defecto")
-
-    # Restaurar
-    if backup:
-        with open(STATE_FILE, "w") as f:
-            f.write(backup)
-
-    # --- Test 2: load_state con JSON corrupto ---
-    print("\n[2] load_state con JSON corrupto:")
-    with open(STATE_FILE, "w") as f:
-        f.write("{ esto no es json válido !!!}")
-
-    state = FileManager.load_state()
-    ok(f"Retornó estado por defecto: {state}")
-    info("Debe aparecer en log: [ERROR] load_state: JSON corrupto")
-
-    # Restaurar estado válido
-    FileManager.write_state({"mode": "auto", "target_pwm": None})
-    ok("Estado restaurado correctamente")
-
-    # --- Test 3: load_curve con archivo inexistente ---
-    print("\n[3] load_curve con archivo inexistente:")
-    curve_backup = None
-    if os.path.exists(CURVE_FILE):
-        with open(CURVE_FILE) as f:
-            curve_backup = f.read()
-        os.remove(CURVE_FILE)
-
-    curve = FileManager.load_curve()
-    ok(f"Retornó curva por defecto con {len(curve)} puntos")
-    info("Debe aparecer en log: [DEBUG] load_curve: no existe, usando curva por defecto")
-
-    if curve_backup:
-        with open(CURVE_FILE, "w") as f:
-            f.write(curve_backup)
-
-    # --- Test 4: load_curve con JSON corrupto ---
-    print("\n[4] load_curve con JSON corrupto:")
-    with open(CURVE_FILE, "w") as f:
-        f.write("{ corrupto }")
-
-    curve = FileManager.load_curve()
-    ok(f"Retornó curva por defecto con {len(curve)} puntos")
-    info("Debe aparecer en log: [ERROR] load_curve: JSON corrupto")
-
-    # Restaurar curva válida
-    if curve_backup:
-        with open(CURVE_FILE, "w") as f:
-            f.write(curve_backup)
-    else:
-        FileManager.save_curve([{"temp": 50, "pwm": 128}])
-
-    ok("Curva restaurada correctamente")
-
-    # --- Test 5: write_state correcto ---
-    print("\n[5] write_state normal:")
-    FileManager.write_state({"mode": "auto", "target_pwm": 128})
-    ok("Estado guardado sin errores")
-
-    # --- Test 6: save_curve correcta ---
-    print("\n[6] save_curve normal:")
-    FileManager.save_curve([{"temp": 50, "pwm": 100}, {"temp": 70, "pwm": 200}])
-    ok("Curva guardada sin errores")
-    info("Debe aparecer en log: [INFO] save_curve: curva guardada (2 puntos)")
-
-
-# ============================================================
-# TEST SYSTEM_UTILS
-# ============================================================
-def test_system_utils():
-    separador("SYSTEM UTILS")
-    from utils.system_utils import SystemUtils
-
-    # --- Test 1: get_cpu_temp ---
-    print("\n[1] get_cpu_temp:")
-    temp = SystemUtils.get_cpu_temp()
-    ok(f"Temperatura obtenida: {temp}°C")
-    if temp == 0.0:
-        info("Retornó 0.0 — revisa el log para ver qué método falló")
-    else:
-        info("Temperatura real leída correctamente")
-
-    # --- Test 2: get_hostname ---
-    print("\n[2] get_hostname:")
-    hostname = SystemUtils.get_hostname()
-    ok(f"Hostname: {hostname}")
-
-    # --- Test 3: get_nvme_temp ---
-    print("\n[3] get_nvme_temp:")
-    nvme = SystemUtils.get_nvme_temp()
-    ok(f"Temperatura NVMe: {nvme}°C")
-    if nvme == 0.0:
-        info("Retornó 0.0 — puede que no haya NVMe o falten permisos (normal)")
-        info("Revisa el log: debe aparecer qué método falló (smartctl/sysfs)")
-
-    # --- Test 4: list_usb_storage_devices ---
-    print("\n[4] list_usb_storage_devices:")
-    usb = SystemUtils.list_usb_storage_devices()
-    ok(f"Dispositivos USB encontrados: {len(usb)}")
-    for d in usb:
-        info(f"  → {d.get('name')} ({d.get('dev')})")
-
-    # --- Test 5: list_usb_other_devices ---
-    print("\n[5] list_usb_other_devices:")
-    otros = SystemUtils.list_usb_other_devices()
-    ok(f"Otros dispositivos USB: {len(otros)}")
-
-    # --- Test 6: get_interfaces_ips ---
-    print("\n[6] get_interfaces_ips:")
-    ips = SystemUtils.get_interfaces_ips()
-    ok(f"Interfaces detectadas: {len(ips)}")
-    for iface, ip in ips.items():
-        info(f"  → {iface}: {ip}")
-
-    # --- Test 7: run_script con script inexistente ---
-    print("\n[7] run_script con script inexistente:")
-    success, msg = SystemUtils.run_script("/ruta/que/no/existe.sh")
-    ok(f"Retornó success={success}, msg='{msg}'")
-    info("Debe aparecer en log: [ERROR] run_script: script no encontrado")
-
-    # --- Test 8: run_script real (crea uno temporal) ---
-    print("\n[8] run_script con script válido:")
-    tmp_script = "/tmp/test_dashboard.sh"
-    with open(tmp_script, "w") as f:
-        f.write("#!/bin/bash\necho 'Script de prueba OK'\nexit 0\n")
-    os.chmod(tmp_script, 0o755)
-
-    success, msg = SystemUtils.run_script(tmp_script)
-    ok(f"Retornó success={success}, msg='{msg}'")
-    info("Debe aparecer en log: [INFO] Script ejecutado correctamente")
-    os.remove(tmp_script)
-
-
-# ============================================================
-# TEST NETWORK_MONITOR
-# ============================================================
-def test_network_monitor():
-    separador("NETWORK MONITOR (SPEEDTEST)")
-    from core.network_monitor import NetworkMonitor
-
-    monitor = NetworkMonitor()
-
-    # --- Test 1: get_current_stats ---
-    print("\n[1] get_current_stats:")
-    stats = monitor.get_current_stats()
-    ok(f"Interfaz: {stats['interface']}, ↓{stats['download_mb']:.3f} MB/s, ↑{stats['upload_mb']:.3f} MB/s")
-
-    # --- Test 2: speedtest completo ---
-    print("\n[2] Speedtest (puede tardar ~30-60s):")
-    info("Iniciando speedtest... espera")
-    monitor.run_speedtest()
-
-    # Esperar resultado con timeout
-    timeout = 90
-    start = time.time()
-    while time.time() - start < timeout:
-        result = monitor.get_speedtest_result()
-        status = result['status']
-
-        if status == 'running':
-            print(f"  ⏳ Ejecutando... ({int(time.time()-start)}s)", end='\r')
-            time.sleep(2)
-        elif status == 'done':
-            print()
-            ok(f"Ping: {result['ping']}ms | ↓{result['download']:.2f} MB/s | ↑{result['upload']:.2f} MB/s")
-            info("Debe aparecer en log: [INFO] Speedtest completado con las métricas")
-            break
-        elif status == 'timeout':
-            print()
-            ok(f"Speedtest timeout (esperado si la conexión es lenta)")
-            info("Debe aparecer en log: [WARNING] Speedtest timeout")
-            break
-        elif status == 'error':
-            print()
-            ok(f"Speedtest error (puede que speedtest-cli no esté instalado)")
-            info("Debe aparecer en log: [ERROR] con el motivo del fallo")
-            break
-    else:
-        print()
-        info("Timeout de espera alcanzado en el script de prueba")
-
-    # --- Test 3: speedtest con binario inexistente (simulado) ---
-    print("\n[3] Verificar log de speedtest-cli no encontrado:")
-    info("Para probar esto, renombra temporalmente speedtest-cli y ejecuta de nuevo")
-    info("Debe aparecer en log: [ERROR] speedtest-cli no encontrado")
-
-
-# ============================================================
-# MAIN
-# ============================================================
-if __name__ == "__main__":
-    print("\n" + "="*60)
-    print("  TEST DE LOGGING - Dashboard v2.5.1")
-    print("  Abre otra terminal y ejecuta:")
-    print("  tail -f data/logs/dashboard.log")
-    print("="*60)
-
-    # Preguntar si hacer el speedtest (tarda mucho)
-    hacer_speedtest = "--speedtest" in sys.argv or "-s" in sys.argv
-
-    try:
-        test_file_manager()
-    except Exception as e:
-        print(f"\n❌ Error en test_file_manager: {e}")
-
-    try:
-        test_system_utils()
-    except Exception as e:
-        print(f"\n❌ Error en test_system_utils: {e}")
-
-    if hacer_speedtest:
-        try:
-            test_network_monitor()
-        except Exception as e:
-            print(f"\n❌ Error en test_network_monitor: {e}")
-    else:
-        separador("NETWORK MONITOR (SPEEDTEST)")
-        print("\n  ⏭️  Saltado. Para incluir el speedtest ejecuta:")
-        print("     python3 test_logging.py --speedtest")
-
-    separador("RESULTADO FINAL")
-    print("\n  Revisa data/logs/dashboard.log para verificar los mensajes.")
-    print("  Todos los tests deberían mostrar ✅ sin excepciones no capturadas.\n")
-````
-
 ## File: config/__init__.py
 ````python
 """
@@ -3779,377 +3168,6 @@ class FanController:
         return curve
 ````
 
-## File: core/service_monitor.py
-````python
-"""
-Monitor de servicios systemd
-"""
-import subprocess
-import re
-from typing import List, Dict, Optional
-from utils import DashboardLogger
-
-
-class ServiceMonitor:
-    """Monitor de servicios del sistema"""
-
-    def __init__(self):
-        """Inicializa el monitor de servicios"""
-        self.sort_by = "name"  # name, state
-        self.sort_reverse = False
-        self.filter_type = "all"  # all, active, inactive, failed
-        self.dashboard_logger = DashboardLogger()
-
-    def get_services(self) -> List[Dict]:
-        """
-        Obtiene lista de servicios systemd
-
-        Returns:
-            Lista de diccionarios con información de servicios
-        """
-        services = []
-
-        try:
-            # Listar todos los servicios
-            result = subprocess.run(
-                ["systemctl", "list-units", "--type=service", "--all", "--no-pager"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            if result.returncode != 0:
-                return []
-
-            # Parsear salida
-            lines = result.stdout.strip().split('\n')
-
-            for line in lines:
-                # Saltar headers y footers
-                if not line.strip() or line.startswith('UNIT') or line.startswith('●') or 'loaded units listed' in line:
-                    continue
-
-                # Parsear línea
-                parts = line.split()
-                if len(parts) < 4:
-                    continue
-
-                unit = parts[0]
-                load = parts[1]
-                active = parts[2]
-                sub = parts[3]
-                description = ' '.join(parts[4:]) if len(parts) > 4 else ''
-
-                # Solo servicios .service
-                if not unit.endswith('.service'):
-                    continue
-
-                # Extraer nombre sin .service
-                name = unit.replace('.service', '')
-
-                # Aplicar filtro
-                if self.filter_type == "active" and active != "active":
-                    continue
-                elif self.filter_type == "inactive" and active != "inactive":
-                    continue
-                elif self.filter_type == "failed" and active != "failed":
-                    continue
-
-                services.append({
-                    'name': name,
-                    'unit': unit,
-                    'load': load,
-                    'active': active,
-                    'sub': sub,
-                    'description': description,
-                    'enabled': self._check_enabled(unit)
-                })
-
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor]Error getting services: {e}")
-            return []
-
-        # Ordenar
-        if self.sort_by == "name":
-            services.sort(key=lambda x: x['name'].lower(), reverse=self.sort_reverse)
-        elif self.sort_by == "state":
-            # Ordenar por estado: active > inactive > failed
-            state_order = {'active': 0, 'inactive': 1, 'failed': 2}
-            services.sort(
-                key=lambda x: state_order.get(x['active'], 3),
-                reverse=self.sort_reverse
-            )
-
-        return services
-
-    def _check_enabled(self, unit: str) -> bool:
-        """
-        Verifica si un servicio está enabled
-
-        Args:
-            unit: Nombre del servicio (ej: nginx.service)
-
-        Returns:
-            True si está enabled
-        """
-        try:
-            result = subprocess.run(
-                ["systemctl", "is-enabled", unit],
-                capture_output=True,
-                text=True,
-                timeout=2
-            )
-            return result.returncode == 0 and result.stdout.strip() == "enabled"
-        except Exception:
-            return False
-
-    def start_service(self, name: str) -> tuple[bool, str]:
-        """
-        Inicia un servicio
-
-        Args:
-            name: Nombre del servicio
-
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["sudo", "systemctl", "start", f"{name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' iniciado correctamente")
-                return True, f"Servicio '{name}' iniciado correctamente"
-                
-            else:
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error iniciando servicio '{name}': {result.stderr}")
-                return False, f"Error: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error iniciando servicio '{name}': {e}")
-            return False, f"Error: {str(e)}"
-
-    def stop_service(self, name: str) -> tuple[bool, str]:
-        """
-        Detiene un servicio
-
-        Args:
-            name: Nombre del servicio
-
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["sudo", "systemctl", "stop", f"{name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' detenido correctamente")
-                return True, f"Servicio '{name}' detenido correctamente"
-            else:
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deteniendo servicio '{name}': {result.stderr}")
-                return False, f"Error: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deteniendo servicio '{name}': {e}")
-            return False, f"Error: {str(e)}"
-
-    def restart_service(self, name: str) -> tuple[bool, str]:
-        """
-        Reinicia un servicio
-
-        Args:
-            name: Nombre del servicio
-
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["sudo", "systemctl", "restart", f"{name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Servicio '{name}' reiniciado correctamente")
-                return True, f"Servicio '{name}' reiniciado correctamente"
-            else:
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error reiniciando servicio '{name}': {result.stderr}")
-                return False, f"Error: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error reiniciando servicio '{name}': {e}")
-            return False, f"Error: {str(e)}"
-
-    def enable_service(self, name: str) -> tuple[bool, str]:
-        """
-        Habilita autostart de un servicio
-
-        Args:
-            name: Nombre del servicio
-
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["sudo", "systemctl", "enable", f"{name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0: 
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Autostart habilitado para '{name}'")
-                return True, f"Autostart habilitado para '{name}'"
-            else:
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error habilitando autostart para '{name}': {result.stderr}")
-                return False, f"Error: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error habilitando autostart para '{name}': {e}")
-            return False, f"Error: {str(e)}"
-
-    def disable_service(self, name: str) -> tuple[bool, str]:
-        """
-        Deshabilita autostart de un servicio
-
-        Args:
-            name: Nombre del servicio
-
-        Returns:
-            Tupla (éxito, mensaje)
-        """
-        try:
-            result = subprocess.run(
-                ["sudo", "systemctl", "disable", f"{name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Autostart deshabilitado para '{name}'")
-                return True, f"Autostart deshabilitado para '{name}'"
-            else:  
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deshabilitando autostart para '{name}': {result.stderr}")
-                return False, f"Error: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error deshabilitando autostart para '{name}': {e}")
-            return False, f"Error: {str(e)}"
-
-    def get_logs(self, name: str, lines: int = 50) -> str:
-        """
-        Obtiene logs de un servicio
-
-        Args:
-            name: Nombre del servicio
-            lines: Número de líneas a obtener
-
-        Returns:
-            Logs del servicio
-        """
-        try:
-            result = subprocess.run(
-                ["journalctl", "-u", f"{name}.service", "-n", str(lines), "--no-pager"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            if result.returncode == 0:
-                self.dashboard_logger.get_logger(__name__).info(f"[ServiceMonitor] Logs obtenidos para '{name}'")
-                return result.stdout
-            else:
-                self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error obteniendo logs para '{name}': {result.stderr}")
-                return f"Error obteniendo logs: {result.stderr}"
-        except Exception as e:
-            self.dashboard_logger.get_logger(__name__).error(f"[ServiceMonitor] Error obteniendo logs para '{name}': {e}")
-            return f"Error: {str(e)}"
-
-    def search_services(self, query: str) -> List[Dict]:
-        """
-        Busca servicios por nombre o descripción
-
-        Args:
-            query: Texto a buscar
-
-        Returns:
-            Lista de servicios que coinciden
-        """
-        query = query.lower()
-        all_services = self.get_services()
-
-        return [s for s in all_services 
-                if query in s['name'].lower() or query in s['description'].lower()]
-
-    def get_stats(self) -> Dict:
-        """
-        Obtiene estadísticas de servicios
-
-        Returns:
-            Diccionario con estadísticas
-        """
-        services = self.get_services()
-
-        total = len(services)
-        active = len([s for s in services if s['active'] == 'active'])
-        inactive = len([s for s in services if s['active'] == 'inactive'])
-        failed = len([s for s in services if s['active'] == 'failed'])
-        enabled = len([s for s in services if s['enabled']])
-
-        return {
-            'total': total,
-            'active': active,
-            'inactive': inactive,
-            'failed': failed,
-            'enabled': enabled
-        }
-
-    def set_sort(self, column: str, reverse: bool = False):
-        """
-        Configura el orden
-
-        Args:
-            column: Columna por la que ordenar (name, state)
-            reverse: Si ordenar invertido
-        """
-        self.sort_by = column
-        self.sort_reverse = reverse
-
-    def set_filter(self, filter_type: str):
-        """
-        Configura el filtro
-
-        Args:
-            filter_type: Tipo de filtro (all, active, inactive, failed)
-        """
-        self.filter_type = filter_type
-
-    def get_state_color(self, state: str) -> str:
-        """
-        Obtiene color según estado
-
-        Args:
-            state: Estado del servicio (active, inactive, failed)
-
-        Returns:
-            Nombre del color en COLORS
-        """
-        if state == "active":
-            return "success"
-        elif state == "failed":
-            return "danger"
-        else:
-            return "text_dim"
-````
-
 ## File: ui/widgets/__init__.py
 ````python
 """
@@ -4160,6 +3178,268 @@ from .dialogs import custom_msgbox, confirm_dialog, terminal_dialog
 
 __all__ = ['GraphWidget', 'update_graph_lines', 'recolor_lines', 
            'custom_msgbox', 'confirm_dialog', 'terminal_dialog']
+````
+
+## File: ui/windows/homebridge.py
+````python
+"""
+Ventana de control de dispositivos Homebridge
+Muestra enchufes e interruptores y permite encenderlos / apagarlos
+"""
+import threading
+import customtkinter as ctk
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from ui.styles import StyleManager, make_futuristic_button, make_window_header, make_homebridge_switch
+from ui.widgets import custom_msgbox
+from core.homebridge_monitor import HomebridgeMonitor
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+# Intervalo de refresco de la ventana (ms)
+HB_UPDATE_MS = 5000
+
+
+class HomebridgeWindow(ctk.CTkToplevel):
+    """Ventana de control de dispositivos Homebridge."""
+
+    def __init__(self, parent, homebridge_monitor: HomebridgeMonitor):
+        super().__init__(parent)
+        self.hb = homebridge_monitor
+        self._accessories = []
+        self._update_job = None
+        self._busy = False  # evita peticiones simultáneas
+
+        # Configurar ventana
+        self.title("Homebridge")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+
+        self._create_ui()
+        self._schedule_update()
+        logger.info("[HomebridgeWindow] Ventana abierta")
+
+    # ── Interfaz ──────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        """Construye la interfaz completa."""
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
+            main,
+            title="HOMEBRIDGE",
+            on_close=self._on_close,
+            status_text="Conectando...",
+        )
+
+        # ── Barra de estado ───────────────────────────────────────────────────
+        status_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'])
+        status_bar.pack(fill="x", padx=5, pady=(0, 4))
+        self._status_label = ctk.CTkLabel(
+            status_bar,
+            text="",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            anchor="w",
+        )
+        self._status_label.pack(pady=4, padx=10, fill="x")
+
+        # ── Área scrollable de dispositivos ───────────────────────────────────
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        max_height = DSI_HEIGHT - 220
+        canvas = ctk.CTkCanvas(
+            scroll_container,
+            bg=COLORS['bg_medium'],
+            highlightthickness=0,
+            height=max_height,
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30,
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        self._device_frame = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window(
+            (0, 0), window=self._device_frame, anchor="nw", width=DSI_WIDTH - 50
+        )
+        self._device_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+
+        # ── Botón Refrescar ───────────────────────────────────────────────────
+        bottom = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=8, padx=10)
+
+        make_futuristic_button(
+            bottom,
+            text="⟳  Refrescar",
+            command=self._force_refresh,
+            width=15,
+            height=6,
+        ).pack(side="left", padx=5)
+
+    # ── Actualización ─────────────────────────────────────────────────────────
+
+    def _schedule_update(self):
+        """Programa la siguiente actualización."""
+        self._update_job = self.after(100, self._fetch_and_render)
+
+    def _force_refresh(self):
+        """Fuerza un refresco inmediato."""
+        if self._update_job:
+            self.after_cancel(self._update_job)
+        self._fetch_and_render()
+
+    def _fetch_and_render(self):
+        """Lanza la petición en background y actualiza la UI cuando termina."""
+        if self._busy:
+            return
+        self._busy = True
+        self._set_status("Actualizando...")
+
+        def fetch():
+            accessories = self.hb.get_accessories()
+            self.after(0, lambda: self._render(accessories))
+
+        threading.Thread(target=fetch, daemon=True, name="HB-Fetch").start()
+
+    def _render(self, accessories):
+        """Actualiza la lista de dispositivos en el hilo principal."""
+        self._accessories = accessories
+        self._busy = False
+
+        # ── Header status ──────────────────────────────────────────────────────
+        if self.hb.is_reachable():
+            on_count = sum(1 for a in accessories if a["on"])
+            total = len(accessories)
+            header_status = f"{on_count}/{total} encendidos"
+            self._set_status(
+                f"{total} dispositivo{'s' if total != 1 else ''} encontrado{'s' if total != 1 else ''}"
+            )
+        else:
+            header_status = "⚠ Sin conexión"
+            self._set_status("No se pudo conectar con Homebridge — verifica host y credenciales")
+
+        # Actualizar status del header
+        try:
+            self._header.status_label.configure(text=header_status)
+        except Exception:
+            pass
+
+        # ── Redibujar grid 2 columnas ──────────────────────────────────────────
+        for widget in self._device_frame.winfo_children():
+            widget.destroy()
+
+        if not accessories:
+            msg = (
+                "Sin conexión con Homebridge" if not self.hb.is_reachable()
+                else "No se encontraron enchufes ni interruptores"
+            )
+            ctk.CTkLabel(
+                self._device_frame,
+                text=msg,
+                text_color=COLORS.get('warning', '#ffaa00'),
+                font=(FONT_FAMILY, FONT_SIZES['medium']),
+            ).pack(pady=30)
+        else:
+            self._device_frame.grid_columnconfigure(0, weight=1, uniform="col")
+            self._device_frame.grid_columnconfigure(1, weight=1, uniform="col")
+            for idx, acc in enumerate(accessories):
+                self._create_device_card(acc, idx // 2, idx % 2)
+
+        # Programar siguiente actualización
+        self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
+
+    def _create_device_card(self, acc: dict, grid_row: int, grid_col: int):
+        """Tarjeta con switch táctil para encender / apagar el dispositivo."""
+        is_on    = acc["on"]
+        is_fault = acc.get("fault", False)
+        is_inact = acc.get("inactive", False)
+        disabled = is_fault or is_inact
+
+        card = ctk.CTkFrame(
+            self._device_frame,
+            fg_color=COLORS['bg_dark'],
+            corner_radius=8,
+        )
+        card.grid(row=grid_row, column=grid_col, sticky="nsew", padx=4, pady=4)
+
+        # ── Indicador de fallo (solo visible si hay problema) ─────────────────
+        if disabled:
+            ctk.CTkLabel(
+                card,
+                text="⚠  FALLO",
+                text_color=COLORS.get('danger', '#ff4444'),
+                font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
+            ).pack(pady=(10, 0))
+        else:
+            # Espaciado superior equivalente para mantener altura uniforme
+            ctk.CTkFrame(card, fg_color="transparent", height=10).pack()
+
+        # ── Switch ────────────────────────────────────────────────────────────
+        def on_toggle(new_state, uid=acc["uniqueId"]):
+            self._toggle(uid, new_state)
+
+        sw = make_homebridge_switch(
+            card,
+            text=acc["displayName"],
+            command=on_toggle,
+            is_on=is_on,
+            disabled=disabled,
+        )
+        sw.pack(padx=16, pady=(8, 18))
+
+    # ── Acciones ──────────────────────────────────────────────────────────────
+
+    def _toggle(self, unique_id: str, turn_on: bool):
+        """Envía el comando ON/OFF al dispositivo en background."""
+        def send():
+            ok = self.hb.toggle(unique_id, turn_on)
+            if ok:
+                # Refresca inmediatamente para reflejar el nuevo estado
+                self.after(500, self._force_refresh)
+            else:
+                self.after(
+                    0,
+                    lambda: custom_msgbox(
+                        self, "Error",
+                        "No se pudo enviar el comando al dispositivo.\n"
+                        "Verifica la conexión con Homebridge.",
+                        tipo="error"
+                    )
+                )
+
+        threading.Thread(target=send, daemon=True, name="HB-Toggle").start()
+
+    def _set_status(self, text: str):
+        """Actualiza la barra de estado inferior."""
+        try:
+            self._status_label.configure(text=text)
+        except Exception:
+            pass
+
+    # ── Cierre ────────────────────────────────────────────────────────────────
+
+    def _on_close(self):
+        """Cancela actualizaciones pendientes y cierra la ventana."""
+        if self._update_job:
+            self.after_cancel(self._update_job)
+        logger.info("[HomebridgeWindow] Ventana cerrada")
+        self.destroy()
 ````
 
 ## File: utils/logger.py
@@ -5151,121 +4431,339 @@ def load_selected_theme() -> str:
         return DEFAULT_THEME
 ````
 
-## File: core/system_monitor.py
+## File: core/service_monitor.py
 ````python
 """
-Monitor del sistema
+Monitor de servicios systemd
 """
-import psutil
-from collections import deque
-from typing import Dict, Tuple
-from config.settings import HISTORY
-from utils.system_utils import SystemUtils
-from config.settings import UPDATE_MS
-from config.settings import COLORS
+import subprocess
+import threading
+from typing import List, Dict, Optional
+from utils import DashboardLogger
 
-class SystemMonitor:
-    """Monitor centralizado de recursos del sistema"""
-    
+
+# Intervalo de actualización del caché de servicios (segundos).
+# Los servicios cambian raramente — 10s es más que suficiente para el badge
+# y no sobrecarga la Pi con systemctl cada 2s.
+SERVICES_POLL_INTERVAL = 10
+
+
+class ServiceMonitor:
+    """
+    Monitor de servicios systemd con caché en background.
+
+    El método get_services() en versiones anteriores lanzaba systemctl
+    en el hilo de UI cada 2s, bloqueando Tkinter. Ahora:
+    - Un thread de background sondea systemctl cada 10s.
+    - get_services() y get_stats() devuelven el caché sin bloquear.
+    - La ventana ServiceWindow puede forzar un refresco con refresh_now().
+    """
+
     def __init__(self):
-        self.system_utils = SystemUtils()
-        
-        # Historiales
-        self.cpu_hist = deque(maxlen=HISTORY)
-        self.ram_hist = deque(maxlen=HISTORY)
-        self.temp_hist = deque(maxlen=HISTORY)
-        self.disk_hist = deque(maxlen=HISTORY)
-        self.disk_write_hist = deque(maxlen=HISTORY)
-        self.disk_read_hist = deque(maxlen=HISTORY)
-        
-        # Estado anterior para cálculos incrementales
-        self.last_disk_io = psutil.disk_io_counters()
-    
-    def get_current_stats(self) -> Dict:
-        """
-        Obtiene estadísticas actuales del sistema
-        
-        Returns:
-            Diccionario con todas las métricas actuales
-        """
-        cpu = psutil.cpu_percent()
-        ram = psutil.virtual_memory().percent
-        ram_used = psutil.virtual_memory().used
-        temp = self.system_utils.get_cpu_temp()
-        disk_usage = psutil.disk_usage('/').percent
-        
-        # Calcular I/O de disco
-        disk_io = psutil.disk_io_counters()
-        disk_read_bytes = max(0, disk_io.read_bytes - self.last_disk_io.read_bytes)
-        disk_write_bytes = max(0, disk_io.write_bytes - self.last_disk_io.write_bytes)
-        self.last_disk_io = disk_io
-        
-        # Convertir a MB/s
+        self.sort_by     = "name"   # name | state
+        self.sort_reverse = False
+        self.filter_type  = "all"   # all | active | inactive | failed
+        self.dashboard_logger = DashboardLogger()
+        self._logger = self.dashboard_logger.get_logger(__name__)
 
-        seconds = UPDATE_MS / 1000.0
-        disk_read_mb = (disk_read_bytes / (1024 * 1024)) / seconds
-        disk_write_mb = (disk_write_bytes / (1024 * 1024)) / seconds
-        
-        return {
-            'cpu': cpu,
-            'ram': ram,
-            'ram_used': ram_used,
-            'temp': temp,
-            'disk_usage': disk_usage,
-            'disk_read_mb': disk_read_mb,
-            'disk_write_mb': disk_write_mb
+        # Caché thread-safe
+        self._lock: threading.Lock = threading.Lock()
+        self._cached_services: List[Dict] = []
+        self._cached_stats: Dict = {
+            'total': 0, 'active': 0, 'inactive': 0, 'failed': 0, 'enabled': 0
         }
-    
-    def update_history(self, stats: Dict) -> None:
+
+        # Control del thread
+        self._running  = False
+        self._stop_evt = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+        self.start()
+
+    # ── Ciclo de vida ─────────────────────────────────────────────────────────
+
+    def start(self) -> None:
+        """Arranca el sondeo en background (llamado automáticamente en __init__)."""
+        if self._running:
+            return
+        self._running = True
+        self._stop_evt.clear()
+        self._thread = threading.Thread(
+            target=self._poll_loop,
+            daemon=True,
+            name="ServiceMonitorPoll",
+        )
+        self._thread.start()
+        self._logger.info(
+            "[ServiceMonitor] Sondeo iniciado (cada %ds)", SERVICES_POLL_INTERVAL
+        )
+
+    def stop(self) -> None:
+        """Detiene el sondeo limpiamente."""
+        self._running = False
+        self._stop_evt.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=6)
+        self._logger.info("[ServiceMonitor] Sondeo detenido")
+
+    def _poll_loop(self) -> None:
+        """Bucle de background: sondea systemctl y actualiza el caché."""
+        self._do_poll()  # primera lectura inmediata
+        while self._running:
+            self._stop_evt.wait(timeout=SERVICES_POLL_INTERVAL)
+            if self._stop_evt.is_set():
+                break
+            self._do_poll()
+
+    def refresh_now(self) -> None:
         """
-        Actualiza los historiales con las estadísticas actuales
-        
-        Args:
-            stats: Diccionario con estadísticas actuales
+        Fuerza un refresco inmediato del caché en background.
+        Llamar desde ServiceWindow tras start/stop/restart/enable/disable.
         """
-        self.cpu_hist.append(stats['cpu'])
-        self.ram_hist.append(stats['ram'])
-        self.temp_hist.append(stats['temp'])
-        self.disk_hist.append(stats['disk_usage'])
-        self.disk_read_hist.append(stats['disk_read_mb'])
-        self.disk_write_hist.append(stats['disk_write_mb'])
-    
-    def get_history(self) -> Dict:
+        threading.Thread(
+            target=self._do_poll,
+            daemon=True,
+            name="ServiceMonitor-ForceRefresh",
+        ).start()
+
+    # ── Sondeo ────────────────────────────────────────────────────────────────
+
+    def _do_poll(self) -> None:
         """
-        Obtiene todos los historiales
-        
-        Returns:
-            Diccionario con todos los historiales
+        Ejecuta systemctl en background y actualiza el caché.
+        Obtiene todos los servicios Y su estado enabled en dos llamadas,
+        evitando el antipatrón de N subprocesses (uno por servicio).
         """
+        try:
+            services = self._fetch_services()
+            stats    = self._compute_stats(services)
+
+            with self._lock:
+                self._cached_services = services
+                self._cached_stats    = stats
+
+        except Exception as e:
+            self._logger.error("[ServiceMonitor] Error en _do_poll: %s", e)
+
+    def _fetch_services(self) -> List[Dict]:
+        """
+        Obtiene la lista de servicios con una sola llamada a systemctl
+        y enriquece con el estado enabled en una segunda llamada batch.
+        """
+        # ── 1. Listar unidades ─────────────────────────────────────────────
+        result = subprocess.run(
+            ["systemctl", "list-units", "--type=service", "--all", "--no-pager"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+        )
+        if result.returncode != 0:
+            return []
+
+        services = []
+        lines = result.stdout.strip().split('\n')
+        for line in lines:
+            if (not line.strip()
+                    or line.startswith('UNIT')
+                    or line.startswith('●')
+                    or 'loaded units listed' in line):
+                continue
+
+            parts = line.split()
+            if len(parts) < 4:
+                continue
+
+            unit = parts[0]
+            if not unit.endswith('.service'):
+                continue
+
+            load        = parts[1]
+            active      = parts[2]
+            sub         = parts[3]
+            description = ' '.join(parts[4:]) if len(parts) > 4 else ''
+            name        = unit.replace('.service', '')
+
+            services.append({
+                'name':        name,
+                'unit':        unit,
+                'load':        load,
+                'active':      active,
+                'sub':         sub,
+                'description': description,
+                'enabled':     False,   # se rellena en el paso 2
+            })
+
+        if not services:
+            return []
+
+        # ── 2. Estado enabled — una sola llamada para todos ────────────────
+        enabled_set = self._fetch_enabled_batch([s['unit'] for s in services])
+        for s in services:
+            s['enabled'] = s['unit'] in enabled_set
+
+        # ── 3. Ordenar ─────────────────────────────────────────────────────
+        if self.sort_by == "name":
+            services.sort(key=lambda x: x['name'].lower(), reverse=self.sort_reverse)
+        elif self.sort_by == "state":
+            order = {'active': 0, 'inactive': 1, 'failed': 2}
+            services.sort(
+                key=lambda x: order.get(x['active'], 3),
+                reverse=self.sort_reverse,
+            )
+
+        return services
+
+    def _fetch_enabled_batch(self, units: List[str]) -> set:
+        """
+        Obtiene el estado enabled de todos los servicios en UNA sola
+        llamada a systemctl, en lugar de N llamadas separadas.
+        Devuelve un set con los nombres de unidades que están enabled.
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-enabled", "--"] + units,
+                capture_output=True,
+                text=True,
+                timeout=8,
+            )
+            # La salida tiene una línea por unidad, en el mismo orden
+            lines = result.stdout.strip().split('\n')
+            enabled = set()
+            for unit, state in zip(units, lines):
+                if state.strip() == "enabled":
+                    enabled.add(unit)
+            return enabled
+        except Exception as e:
+            self._logger.warning("[ServiceMonitor] Error en is-enabled batch: %s", e)
+            return set()
+
+    def _compute_stats(self, services: List[Dict]) -> Dict:
+        """Calcula las estadísticas a partir de la lista de servicios."""
         return {
-            'cpu': list(self.cpu_hist),
-            'ram': list(self.ram_hist),
-            'temp': list(self.temp_hist),
-            'disk': list(self.disk_hist),
-            'disk_read': list(self.disk_read_hist),
-            'disk_write': list(self.disk_write_hist)
+            'total':    len(services),
+            'active':   sum(1 for s in services if s['active'] == 'active'),
+            'inactive': sum(1 for s in services if s['active'] == 'inactive'),
+            'failed':   sum(1 for s in services if s['active'] == 'failed'),
+            'enabled':  sum(1 for s in services if s['enabled']),
         }
-    
-    @staticmethod
-    def level_color(value: float, warn: float, crit: float) -> str:
+
+    # ── API pública (lee del caché, no bloquea) ───────────────────────────────
+
+    def get_services(self) -> List[Dict]:
         """
-        Determina el color según el nivel de alerta
-        
-        Args:
-            value: Valor actual
-            warn: Umbral de advertencia
-            crit: Umbral crítico
-            
-        Returns:
-            Color en formato hex
+        Devuelve la lista de servicios del caché aplicando filtro actual.
+        No lanza ningún subprocess — nunca bloquea el hilo de UI.
         """
-        
-        if value >= crit:
-            return COLORS['danger']
-        elif value >= warn:
-            return COLORS['warning']
-        else:
-            return COLORS['primary']
+        with self._lock:
+            services = list(self._cached_services)
+
+        # Aplicar filtro en memoria
+        if self.filter_type != "all":
+            services = [s for s in services if s['active'] == self.filter_type]
+
+        return services
+
+    def get_stats(self) -> Dict:
+        """
+        Devuelve las estadísticas del caché.
+        No lanza ningún subprocess — nunca bloquea el hilo de UI.
+        """
+        with self._lock:
+            return dict(self._cached_stats)
+
+    def search_services(self, query: str) -> List[Dict]:
+        """Busca servicios por nombre o descripción (en el caché)."""
+        query = query.lower()
+        with self._lock:
+            all_services = list(self._cached_services)
+        return [
+            s for s in all_services
+            if query in s['name'].lower() or query in s['description'].lower()
+        ]
+
+    # ── Control de servicios (subprocesses bloqueantes, solo bajo demanda) ────
+
+    def start_service(self, name: str) -> tuple:
+        """Inicia un servicio y fuerza refresco del caché."""
+        ok, msg = self._run_systemctl("start", name)
+        if ok:
+            self.refresh_now()
+        return ok, msg
+
+    def stop_service(self, name: str) -> tuple:
+        """Detiene un servicio y fuerza refresco del caché."""
+        ok, msg = self._run_systemctl("stop", name)
+        if ok:
+            self.refresh_now()
+        return ok, msg
+
+    def restart_service(self, name: str) -> tuple:
+        """Reinicia un servicio y fuerza refresco del caché."""
+        ok, msg = self._run_systemctl("restart", name)
+        if ok:
+            self.refresh_now()
+        return ok, msg
+
+    def enable_service(self, name: str) -> tuple:
+        """Habilita autostart y fuerza refresco del caché."""
+        ok, msg = self._run_systemctl("enable", name, sudo=False)
+        if ok:
+            self.refresh_now()
+        return ok, msg
+
+    def disable_service(self, name: str) -> tuple:
+        """Deshabilita autostart y fuerza refresco del caché."""
+        ok, msg = self._run_systemctl("disable", name, sudo=False)
+        if ok:
+            self.refresh_now()
+        return ok, msg
+
+    def _run_systemctl(self, action: str, name: str, sudo: bool = True) -> tuple:
+        """Ejecuta un comando systemctl. Uso interno."""
+        cmd = (["sudo"] if sudo else []) + ["systemctl", action, f"{name}.service"]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0:
+                self._logger.info("[ServiceMonitor] %s '%s' OK", action, name)
+                return True, f"Servicio '{name}' {action} correctamente"
+            self._logger.error(
+                "[ServiceMonitor] Error en %s '%s': %s", action, name, result.stderr
+            )
+            return False, f"Error: {result.stderr}"
+        except Exception as e:
+            self._logger.error("[ServiceMonitor] Error en %s '%s': %s", action, name, e)
+            return False, f"Error: {str(e)}"
+
+    def get_logs(self, name: str, lines: int = 50) -> str:
+        """Obtiene logs de un servicio vía journalctl."""
+        try:
+            result = subprocess.run(
+                ["journalctl", "-u", f"{name}.service", "-n", str(lines), "--no-pager"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                return result.stdout
+            return f"Error obteniendo logs: {result.stderr}"
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+    # ── Configuración de vista ────────────────────────────────────────────────
+
+    def set_sort(self, column: str, reverse: bool = False) -> None:
+        self.sort_by     = column
+        self.sort_reverse = reverse
+
+    def set_filter(self, filter_type: str) -> None:
+        self.filter_type = filter_type
+
+    def get_state_color(self, state: str) -> str:
+        if state == "active":
+            return "success"
+        elif state == "failed":
+            return "danger"
+        return "text_dim"
 ````
 
 ## File: core/update_monitor.py
@@ -6328,180 +5826,6 @@ class FileManager:
             raise
 ````
 
-## File: core/fan_auto_service.py
-````python
-"""
-Servicio en segundo plano para modo AUTO de ventiladores
-"""
-import threading
-import time
-from typing import Optional
-from core.fan_controller import FanController
-from core.system_monitor import SystemMonitor
-from utils import FileManager
-from utils.logger import get_logger
-
-
-logger = get_logger(__name__)
-
-
-class FanAutoService:
-    """
-    Servicio que actualiza automáticamente el PWM en modo AUTO
-    Se ejecuta en segundo plano independiente de la UI
-    
-    Características:
-    - Singleton: Solo una instancia en toda la aplicación
-    - Thread-safe: Seguro para concurrencia
-    - Daemon: Se cierra automáticamente con el programa
-    - Independiente de UI: Funciona con o sin ventanas abiertas
-    """
-    
-    _instance: Optional['FanAutoService'] = None
-    _lock = threading.Lock()
-    
-    def __new__(cls, *args, **kwargs):
-        """Singleton: solo una instancia"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
-    
-    def __init__(self, fan_controller: FanController, 
-                 system_monitor: SystemMonitor):
-        """
-        Inicializa el servicio (solo la primera vez)
-        
-        Args:
-            fan_controller: Instancia del controlador de ventiladores
-            system_monitor: Instancia del monitor del sistema
-        """
-        # Solo inicializar una vez (patrón singleton)
-        if hasattr(self, '_initialized'):
-            return
-        
-        self.fan_controller = fan_controller
-        self.system_monitor = system_monitor
-        self.file_manager = FileManager()
-        
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
-        self._update_interval = 2.0  # segundos
-        self._initialized = True
-        self.start_cycle = True
-    def start(self):
-        """Inicia el servicio en segundo plano"""
-        if self._running:
-            logger.info("[FanAutoService] ya está corriendo")
-            return
-        
-        self._running = True
-        self._thread = threading.Thread(
-            target=self._run,
-            daemon=True,  # Se cierra con el programa
-            name="FanAutoService"
-        )
-        self._thread.start()
-    
-    def stop(self):
-        """Detiene el servicio"""
-        if not self._running:
-            logger.warning("[FanAutoService] no está corriendo")
-            return
-        
-        self._running = False
-        
-        if self._thread:
-            self._thread.join(timeout=5)
-    
-    def _run(self):
-        """Bucle principal del servicio (ejecuta en thread separado)"""
-        while self._running:
-            try:
-                self._update_auto_mode()
-            except Exception as e:
-                logger.error(f"[FanAutoService] Error en actualización automática: {e}")
-            
-            # Dormir en intervalos pequeños para poder detener rápido
-            for _ in range(int(self._update_interval * 10)):
-                if not self._running:
-                    break
-                time.sleep(0.1)
-    
-    def _update_auto_mode(self):
-        """Actualiza el PWM si está en modo auto"""
-        
-        try:
-            state = self.file_manager.load_state()
-        except Exception as e:
-            logger.error(f"[FanAutoService] Error cargando estado: {e}")
-            return
-        
-        # Solo actuar si está en modo auto
-        if state.get("mode") != "auto":
-            
-            if self.start_cycle:
-                logger.info("[FanAutoService] Modo no es auto, esperando para iniciar actualizaciones automáticas...")
-                self.start_cycle = False
-            return
-        
-        try:
-            # Obtener temperatura actual
-            stats = self.system_monitor.get_current_stats()
-            temp = stats.get('temp', 50)
-            
-            # Calcular PWM según curva
-            target_pwm = self.fan_controller.get_pwm_for_mode(
-                mode="auto",
-                temp=temp,
-                manual_pwm=128  # No importa en auto
-            )
-            
-            # Solo guardar si cambió (evitar writes innecesarios)
-            current_pwm = state.get("target_pwm")
-            if target_pwm != current_pwm:
-                self.file_manager.write_state({
-                    "mode": "auto",
-                    "target_pwm": target_pwm
-                })
-        
-        except Exception as e:
-            logger.error(f"[FanAutoService] Error calculando o guardando PWM: {e}")
-    
-    def set_update_interval(self, seconds: float):
-        """
-        Cambia el intervalo de actualización
-        
-        Args:
-            seconds: Segundos entre actualizaciones (mínimo 1.0)
-        """
-        self._update_interval = max(1.0, seconds)
-    
-    def is_running(self) -> bool:
-        """
-        Verifica si el servicio está corriendo
-        
-        Returns:
-            True si está activo, False si no
-        """
-        logger.debug(f"[FanAutoService] is_running: {self._running}")
-        return self._running
-    
-    def get_status(self) -> dict:
-        """
-        Obtiene el estado del servicio
-        
-        Returns:
-            Diccionario con información del servicio
-        """
-        return {
-            'running': self._running,
-            'interval': self._update_interval,
-            'thread_alive': self._thread.is_alive() if self._thread else False
-        }
-````
-
 ## File: core/process_monitor.py
 ````python
 """
@@ -6741,6 +6065,143 @@ class ProcessMonitor:
             return "warning"
         else:
             return "success"
+````
+
+## File: core/system_monitor.py
+````python
+"""
+Monitor del sistema
+"""
+import threading
+import psutil
+from collections import deque
+from typing import Dict, Optional
+from config.settings import HISTORY, UPDATE_MS, COLORS
+from utils.system_utils import SystemUtils
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class SystemMonitor:
+    """
+    Monitor centralizado de recursos del sistema.
+
+    Las métricas se actualizan en un thread de background cada UPDATE_MS ms.
+    La UI siempre lee del caché (get_current_stats / get_cached_stats),
+    nunca bloquea el hilo principal de Tkinter.
+    """
+
+    def __init__(self):
+        self.system_utils = SystemUtils()
+
+        self.cpu_hist        = deque(maxlen=HISTORY)
+        self.ram_hist        = deque(maxlen=HISTORY)
+        self.temp_hist       = deque(maxlen=HISTORY)
+        self.disk_hist       = deque(maxlen=HISTORY)
+        self.disk_write_hist = deque(maxlen=HISTORY)
+        self.disk_read_hist  = deque(maxlen=HISTORY)
+
+        self._cache_lock = threading.Lock()
+        self._cached: Dict = {
+            'cpu': 0.0, 'ram': 0.0, 'ram_used': 0,
+            'temp': 0.0, 'disk_usage': 0.0,
+            'disk_read_mb': 0.0, 'disk_write_mb': 0.0,
+        }
+
+        self._last_disk_io = psutil.disk_io_counters()
+        self._running      = False
+        self._stop_evt     = threading.Event()
+        self._thread       = None
+        self._interval_s   = max(UPDATE_MS / 1000.0, 1.0)
+
+        self.start()
+
+    def start(self) -> None:
+        if self._running:
+            return
+        self._running = True
+        self._stop_evt.clear()
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True, name="SystemMonitorPoll")
+        self._thread.start()
+        logger.info("[SystemMonitor] Sondeo iniciado (cada %.1fs)", self._interval_s)
+
+    def stop(self) -> None:
+        self._running = False
+        self._stop_evt.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=3)
+        logger.info("[SystemMonitor] Sondeo detenido")
+
+    def _poll_loop(self) -> None:
+        self._do_poll()
+        while self._running:
+            self._stop_evt.wait(timeout=self._interval_s)
+            if self._stop_evt.is_set():
+                break
+            self._do_poll()
+
+    def _do_poll(self) -> None:
+        try:
+            cpu      = psutil.cpu_percent()
+            vm       = psutil.virtual_memory()
+            temp     = self.system_utils.get_cpu_temp()
+            disk_pct = psutil.disk_usage('/').percent
+
+            disk_io      = psutil.disk_io_counters()
+            disk_read_b  = max(0, disk_io.read_bytes  - self._last_disk_io.read_bytes)
+            disk_write_b = max(0, disk_io.write_bytes - self._last_disk_io.write_bytes)
+            self._last_disk_io = disk_io
+
+            stats = {
+                'cpu':           cpu,
+                'ram':           vm.percent,
+                'ram_used':      vm.used,
+                'temp':          temp,
+                'disk_usage':    disk_pct,
+                'disk_read_mb':  (disk_read_b  / (1024 * 1024)) / self._interval_s,
+                'disk_write_mb': (disk_write_b / (1024 * 1024)) / self._interval_s,
+            }
+
+            with self._cache_lock:
+                self._cached = stats
+
+            self.update_history(stats)
+
+        except Exception as e:
+            logger.error("[SystemMonitor] Error en _do_poll: %s", e)
+
+    def get_current_stats(self) -> Dict:
+        with self._cache_lock:
+            return dict(self._cached)
+
+    get_cached_stats = get_current_stats
+
+    def update_history(self, stats: Dict) -> None:
+        self.cpu_hist.append(stats['cpu'])
+        self.ram_hist.append(stats['ram'])
+        self.temp_hist.append(stats['temp'])
+        self.disk_hist.append(stats['disk_usage'])
+        self.disk_read_hist.append(stats['disk_read_mb'])
+        self.disk_write_hist.append(stats['disk_write_mb'])
+
+    def get_history(self) -> Dict:
+        return {
+            'cpu':        list(self.cpu_hist),
+            'ram':        list(self.ram_hist),
+            'temp':       list(self.temp_hist),
+            'disk':       list(self.disk_hist),
+            'disk_read':  list(self.disk_read_hist),
+            'disk_write': list(self.disk_write_hist),
+        }
+
+    @staticmethod
+    def level_color(value: float, warn: float, crit: float) -> str:
+        if value >= crit:
+            return COLORS['danger']
+        elif value >= warn:
+            return COLORS['warning']
+        return COLORS['primary']
 ````
 
 ## File: ui/widgets/dialogs.py
@@ -8634,6 +8095,183 @@ class DataLogger:
             log.info(f"[DataLogger] Limpieza completada. Nuevo tamaño: {self.get_db_size_mb():.2f} MB")
 ````
 
+## File: core/fan_auto_service.py
+````python
+"""
+Servicio en segundo plano para modo AUTO de ventiladores
+"""
+import threading
+import time
+from typing import Optional
+from core.fan_controller import FanController
+from core.system_monitor import SystemMonitor
+from utils import FileManager
+from utils.logger import get_logger
+
+
+logger = get_logger(__name__)
+
+
+class FanAutoService:
+    """
+    Servicio que actualiza automáticamente el PWM en modo AUTO
+    Se ejecuta en segundo plano independiente de la UI
+    
+    Características:
+    - Singleton: Solo una instancia en toda la aplicación
+    - Thread-safe: Seguro para concurrencia
+    - Daemon: Se cierra automáticamente con el programa
+    - Independiente de UI: Funciona con o sin ventanas abiertas
+    """
+    
+    _instance: Optional['FanAutoService'] = None
+    _lock = threading.Lock()
+    
+    def __new__(cls, *args, **kwargs):
+        """Singleton: solo una instancia"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, fan_controller: FanController, 
+                 system_monitor: SystemMonitor):
+        """
+        Inicializa el servicio (solo la primera vez)
+        
+        Args:
+            fan_controller: Instancia del controlador de ventiladores
+            system_monitor: Instancia del monitor del sistema
+        """
+        # Solo inicializar una vez (patrón singleton)
+        if hasattr(self, '_initialized'):
+            return
+        
+        self.fan_controller = fan_controller
+        self.system_monitor = system_monitor
+        self.file_manager = FileManager()
+        
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        self._update_interval = 2.0  # segundos
+        self._initialized = True
+        self.start_cycle = True
+    def start(self):
+        """Inicia el servicio en segundo plano"""
+        if self._running:
+            logger.info("[FanAutoService] ya está corriendo")
+            return
+        
+        self._running = True
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,  # Se cierra con el programa
+            name="FanAutoService"
+        )
+        self._thread.start()
+        logger.info("[FanAutoService] Servicio iniciado")
+    
+    def stop(self):
+        """Detiene el servicio"""
+        if not self._running:
+            logger.warning("[FanAutoService] no está corriendo")
+            return
+        
+        self._running = False
+        
+        if self._thread:
+            self._thread.join(timeout=5)
+        logger.info("[FanAutoService] Servicio detenido")
+
+    
+    def _run(self):
+        """Bucle principal del servicio (ejecuta en thread separado)"""
+        while self._running:
+            try:
+                self._update_auto_mode()
+            except Exception as e:
+                logger.error(f"[FanAutoService] Error en actualización automática: {e}")
+            
+            # Dormir en intervalos pequeños para poder detener rápido
+            for _ in range(int(self._update_interval * 10)):
+                if not self._running:
+                    break
+                time.sleep(0.1)
+    
+    def _update_auto_mode(self):
+        """Actualiza el PWM si está en modo auto"""
+        
+        try:
+            state = self.file_manager.load_state()
+        except Exception as e:
+            logger.error(f"[FanAutoService] Error cargando estado: {e}")
+            return
+        
+        # Solo actuar si está en modo auto
+        if state.get("mode") != "auto":
+            
+            if self.start_cycle:
+                logger.info("[FanAutoService] Modo no es auto, esperando para iniciar actualizaciones automáticas...")
+                self.start_cycle = False
+            return
+        
+        try:
+            # Obtener temperatura actual
+            stats = self.system_monitor.get_current_stats()
+            temp = stats.get('temp', 50)
+            
+            # Calcular PWM según curva
+            target_pwm = self.fan_controller.get_pwm_for_mode(
+                mode="auto",
+                temp=temp,
+                manual_pwm=128  # No importa en auto
+            )
+            
+            # Solo guardar si cambió (evitar writes innecesarios)
+            current_pwm = state.get("target_pwm")
+            if target_pwm != current_pwm:
+                self.file_manager.write_state({
+                    "mode": "auto",
+                    "target_pwm": target_pwm
+                })
+        
+        except Exception as e:
+            logger.error(f"[FanAutoService] Error calculando o guardando PWM: {e}")
+    
+    def set_update_interval(self, seconds: float):
+        """
+        Cambia el intervalo de actualización
+        
+        Args:
+            seconds: Segundos entre actualizaciones (mínimo 1.0)
+        """
+        self._update_interval = max(1.0, seconds)
+    
+    def is_running(self) -> bool:
+        """
+        Verifica si el servicio está corriendo
+        
+        Returns:
+            True si está activo, False si no
+        """
+        logger.debug(f"[FanAutoService] is_running: {self._running}")
+        return self._running
+    
+    def get_status(self) -> dict:
+        """
+        Obtiene el estado del servicio
+        
+        Returns:
+            Diccionario con información del servicio
+        """
+        return {
+            'running': self._running,
+            'interval': self._update_interval,
+            'thread_alive': self._thread.is_alive() if self._thread else False
+        }
+````
+
 ## File: core/network_monitor.py
 ````python
 """
@@ -8979,6 +8617,237 @@ class DiskWindow(ctk.CTkToplevel):
         g['widget'].update(history, g['max_val'], color)
 ````
 
+## File: ui/windows/network.py
+````python
+"""
+Ventana de monitoreo de red
+"""
+import customtkinter as ctk
+from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
+from ui.styles import StyleManager, make_futuristic_button, make_window_header
+from ui.widgets import GraphWidget
+from core.network_monitor import NetworkMonitor
+from utils.system_utils import SystemUtils
+
+_COL_W   = (DSI_WIDTH - 70) // 2
+_GRAPH_H = 110
+
+
+class NetworkWindow(ctk.CTkToplevel):
+    """Ventana de monitoreo de red"""
+
+    def __init__(self, parent, network_monitor: NetworkMonitor):
+        super().__init__(parent)
+        self.network_monitor = network_monitor
+        self.widgets = {}
+        self.graphs  = {}
+        self._interface_update_counter = 0
+
+        self.title("Monitor de Red")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+
+        self._create_ui()
+        self._update()
+
+    def _create_ui(self):
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self._header = make_window_header(
+            main, title="MONITOR DE RED", on_close=self.destroy,
+            status_text="Detectando interfaz...")
+
+        # Scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        canvas = ctk.CTkCanvas(
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
+        scrollbar.pack(side="right", fill="y")
+
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
+        inner.bind("<Configure>",
+                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Grid 2 columnas dentro del inner scrollable
+        grid = ctk.CTkFrame(inner, fg_color=COLORS['bg_medium'])
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(0, weight=1)
+        grid.grid_columnconfigure(1, weight=1)
+
+        # Fila 0: DESCARGA | SUBIDA  (con gráfica)
+        self._create_traffic_cell(grid, 0, 0, "DESCARGA", "download")
+        self._create_traffic_cell(grid, 0, 1, "SUBIDA",   "upload")
+
+        # Fila 1: INTERFACES | SPEEDTEST  (informativas)
+        self._create_interfaces_cell(grid, 1, 0)
+        self._create_speedtest_cell(grid,  1, 1)
+
+    # ── Celdas ───────────────────────────────────────────────────────────────
+
+    def _create_traffic_cell(self, parent, row, col, title, key):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        lbl = ctk.CTkLabel(cell, text=title, text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w")
+        lbl.pack(anchor="w", padx=8, pady=(6, 0))
+
+        val = ctk.CTkLabel(cell, text="0.00 MB/s", text_color=COLORS['primary'],
+                           font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"), anchor="e")
+        val.pack(anchor="e", padx=8, pady=(0, 2))
+
+        graph = GraphWidget(cell, width=_COL_W - 16, height=_GRAPH_H)
+        graph.pack(padx=4, pady=(0, 6))
+
+        self.widgets[f"{key}_label"] = lbl
+        self.widgets[f"{key}_value"] = val
+        self.graphs[key] = graph
+
+    def _create_interfaces_cell(self, parent, row, col):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        ctk.CTkLabel(cell, text="INTERFACES", text_color=COLORS['success'],
+                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
+                     ).pack(anchor="w", padx=8, pady=(6, 4))
+
+        self.interfaces_container = ctk.CTkFrame(cell, fg_color="transparent")
+        self.interfaces_container.pack(fill="both", expand=True, padx=4, pady=(0, 6))
+        self._update_interfaces()
+
+    def _create_speedtest_cell(self, parent, row, col):
+        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+
+        ctk.CTkLabel(cell, text="SPEEDTEST", text_color=COLORS['primary'],
+                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
+                     ).pack(anchor="w", padx=8, pady=(6, 4))
+
+        self.speedtest_result = ctk.CTkLabel(
+            cell, text="Pulsa 'Test' para\ncomenzar",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            justify="left", wraplength=_COL_W - 20)
+        self.speedtest_result.pack(anchor="w", padx=8, pady=(0, 4))
+
+        self.speedtest_btn = make_futuristic_button(
+            cell, text="Ejecutar Test", command=self._run_speedtest, width=15, height=5)
+        self.speedtest_btn.pack(pady=(0, 8))
+
+    # ── Interfaces ───────────────────────────────────────────────────────────
+
+    def _update_interfaces(self):
+        for w in self.interfaces_container.winfo_children():
+            w.destroy()
+
+        interfaces = SystemUtils.get_interfaces_ips()
+        if not interfaces:
+            ctk.CTkLabel(self.interfaces_container, text="Sin interfaces",
+                         text_color=COLORS['warning'],
+                         font=(FONT_FAMILY, FONT_SIZES['small'])).pack(pady=5)
+            return
+
+        for iface, ip in sorted(interfaces.items()):
+            if iface.startswith('tun'):
+                color, icon = COLORS['success'], "🔒"
+            elif iface.startswith(('eth', 'enp')):
+                color, icon = COLORS['primary'], "🌐"
+            elif iface.startswith(('wlan', 'wlp')):
+                color, icon = COLORS['warning'], "\uf0eb"
+            else:
+                color, icon = COLORS['text'], "•"
+
+            ctk.CTkLabel(self.interfaces_container,
+                         text=f"{icon} {iface}: {ip}",
+                         text_color=color,
+                         font=(FONT_FAMILY, FONT_SIZES['small']),
+                         anchor="w", wraplength=_COL_W - 20
+                         ).pack(anchor="w", pady=1, padx=4)
+
+    # ── Speedtest ─────────────────────────────────────────────────────────────
+
+    def _run_speedtest(self):
+        result = self.network_monitor.get_speedtest_result()
+        if result['status'] == 'running':
+            return
+        self.network_monitor.reset_speedtest()
+        self.network_monitor.run_speedtest()
+        self.speedtest_btn.configure(state="disabled")
+        self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
+
+    def _update_speedtest(self):
+        result = self.network_monitor.get_speedtest_result()
+        status = result['status']
+        if status == 'idle':
+            self.speedtest_result.configure(
+                text="Pulsa 'Test' para\ncomenzar", text_color=COLORS['text'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'running':
+            self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
+            self.speedtest_btn.configure(state="disabled")
+        elif status == 'done':
+            self.speedtest_result.configure(
+                text=f"Ping: {result['ping']} ms\n↓ {result['download']:.1f} MB/s\n↑ {result['upload']:.1f} MB/s",
+                text_color=COLORS['success'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'timeout':
+            self.speedtest_result.configure(text="Timeout", text_color=COLORS['danger'])
+            self.speedtest_btn.configure(state="normal")
+        elif status == 'error':
+            self.speedtest_result.configure(
+                text="Error al ejecutar\nel test", text_color=COLORS['danger'])
+            self.speedtest_btn.configure(state="normal")
+
+    # ── Update loop ───────────────────────────────────────────────────────────
+
+    def _update(self):
+        if not self.winfo_exists():
+            return
+
+        stats = self.network_monitor.get_current_stats(NET_INTERFACE)
+        self.network_monitor.update_history(stats)
+        self.network_monitor.update_dynamic_scale()
+        history = self.network_monitor.get_history()
+
+        self._header.status_label.configure(
+            text=f"{stats['interface']}  ·  ↓{stats['download_mb']:.2f}  ↑{stats['upload_mb']:.2f} MB/s")
+
+        dl_color = self.network_monitor.net_color(stats['download_mb'])
+        self.widgets['download_label'].configure(text_color=dl_color)
+        self.widgets['download_value'].configure(
+            text=f"{stats['download_mb']:.2f} MB/s", text_color=dl_color)
+        self.graphs['download'].update(history['download'], history['dynamic_max'], dl_color)
+
+        ul_color = self.network_monitor.net_color(stats['upload_mb'])
+        self.widgets['upload_label'].configure(text_color=ul_color)
+        self.widgets['upload_value'].configure(
+            text=f"{stats['upload_mb']:.2f} MB/s", text_color=ul_color)
+        self.graphs['upload'].update(history['upload'], history['dynamic_max'], ul_color)
+
+        self._update_speedtest()
+
+        self._interface_update_counter += 1
+        if self._interface_update_counter >= 5:
+            self._update_interfaces()
+            self._interface_update_counter = 0
+
+        self.after(UPDATE_MS, self._update)
+````
+
 ## File: ui/styles.py
 ````python
 """
@@ -9275,237 +9144,86 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     header.status_label = status_lbl
 
     return header
-````
-
-## File: ui/windows/network.py
-````python
-"""
-Ventana de monitoreo de red
-"""
-import customtkinter as ctk
-from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
-from ui.styles import StyleManager, make_futuristic_button, make_window_header
-from ui.widgets import GraphWidget
-from core.network_monitor import NetworkMonitor
-from utils.system_utils import SystemUtils
-
-_COL_W   = (DSI_WIDTH - 70) // 2
-_GRAPH_H = 110
 
 
-class NetworkWindow(ctk.CTkToplevel):
-    """Ventana de monitoreo de red"""
+def make_homebridge_switch(
+    parent,
+    text: str,
+    command=None,
+    is_on: bool = False,
+    disabled: bool = False,
+) -> ctk.CTkSwitch:
+    """
+    Crea un CTkSwitch estilado para el control de accesorios Homebridge.
 
-    def __init__(self, parent, network_monitor: NetworkMonitor):
-        super().__init__(parent)
-        self.network_monitor = network_monitor
-        self.widgets = {}
-        self.graphs  = {}
-        self._interface_update_counter = 0
+    Layout dentro de la tarjeta de dispositivo:
+    ┌─────────────────────────────────────────┐
+    │   NOMBRE DEL DISPOSITIVO   [══ ●]       │
+    └─────────────────────────────────────────┘
 
-        self.title("Monitor de Red")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
+    El switch usa los colores del tema activo:
+    - ON  → COLORS['success']  (verde por defecto)
+    - OFF → COLORS['bg_light'] (gris oscuro)
+    - Deshabilitado (fallo/inactivo) → COLORS['danger'] fijo, no interactivo
 
-        self._create_ui()
-        self._update()
+    Args:
+        parent:   Widget padre (normalmente la tarjeta CTkFrame).
+        text:     Etiqueta del switch (nombre del dispositivo).
+        command:  Callable ejecutado al cambiar el estado.
+                  Recibe el nuevo valor como booleano (True=ON, False=OFF).
+        is_on:    Estado inicial del switch.
+        disabled: Si True, el switch se muestra bloqueado en rojo (fallo/inactivo).
 
-    def _create_ui(self):
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
+    Returns:
+        CTkSwitch configurado y listo para empaquetar.
+    """
+    color_on   = COLORS.get('success', '#00ff88')
+    color_off  = COLORS.get('bg_light', '#333333')
+    color_fault = COLORS.get('danger', '#ff4444')
 
-        self._header = make_window_header(
-            main, title="MONITOR DE RED", on_close=self.destroy,
-            status_text="Detectando interfaz...")
+    if disabled:
+        # Fallo o inactivo: switch bloqueado, color de aviso
+        sw = ctk.CTkSwitch(
+            parent,
+            text=text,
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
+            text_color=COLORS.get('text_dim', '#888888'),
+            progress_color=color_fault,
+            button_color=color_fault,
+            button_hover_color=color_fault,
+            fg_color=color_off,
+            switch_width=90,
+            switch_height=46,
+            state="disabled",
+        )
+        # Fijar visualmente en OFF aunque haya fallo
+        sw.deselect()
+    else:
+        def _on_toggle():
+            # El switch ya cambió internamente; leemos su valor
+            if command:
+                command(bool(sw.get()))
 
-        # Scroll
-        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-
-        canvas = ctk.CTkCanvas(
-            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
-        canvas.pack(side="left", fill="both", expand=True)
-
-        scrollbar = ctk.CTkScrollbar(
-            scroll_container, orientation="vertical",
-            command=canvas.yview, width=30)
-        scrollbar.pack(side="right", fill="y")
-
-        StyleManager.style_scrollbar_ctk(scrollbar)
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH - 50)
-        inner.bind("<Configure>",
-                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        # Grid 2 columnas dentro del inner scrollable
-        grid = ctk.CTkFrame(inner, fg_color=COLORS['bg_medium'])
-        grid.pack(fill="x")
-        grid.grid_columnconfigure(0, weight=1)
-        grid.grid_columnconfigure(1, weight=1)
-
-        # Fila 0: DESCARGA | SUBIDA  (con gráfica)
-        self._create_traffic_cell(grid, 0, 0, "DESCARGA", "download")
-        self._create_traffic_cell(grid, 0, 1, "SUBIDA",   "upload")
-
-        # Fila 1: INTERFACES | SPEEDTEST  (informativas)
-        self._create_interfaces_cell(grid, 1, 0)
-        self._create_speedtest_cell(grid,  1, 1)
-
-    # ── Celdas ───────────────────────────────────────────────────────────────
-
-    def _create_traffic_cell(self, parent, row, col, title, key):
-        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
-        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-
-        lbl = ctk.CTkLabel(cell, text=title, text_color=COLORS['primary'],
-                           font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w")
-        lbl.pack(anchor="w", padx=8, pady=(6, 0))
-
-        val = ctk.CTkLabel(cell, text="0.00 MB/s", text_color=COLORS['primary'],
-                           font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"), anchor="e")
-        val.pack(anchor="e", padx=8, pady=(0, 2))
-
-        graph = GraphWidget(cell, width=_COL_W - 16, height=_GRAPH_H)
-        graph.pack(padx=4, pady=(0, 6))
-
-        self.widgets[f"{key}_label"] = lbl
-        self.widgets[f"{key}_value"] = val
-        self.graphs[key] = graph
-
-    def _create_interfaces_cell(self, parent, row, col):
-        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
-        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-
-        ctk.CTkLabel(cell, text="INTERFACES", text_color=COLORS['success'],
-                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
-                     ).pack(anchor="w", padx=8, pady=(6, 4))
-
-        self.interfaces_container = ctk.CTkFrame(cell, fg_color="transparent")
-        self.interfaces_container.pack(fill="both", expand=True, padx=4, pady=(0, 6))
-        self._update_interfaces()
-
-    def _create_speedtest_cell(self, parent, row, col):
-        cell = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
-        cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-
-        ctk.CTkLabel(cell, text="SPEEDTEST", text_color=COLORS['primary'],
-                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), anchor="w"
-                     ).pack(anchor="w", padx=8, pady=(6, 4))
-
-        self.speedtest_result = ctk.CTkLabel(
-            cell, text="Pulsa 'Test' para\ncomenzar",
+        sw = ctk.CTkSwitch(
+            parent,
+            text=text,
+            command=_on_toggle,
+            font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
             text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            justify="left", wraplength=_COL_W - 20)
-        self.speedtest_result.pack(anchor="w", padx=8, pady=(0, 4))
+            progress_color=color_on,
+            button_color=COLORS['secondary'],
+            button_hover_color=COLORS['primary'],
+            fg_color=color_off,
+            switch_width=90,
+            switch_height=46,
+        )
+        # Establecer estado inicial
+        if is_on:
+            sw.select()
+        else:
+            sw.deselect()
 
-        self.speedtest_btn = make_futuristic_button(
-            cell, text="Ejecutar Test", command=self._run_speedtest, width=15, height=5)
-        self.speedtest_btn.pack(pady=(0, 8))
-
-    # ── Interfaces ───────────────────────────────────────────────────────────
-
-    def _update_interfaces(self):
-        for w in self.interfaces_container.winfo_children():
-            w.destroy()
-
-        interfaces = SystemUtils.get_interfaces_ips()
-        if not interfaces:
-            ctk.CTkLabel(self.interfaces_container, text="Sin interfaces",
-                         text_color=COLORS['warning'],
-                         font=(FONT_FAMILY, FONT_SIZES['small'])).pack(pady=5)
-            return
-
-        for iface, ip in sorted(interfaces.items()):
-            if iface.startswith('tun'):
-                color, icon = COLORS['success'], "🔒"
-            elif iface.startswith(('eth', 'enp')):
-                color, icon = COLORS['primary'], "🌐"
-            elif iface.startswith(('wlan', 'wlp')):
-                color, icon = COLORS['warning'], "\uf0eb"
-            else:
-                color, icon = COLORS['text'], "•"
-
-            ctk.CTkLabel(self.interfaces_container,
-                         text=f"{icon} {iface}: {ip}",
-                         text_color=color,
-                         font=(FONT_FAMILY, FONT_SIZES['small']),
-                         anchor="w", wraplength=_COL_W - 20
-                         ).pack(anchor="w", pady=1, padx=4)
-
-    # ── Speedtest ─────────────────────────────────────────────────────────────
-
-    def _run_speedtest(self):
-        result = self.network_monitor.get_speedtest_result()
-        if result['status'] == 'running':
-            return
-        self.network_monitor.reset_speedtest()
-        self.network_monitor.run_speedtest()
-        self.speedtest_btn.configure(state="disabled")
-        self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
-
-    def _update_speedtest(self):
-        result = self.network_monitor.get_speedtest_result()
-        status = result['status']
-        if status == 'idle':
-            self.speedtest_result.configure(
-                text="Pulsa 'Test' para\ncomenzar", text_color=COLORS['text'])
-            self.speedtest_btn.configure(state="normal")
-        elif status == 'running':
-            self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
-            self.speedtest_btn.configure(state="disabled")
-        elif status == 'done':
-            self.speedtest_result.configure(
-                text=f"Ping: {result['ping']} ms\n↓ {result['download']:.1f} MB/s\n↑ {result['upload']:.1f} MB/s",
-                text_color=COLORS['success'])
-            self.speedtest_btn.configure(state="normal")
-        elif status == 'timeout':
-            self.speedtest_result.configure(text="Timeout", text_color=COLORS['danger'])
-            self.speedtest_btn.configure(state="normal")
-        elif status == 'error':
-            self.speedtest_result.configure(
-                text="Error al ejecutar\nel test", text_color=COLORS['danger'])
-            self.speedtest_btn.configure(state="normal")
-
-    # ── Update loop ───────────────────────────────────────────────────────────
-
-    def _update(self):
-        if not self.winfo_exists():
-            return
-
-        stats = self.network_monitor.get_current_stats(NET_INTERFACE)
-        self.network_monitor.update_history(stats)
-        self.network_monitor.update_dynamic_scale()
-        history = self.network_monitor.get_history()
-
-        self._header.status_label.configure(
-            text=f"{stats['interface']}  ·  ↓{stats['download_mb']:.2f}  ↑{stats['upload_mb']:.2f} MB/s")
-
-        dl_color = self.network_monitor.net_color(stats['download_mb'])
-        self.widgets['download_label'].configure(text_color=dl_color)
-        self.widgets['download_value'].configure(
-            text=f"{stats['download_mb']:.2f} MB/s", text_color=dl_color)
-        self.graphs['download'].update(history['download'], history['dynamic_max'], dl_color)
-
-        ul_color = self.network_monitor.net_color(stats['upload_mb'])
-        self.widgets['upload_label'].configure(text_color=ul_color)
-        self.widgets['upload_value'].configure(
-            text=f"{stats['upload_mb']:.2f} MB/s", text_color=ul_color)
-        self.graphs['upload'].update(history['upload'], history['dynamic_max'], ul_color)
-
-        self._update_speedtest()
-
-        self._interface_update_counter += 1
-        if self._interface_update_counter >= 5:
-            self._update_interfaces()
-            self._interface_update_counter = 0
-
-        self.after(UPDATE_MS, self._update)
+    return sw
 ````
 
 ## File: QUICKSTART.md
@@ -12376,7 +12094,9 @@ def main():
         fan_service.stop()
         data_service.stop()
         cleanup_service.stop()
-        homebridge_monitor.stop() 
+        homebridge_monitor.stop()
+        system_monitor.stop()
+        service_monitor.stop()
     
     atexit.register(cleanup)
     
@@ -12950,45 +12670,46 @@ class MainWindow:
         self._update()
     
     def _update(self):
-        """Actualiza los datos del sistema y los badges"""
+        """Actualiza los badges del menú. Solo lee cachés — nunca bloquea la UI."""
         try:
             pending = self.update_monitor.cached_result.get('pending', 0)
             self._update_badge("updates", pending)
-            #rojo falla conexion
+
+            # Homebridge — lectura desde memoria, sin HTTP
             self._update_badge("hb_offline", self.homebridge_monitor.get_offline_count())
-            #naranja n echufes encendidos
             self._update_badge(
                 "hb_on",
                 self.homebridge_monitor.get_on_count(),
                 color=COLORS.get('warning', '#ffaa00'),
             )
-            #enchufe con fallo
             self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
-
 
         except Exception:
             pass
 
         try:
-            stats = self.service_monitor.get_stats()
+            # get_stats() ahora es lectura de caché — no lanza systemctl
+            stats  = self.service_monitor.get_stats()
             failed = stats.get('failed', 0)
             self._update_badge("services", failed)
         except Exception:
             pass
 
         try:
+            # get_current_stats() ahora es lectura de caché — no llama psutil
             sys_stats = self.system_monitor.get_current_stats()
 
             # Temperatura
             temp = sys_stats['temp']
             if temp >= self._TEMP_CRIT:
                 temp_color = COLORS['danger']
-                show_temp = True
+                show_temp  = True
             elif temp >= self._TEMP_WARN:
                 temp_color = COLORS.get('warning', '#ffaa00')
-                show_temp = True
+                show_temp  = True
             else:
                 show_temp = False
+
             if show_temp:
                 self._update_badge_temp("temp_fan",     int(temp), temp_color)
                 self._update_badge_temp("temp_monitor", int(temp), temp_color)
@@ -13027,6 +12748,7 @@ class MainWindow:
             pass
 
         self.root.after(self.update_interval, self._update)
+
 
     def _update_badge_temp(self, key, temp, color):
         """Muestra la temperatura en el badge con el color indicado."""
