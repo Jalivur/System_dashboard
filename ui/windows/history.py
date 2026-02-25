@@ -3,7 +3,7 @@ Ventana de histórico de datos
 """
 import customtkinter as ctk
 from datetime import datetime, timedelta
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR, EXPORTS_CSV_DIR, EXPORTS_SCR_DIR
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox , confirm_dialog
 from core.data_analyzer import DataAnalyzer
@@ -441,19 +441,27 @@ class HistoryWindow(ctk.CTkToplevel):
             start = self._custom_start
             end   = self._custom_end
             label = f"custom_{start.strftime('%Y%m%d%H%M')}_{end.strftime('%Y%m%d%H%M')}"
-            path  = f"{DATA_DIR}/history_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            path  = str(EXPORTS_CSV_DIR / f"history_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
             try:
                 self.analyzer.export_to_csv_between(path, start, end)
                 custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
+                try:
+                    CleanupService().clean_csv()
+                except Exception as ce:
+                    logger.warning(f"[HistoryWindow] No se pudo limpiar CSV: {ce}")
             except Exception as e:
                 custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
         else:
             period = self.period_var.get()
             hours  = {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}[period]
-            path   = f"{DATA_DIR}/history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            path   = str(EXPORTS_CSV_DIR / f"history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
             try:
                 self.analyzer.export_to_csv(path, hours)
                 custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
+                try:
+                    CleanupService().clean_csv()
+                except Exception as ce:
+                    logger.warning(f"[HistoryWindow] No se pudo limpiar CSV: {ce}")
             except Exception as e:
                 custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
 
@@ -494,7 +502,7 @@ class HistoryWindow(ctk.CTkToplevel):
     def _export_figure_image(self):
         
         try:
-            save_dir = os.path.join(os.getcwd(), "data/screenshots")
+            save_dir = str(EXPORTS_SCR_DIR)
             os.makedirs(save_dir, exist_ok=True)
             filepath = os.path.join(
                 save_dir,
@@ -507,6 +515,10 @@ class HistoryWindow(ctk.CTkToplevel):
             )
             logger.info(f"[HistoryWindow] Figura guardada: {filepath}")
             custom_msgbox(self, f"Imagen guardada en:\n\n{filepath}", "✅ Captura Guardada")
+            try:
+                CleanupService().clean_png()
+            except Exception as ce:
+                logger.warning(f"[HistoryWindow] No se pudo limpiar PNG: {ce}")
         except Exception as e:
             logger.error(f"[HistoryWindow] Error guardando imagen: {e}")
             custom_msgbox(self, f"Error al guardar la imagen: {e}", "❌ Error")
