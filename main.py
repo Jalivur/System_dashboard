@@ -71,7 +71,7 @@ def main():
         data_logger=DataLogger(),
         max_csv=10,
         max_png=10,
-        db_days=90,
+        db_days=30,
         interval_hours=24,
     )
     cleanup_service.start()
