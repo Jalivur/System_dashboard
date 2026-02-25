@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.8
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.9
 
 Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge y logging completo.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.8-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.9-orange.svg)]()
 
 ---
 
@@ -38,8 +38,8 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 
 ### 🏠 **Integración Homebridge**
 - **Control de accesorios HomeKit**: Enchufes e interruptores desde el dashboard
-- **Toggle táctil**: Activa/desactiva cada dispositivo directamente en pantalla
-- **Indicador visual**: ● color por dispositivo, ⚠ rojo si `StatusFault=1`
+- **CTkSwitch táctil** (90×46px): Toggle grande optimizado para uso con el dedo en pantalla DSI
+- **Indicador visual**: switch verde ON / gris OFF, ⚠ rojo bloqueado si `StatusFault=1`
 - **Sondeo ligero en background**: Cada 30 segundos sin bloquear la UI
 - **Autenticación JWT** con renovación automática en 401
 - **3 badges en el menú**: offline (🔴), enchufes encendidos (🟠), dispositivos con fallo (🔴)
@@ -57,6 +57,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Estado visual**: active, inactive, failed con iconos
 - **Autostart**: Enable/Disable con confirmación
 - **Logs en tiempo real**: Ver últimas 50 líneas
+- **Caché en background**: Sondeo cada 10s sin bloquear la UI; `is-enabled` en llamada batch
 
 ### 📊 **Histórico de Datos**
 - **Recolección automática**: Cada 5 minutos en background
@@ -119,10 +120,11 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - Botón "Limpiar Antiguos" fuerza limpieza manual completa
 
 ### 📋 **Sistema de Logging Completo**
-- **Cobertura total**: Todos los módulos core y UI
+- **Cobertura total**: Todos los módulos core y UI incluyendo todos los servicios background
 - **Niveles diferenciados**: DEBUG, INFO, WARNING, ERROR
 - **Rotación automática**: 2MB máximo con backup
 - **Ubicación**: `data/logs/dashboard.log`
+- **Todos los servicios** registran inicio y parada en el log
 
 ---
 
@@ -205,6 +207,8 @@ HOMEBRIDGE_PASS=tu_contraseña
 
 El archivo `.env` está en `.gitignore` y nunca se sube al repositorio.
 
+La ventana Homebridge muestra los accesorios en un grid de 2 columnas. Cada tarjeta incluye un **switch grande (90×46px)** con el nombre del dispositivo como etiqueta, optimizado para activar/desactivar con el dedo. Si un dispositivo tiene `StatusFault=1` el switch aparece bloqueado con un aviso ⚠ FALLO en rojo.
+
 ---
 
 ## 󰍜 Menú Principal (14 botones)
@@ -244,7 +248,7 @@ El archivo `.env` está en `.gitignore` y nunca se sube al repositorio.
 8. **Monitor Servicios** - Control de servicios systemd
 9. **Histórico Datos** - Visualización de métricas históricas
 10. **Actualizaciones** - Gestión de paquetes del sistema
-11. **Homebridge** - Control de accesorios HomeKit (enchufes e interruptores)
+11. **Homebridge** - Control de accesorios HomeKit con switches táctiles
 12. **Cambiar Tema** - Selecciona entre 15 temas
 13. **Reiniciar** - Reinicia el dashboard
 14. **Salir** - Cierra la app o apaga el sistema
@@ -283,11 +287,11 @@ system_dashboard/
 ├── core/
 │   ├── fan_controller.py           # Control PWM y curvas
 │   ├── fan_auto_service.py         # Servicio background ventiladores
-│   ├── system_monitor.py           # CPU, RAM, temperatura
+│   ├── system_monitor.py           # CPU, RAM, temp — caché en background thread
 │   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
 │   ├── disk_monitor.py             # Disco, NVMe, I/O
 │   ├── process_monitor.py          # Gestión de procesos
-│   ├── service_monitor.py          # Servicios systemd
+│   ├── service_monitor.py          # Servicios systemd — caché 10s, batch is-enabled
 │   ├── update_monitor.py           # Actualizaciones con caché 12h
 │   ├── homebridge_monitor.py       # Integración Homebridge (JWT, sondeo 30s)
 │   ├── data_logger.py              # SQLite logging
@@ -297,7 +301,8 @@ system_dashboard/
 │   └── __init__.py
 ├── ui/
 │   ├── main_window.py              # Ventana principal (14 botones + badges)
-│   ├── styles.py                   # make_window_header(), make_futuristic_button(), StyleManager
+│   ├── styles.py                   # make_window_header(), make_futuristic_button(),
+│   │                               # make_homebridge_switch(), StyleManager
 │   ├── widgets/
 │   │   ├── graphs.py               # Gráficas personalizadas
 │   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
@@ -306,7 +311,7 @@ system_dashboard/
 │       ├── process_window.py, service.py, history.py
 │       ├── update.py, fan_control.py
 │       ├── launchers.py, theme_selector.py
-│       ├── homebridge.py           # Ventana de control Homebridge
+│       ├── homebridge.py           # Ventana de control Homebridge con CTkSwitch
 │       └── __init__.py
 ├── utils/
 │   ├── file_manager.py             # Gestión de JSON (escritura atómica)
@@ -373,6 +378,16 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 **Niveles:** `DEBUG` (operaciones normales) · `INFO` (eventos importantes) · `WARNING` (degradación) · `ERROR` (fallos)
 
+Todos los servicios background registran su inicio y parada. Al arrancar verás entradas como:
+```
+[SystemMonitor]   Sondeo iniciado (cada 2.0s)
+[ServiceMonitor]  Sondeo iniciado (cada 10s)
+[HomebridgeMonitor] Sondeo iniciado (cada 30s)
+[FanAutoService]  Servicio iniciado
+[DataCollection]  Servicio iniciado (cada 5 min)
+[CleanupService]  Servicio iniciado
+```
+
 ---
 
 ## 📈 Rendimiento
@@ -380,8 +395,8 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 - **Uso CPU**: ~5-10% en idle
 - **Uso RAM**: ~100-150 MB
 - **Base de datos**: ~5 MB por 10,000 registros
-- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`)
-- **Threads background**: 5 (main + FanAuto + DataCollection + Cleanup + Homebridge)
+- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`) — solo lectura de caché, sin syscalls bloqueantes
+- **Threads background**: 7 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + main)
 - **Log**: máx. 2MB con rotación automática
 
 ---
@@ -398,6 +413,7 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 | USB no expulsa | `sudo apt install udisks2` |
 | Homebridge no conecta | Verificar IP/puerto en `.env` y que Insecure Mode esté activo |
 | Badge hb_offline siempre rojo | Comprobar `HOMEBRIDGE_HOST` en `.env` y red entre Pis |
+| Servicios tardan en aparecer | Normal — ServiceMonitor sondea systemctl cada 10s al arrancar |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
@@ -416,12 +432,12 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 | Métrica | Valor |
 |---------|-------|
-| Versión | 2.8 |
+| Versión | 2.9 |
 | Archivos Python | 43 |
-| Líneas de código | ~13,000 |
+| Líneas de código | ~13,200 |
 | Ventanas | 14 |
 | Temas | 15 |
-| Servicios background | 4 (FanAuto + DataCollection + Cleanup + Homebridge) |
+| Servicios background | 7 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + main) |
 | Badges en menú | 9 |
 | Cobertura logging | 100% módulos core y UI |
 
@@ -429,7 +445,15 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 
 ## Changelog
 
-### **v2.8** - 2026-02-23 ⭐ ACTUAL
+### **v2.9** - 2026-02-24 ⭐ ACTUAL
+- ✅ **MEJORA**: `SystemMonitor` — caché en background thread (cada 2s); la UI nunca llama psutil directamente
+- ✅ **MEJORA**: `ServiceMonitor` — caché en background thread (cada 10s); `is-enabled` en llamada batch en lugar de N subprocesses
+- ✅ **MEJORA**: `_update()` de `MainWindow` solo lee cachés — hilo de UI completamente libre de syscalls bloqueantes
+- ✅ **MEJORA**: `HomebridgeWindow` usa `CTkSwitch` (90×46px) en lugar de botones ON/OFF — más intuitivo y táctil
+- ✅ **MEJORA**: `make_homebridge_switch()` añadida a `ui/styles.py` con soporte de estado disabled (fallo)
+- ✅ **MEJORA**: Todos los servicios background registran inicio y parada en el log (`FanAutoService` incluido)
+
+### **v2.8** - 2026-02-23
 - ✅ **NUEVO**: Integración Homebridge — ventana de control de accesorios HomeKit (enchufes e interruptores)
 - ✅ **NUEVO**: `HomebridgeMonitor` en `core/` — sondeo ligero cada 30s, autenticación JWT con renovación automática
 - ✅ **NUEVO**: 3 badges Homebridge en menú principal (`hb_offline` 🔴, `hb_on` 🟠, `hb_fault` 🔴)
@@ -445,26 +469,20 @@ grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
 ### **v2.6** - 2026-02-22
 - ✅ **NUEVO**: 6 badges de notificación visual en menú principal
 - ✅ **NUEVO**: `CleanupService` — limpieza automática background de CSV, PNG y BD
-- ✅ **NUEVO**: Fan control con entries (placeholder) en lugar de sliders
-- ✅ **MEJORA**: Botón "Limpiar Antiguos" delega en CleanupService (inyección de dependencias)
-- ✅ **MEJORA**: Badges con texto dinámico y color adaptativo
+- ✅ **NUEVO**: Fan control
+ con entries en lugar de sliders
 
-### **v2.5.1** - 2026-02-19
-- ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
-- ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
-- ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
-- ✅ **FIX**: Bug `atexit` en `DataCollectionService`
-- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
+### v2.5.1 - 2026-02-19
+- Logging completo, Ventana Actualizaciones, Fix atexit DataCollectionService
 
-### **v2.5** - 2026-02-17
-- ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
-- ✅ Recolección automática background, Exportación CSV, Detección de anomalías
+### v2.5 - 2026-02-17
+- Monitor Servicios systemd, Historico SQLite, Boton Reiniciar
 
-### **v2.0** - 2026-02-16
-- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
+### v2.0 - 2026-02-16
+- Monitor Procesos, 15 temas, fix Speedtest
 
-### **v1.0** - 2025-01
-- ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
+### v1.0 - 2025-01
+- Release inicial
 
 ---
 
@@ -476,8 +494,8 @@ MIT License
 
 ## Agradecimientos
 
-**CustomTkinter** · **psutil** · **matplotlib** · **Ookla Speedtest CLI** · **Homebridge** · **Raspberry Pi Foundation**
+CustomTkinter - psutil - matplotlib - Ookla Speedtest CLI - Homebridge - Raspberry Pi Foundation
 
 ---
 
-**Dashboard v2.8: Profesional, Unificado, Táctil, Auto-mantenido y conectado a HomeKit**
+Dashboard v2.9: Profesional, Unificado, Tactil, Auto-mantenido, conectado a HomeKit y sin bloqueos en UI

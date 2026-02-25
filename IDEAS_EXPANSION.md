@@ -1,4 +1,4 @@
-# 💡 Ideas de Expansión - Dashboard v2.8
+# 💡 Ideas de Expansión - Dashboard v2.9
 
 ---
 
@@ -150,6 +150,29 @@
 
 ---
 
+
+---
+
+### ~~**13. Optimización de Rendimiento — UI sin bloqueos**~~ ✅ Implementado en v2.9
+**Implementado en v2.9**
+- ✅ `SystemMonitor` con thread de background (cada 2s) — `get_current_stats()` devuelve caché sin llamar psutil
+- ✅ `ServiceMonitor` con thread de background (cada 10s) — `get_services()` / `get_stats()` devuelven caché
+- ✅ `is-enabled` obtenido en una sola llamada batch (`systemctl is-enabled u1 u2 ...`) en lugar de N subprocesses
+- ✅ `refresh_now()` fuerza refresco inmediato tras start/stop/restart/enable/disable
+- ✅ `_update()` de `MainWindow` solo lee cachés — hilo de Tkinter completamente libre de syscalls bloqueantes
+- ✅ Todos los servicios background registran inicio y parada en el log (`FanAutoService` incluido)
+- ✅ `make_homebridge_switch()` en `ui/styles.py` — CTkSwitch (90×46px) estilado con colores del tema
+
+---
+
+### ~~**14. Control Homebridge con Switches Táctiles**~~ ✅ Implementado en v2.9
+**Implementado en v2.9**
+- ✅ `CTkSwitch` en lugar de botones ON/OFF — más intuitivo y adaptado al uso táctil
+- ✅ Tamaño 90×46px óptimo para operar con el dedo en pantalla DSI de 4,5"
+- ✅ Estado disabled en rojo para dispositivos con fallo (no interactivo)
+- ✅ Colores del tema activo: success (ON), bg_light (OFF), danger (fallo)
+- ✅ Nombre del dispositivo integrado como etiqueta del switch
+
 ## 🔄 En Evaluación
 
 ### **Monitor de Contenedores Docker**
@@ -226,12 +249,19 @@
 - ✅ Botón ✕ táctil 52×42px para pantalla DSI
 - ✅ Speedtest migrado a CLI oficial de Ookla (JSON, MB/s reales)
 
-### **v2.8** ✅ ACTUAL — 2026-02-23
+### **v2.8** ✅ — 2026-02-23
 - ✅ Integración Homebridge completa
 - ✅ HomebridgeMonitor con JWT, sondeo 30s, caché en memoria
 - ✅ HomebridgeWindow con toggle táctil en grid 2 columnas
 - ✅ 3 badges Homebridge en menú principal
 - ✅ Configuración por .env (credenciales seguras)
+
+### **v2.9** ✅ ACTUAL — 2026-02-24
+- ✅ SystemMonitor y ServiceMonitor con caché en background thread
+- ✅ ServiceMonitor: is-enabled batch, sondeo 10s, refresh_now() tras acciones
+- ✅ HomebridgeWindow: CTkSwitch táctil 90×46px en lugar de botones
+- ✅ make_homebridge_switch() en ui/styles.py
+- ✅ Logging completo en todos los servicios background (FanAutoService incluido)
 
 ### **v3.0** (Futuro)
 - [ ] Alertas externas (Telegram/webhook)
@@ -260,4 +290,4 @@
 
 ---
 
-**Versión actual**: v2.8 — **Última actualización**: 2026-02-23
+**Versión actual**: v2.9 — **Última actualización**: 2026-02-24

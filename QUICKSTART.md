@@ -1,4 +1,4 @@
-# 🚀 Inicio Rápido - Dashboard v2.8
+# 🚀 Inicio Rápido - Dashboard v2.9
 
 ---
 
@@ -89,7 +89,7 @@ python3 main.py
 
 **10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
 
-**11. Homebridge** — Control de enchufes e interruptores HomeKit, toggle táctil por dispositivo
+**11. Homebridge** — Control de accesorios HomeKit con **switches táctiles** (90×46px) por dispositivo
 
 **12. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
 
@@ -131,7 +131,7 @@ HOMEBRIDGE_PASS=tu_contraseña
 
 > **Importante**: Activa el **Insecure Mode** en Homebridge (`homebridge-config-ui-x → Configuración → Homebridge`). Sin él, la API no permite acceder a los accesorios.
 
-El panel Homebridge del dashboard muestra los accesorios en grid de 2 columnas. Cada botón muestra el nombre del dispositivo, un indicador ● de color (on/off) y permite hacer toggle con un toque. Si un dispositivo tiene `StatusFault=1` aparece ⚠ en rojo.
+La ventana Homebridge muestra los accesorios en grid de 2 columnas. Cada tarjeta incluye un **switch táctil (90×46px)** con el nombre del dispositivo como etiqueta. Desliza o pulsa el switch para encender/apagar con el dedo. Si un dispositivo tiene `StatusFault=1` aparece ⚠ FALLO en rojo y el switch queda bloqueado.
 
 ---
 
@@ -158,12 +158,19 @@ grep ERROR data/logs/dashboard.log
 | USB no expulsa | `sudo apt install udisks2` |
 | Homebridge no conecta | Revisar `.env` y activar Insecure Mode en Homebridge |
 | Badge hb_offline siempre rojo | Comprobar conectividad entre Pis y `HOMEBRIDGE_HOST` |
+| Servicios tardan en aparecer | Normal — ServiceMonitor sondea systemctl cada 10s al arrancar |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 🆕 Novedades v2.8
+## 🆕 Novedades v2.9
 
+✅ **Switches táctiles Homebridge** — CTkSwitch de 90×46px, optimizado para el dedo en DSI  
+✅ **Sin bloqueos en UI** — SystemMonitor y ServiceMonitor con caché en background thread  
+✅ **ServiceMonitor optimizado** — is-enabled en llamada batch, sondeo cada 10s  
+✅ **Logging completo** — Todos los servicios registran inicio y parada  
+
+### v2.8 (referencia)
 ✅ **Integración Homebridge** — Ventana de control de accesorios HomeKit (enchufes e interruptores)  
 ✅ **HomebridgeMonitor** — Sondeo ligero en background cada 30s, JWT con renovación automática  
 ✅ **3 badges Homebridge** — offline 🔴, enchufes encendidos 🟠, dispositivos con fallo 🔴  
@@ -180,4 +187,4 @@ grep ERROR data/logs/dashboard.log
 
 ---
 
-**Dashboard v2.8** 🚀🏠✨
+**Dashboard v2.9** 🚀🏠✨
