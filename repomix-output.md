@@ -1,9 +1,9 @@
-This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
 
 # File Summary
 
 ## Purpose
-This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+This file contains a packed representation of the entire repository's contents.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
 
@@ -28,7 +28,6 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching these patterns are excluded: /home/jalivur/Documents/system_dashboard/fix_timestamps.py, /home/jalivur/Documents/system_dashboard/test_logging.py
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -66,6 +65,7 @@ ui/
     history.py
     homebridge.py
     launchers.py
+    log_viewer.py
     monitor.py
     network.py
     process_window.py
@@ -84,6 +84,7 @@ utils/
 .gitignore
 COMPATIBILIDAD.md
 create_desktop_launcher.sh
+fix_timestamps.py
 IDEAS_EXPANSION.md
 INDEX.md
 INSTALL_GUIDE.md
@@ -98,13 +99,14 @@ README.md
 REQUIREMENTS.md
 requirements.txt
 setup.py
+test_logging.py
 THEMES_GUIDE.md
 ```
 
 # Files
 
 ## File: core/cleanup_service.py
-````python
+`````python
 """
 Servicio de limpieza automática de archivos exportados y datos antiguos
 """
@@ -362,10 +364,10 @@ class CleanupService:
     def is_running(self) -> bool:
         """Verifica si el servicio está corriendo."""
         return self._running
-````
+`````
 
 ## File: core/homebridge_monitor.py
-````python
+`````python
 """
 Monitor de Homebridge
 Integración con la API REST de homebridge-config-ui-x
@@ -690,10 +692,10 @@ class HomebridgeMonitor:
             return 0
         with self._accessories_lock:
             return sum(1 for a in self._accessories if a.get("fault", False))
-````
+`````
 
 ## File: ui/widgets/graphs.py
-````python
+`````python
 """
 Widgets para gráficas y visualización
 """
@@ -832,15 +834,410 @@ def recolor_lines(canvas, lines: List, color: str) -> None:
     """
     for line in lines:
         canvas.itemconfig(line, fill=color)
-````
+`````
+
+## File: ui/windows/log_viewer.py
+`````python
+"""
+Ventana de visualización del log del dashboard
+Permite filtrar por nivel, módulo, texto libre e intervalo de tiempo
+y exportar el resultado filtrado a un archivo .log
+"""
+import re
+import threading
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import customtkinter as ctk
+
+from config.settings import (
+    COLORS, FONT_FAMILY, FONT_SIZES,
+    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
+)
+from ui.styles import make_window_header, make_futuristic_button, StyleManager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+LOG_FILE = DATA_DIR / "logs" / "dashboard.log"
+LOG_LEVELS = ["TODOS", "DEBUG", "INFO", "WARNING", "ERROR"]
+LEVEL_COLORS = {
+    "DEBUG":   "#888888",
+    "INFO":    "#00BFFF",
+    "WARNING": "#FFA500",
+    "ERROR":   "#FF4444",
+}
+
+_PH_SEARCH = "buscar..."
+_PH_DATE   = "YYYY-MM-DD"
+_PH_TIME   = "HH:MM"
+
+LOG_PATTERN = re.compile(
+    r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s+Dashboard(?:\.(\S+?))?:\s+(.*)$'
+)
+
+
+class LogViewerWindow(ctk.CTkToplevel):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Visor de Logs")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.lift()
+        self.focus_force()
+
+        self._all_lines = []
+        self._modules   = []
+        self._loading   = False
+
+        self._level_var  = ctk.StringVar(value="TODOS")
+        self._module_var = ctk.StringVar(value="TODOS")
+        self._search_var = ctk.StringVar(value=_PH_SEARCH)
+        self._quick_var  = ctk.StringVar(value="1h")
+        self._date_from  = ctk.StringVar(value=_PH_DATE)
+        self._time_from  = ctk.StringVar(value=_PH_TIME)
+        self._date_to    = ctk.StringVar(value=_PH_DATE)
+        self._time_to    = ctk.StringVar(value=_PH_TIME)
+
+        self._create_ui()
+        self._load_log()
+
+    # ── Placeholder helpers ──────────────────────────────────────────────────
+
+    def _entry_focus_in(self, entry, var, placeholder):
+        if var.get() == placeholder:
+            var.set("")
+            entry.configure(text_color=COLORS['text'])
+
+    def _entry_focus_out(self, entry, var, placeholder):
+        if var.get().strip() == "":
+            var.set(placeholder)
+            entry.configure(text_color=COLORS['text_dim'])
+
+    def _entry_value(self, var, placeholder):
+        v = var.get().strip()
+        return "" if v == placeholder else v
+
+    def _make_entry(self, parent, var, placeholder, width):
+        e = ctk.CTkEntry(
+            parent,
+            textvariable=var,
+            width=width,
+            height=28,
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            fg_color=COLORS['bg_medium'],
+            border_color=COLORS['primary'],
+            text_color=COLORS['text_dim'],
+        )
+        e.bind("<FocusIn>",  lambda ev: self._entry_focus_in(e, var, placeholder))
+        e.bind("<FocusOut>", lambda ev: self._entry_focus_out(e, var, placeholder))
+        return e
+
+    # ── UI ───────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        make_window_header(main, title="VISOR DE LOGS", on_close=self.destroy)
+        self._create_filters(main)
+        ctk.CTkFrame(main, fg_color=COLORS['border'], height=1,
+                     corner_radius=0).pack(fill="x", padx=5, pady=(4, 0))
+        self._create_results(main)
+        self._create_bottom_bar(main)
+
+    def _create_filters(self, parent):
+        filters = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        filters.pack(fill="x", padx=5, pady=(4, 0))
+
+        # Fila 1: Nivel · Módulo · Búsqueda
+        row1 = ctk.CTkFrame(filters, fg_color="transparent")
+        row1.pack(fill="x", padx=8, pady=(6, 2))
+
+        ctk.CTkLabel(row1, text="Nivel:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        ctk.CTkOptionMenu(
+            row1, variable=self._level_var, values=LOG_LEVELS, width=100,
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            fg_color=COLORS['bg_medium'], button_color=COLORS['primary'],
+            command=lambda _: self._apply_filters()
+        ).pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(row1, text="Módulo:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        self._module_menu = ctk.CTkOptionMenu(
+            row1, variable=self._module_var, values=["TODOS"], width=160,
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            fg_color=COLORS['bg_medium'], button_color=COLORS['primary'],
+            command=lambda _: self._apply_filters()
+        )
+        self._module_menu.pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(row1, text="Buscar:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        search_entry = self._make_entry(row1, self._search_var, _PH_SEARCH, width=140)
+        search_entry.bind("<Return>",     lambda e: self._apply_filters())
+        search_entry.bind("<KeyRelease>", lambda e: self.after(400, self._apply_filters))
+        search_entry.pack(side="left")
+
+        # Fila 2: Intervalo rápido | Intervalo manual
+        row2 = ctk.CTkFrame(filters, fg_color="transparent")
+        row2.pack(fill="x", padx=8, pady=(2, 6))
+
+        ctk.CTkLabel(row2, text="Últimos:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        ctk.CTkOptionMenu(
+            row2, variable=self._quick_var,
+            values=["15min", "1h", "6h", "24h", "Todo"], width=80,
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            fg_color=COLORS['bg_medium'], button_color=COLORS['primary'],
+            command=self._on_quick_interval
+        ).pack(side="left", padx=(0, 16))
+
+        ctk.CTkLabel(row2, text="│", text_color=COLORS['border'],
+                     font=(FONT_FAMILY, FONT_SIZES['medium'])).pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(row2, text="Desde:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        self._make_entry(row2, self._date_from, _PH_DATE, width=90).pack(side="left", padx=(0, 4))
+        self._make_entry(row2, self._time_from, _PH_TIME, width=60).pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(row2, text="Hasta:", font=(FONT_FAMILY, FONT_SIZES['small']),
+                     text_color=COLORS['text_dim']).pack(side="left", padx=(0, 4))
+        self._make_entry(row2, self._date_to, _PH_DATE, width=90).pack(side="left", padx=(0, 4))
+        self._make_entry(row2, self._time_to, _PH_TIME, width=60).pack(side="left", padx=(0, 8))
+
+        make_futuristic_button(
+            row2, text="Aplicar", command=self._apply_filters,
+            width=8, height=4, font_size=13
+        ).pack(side="left")
+
+    def _create_results(self, parent):
+        result_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=8)
+        result_frame.pack(fill="both", expand=True, padx=5, pady=4)
+
+        self._textbox = ctk.CTkTextbox(
+            result_frame,
+            fg_color=COLORS['bg_dark'],
+            text_color=COLORS['text'],
+            font=("Courier New", 12),
+            wrap="none",
+            state="disabled",
+        )
+        self._textbox.pack(fill="both", expand=True, padx=4, pady=4)
+
+        self._textbox._textbox.tag_config("DEBUG",   foreground=LEVEL_COLORS["DEBUG"])
+        self._textbox._textbox.tag_config("INFO",    foreground=LEVEL_COLORS["INFO"])
+        self._textbox._textbox.tag_config("WARNING", foreground=LEVEL_COLORS["WARNING"])
+        self._textbox._textbox.tag_config("ERROR",   foreground=LEVEL_COLORS["ERROR"])
+
+        try:
+            children = self._textbox._textbox.master.children
+            vsb = children.get('!ctkscrollbar')
+            hsb = children.get('!ctkscrollbar2')
+            if vsb:
+                StyleManager.style_scrollbar_ctk(vsb)
+                vsb.configure(width=22)
+            if hsb:
+                StyleManager.style_scrollbar_ctk(hsb)
+                hsb.configure(height=22)
+        except Exception:
+            pass
+
+    def _create_bottom_bar(self, parent):
+        bar = ctk.CTkFrame(parent, fg_color="transparent")
+        bar.pack(fill="x", padx=5, pady=(0, 4))
+
+        self._count_label = ctk.CTkLabel(
+            bar, text="0 entradas",
+            font=(FONT_FAMILY, FONT_SIZES['small']),
+            text_color=COLORS['text_dim']
+        )
+        self._count_label.pack(side="left", padx=8)
+
+        make_futuristic_button(
+            bar, text="↓ Exportar", command=self._export,
+            width=10, height=5, font_size=14
+        ).pack(side="right", padx=4)
+
+        make_futuristic_button(
+            bar, text="↺ Recargar", command=self._load_log,
+            width=10, height=5, font_size=14
+        ).pack(side="right", padx=4)
+
+    # ── Carga ────────────────────────────────────────────────────────────────
+
+    def _load_log(self):
+        if self._loading:
+            return
+        self._loading = True
+        self._set_text("Cargando log...", [])
+        threading.Thread(target=self._read_log_thread, daemon=True).start()
+
+    def _read_log_thread(self):
+        lines = []
+        try:
+            rotated = Path(str(LOG_FILE) + ".1")
+            if rotated.exists():
+                with open(rotated, "r", encoding="utf-8", errors="replace") as f:
+                    for raw in f:
+                        p = self._parse_line(raw.rstrip())
+                        if p:
+                            lines.append(p)
+            if LOG_FILE.exists():
+                with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
+                    for raw in f:
+                        p = self._parse_line(raw.rstrip())
+                        if p:
+                            lines.append(p)
+        except Exception as e:
+            logger.error(f"[LogViewerWindow] Error leyendo log: {e}")
+
+        self._all_lines = lines
+        self._loading = False
+        modules = sorted(set(l["module"] for l in lines))
+        self.after(0, lambda: self._update_modules(modules))
+        self.after(0, self._apply_filters)
+
+    def _parse_line(self, raw):
+        m = LOG_PATTERN.match(raw)
+        if not m:
+            return None
+        ts_str, level, module, message = m.groups()
+        if not module:
+            module = "general"
+        try:
+            ts = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+        return {"ts": ts, "ts_str": ts_str, "level": level,
+                "module": module, "message": message, "raw": raw}
+
+    def _update_modules(self, modules):
+        values = ["TODOS"] + modules
+        self._module_menu.configure(values=values)
+        if self._module_var.get() not in values:
+            self._module_var.set("TODOS")
+
+    # ── Filtrado ─────────────────────────────────────────────────────────────
+
+    def _on_quick_interval(self, value):
+        now = datetime.now()
+        deltas = {"15min": timedelta(minutes=15), "1h": timedelta(hours=1),
+                  "6h": timedelta(hours=6), "24h": timedelta(hours=24)}
+        if value == "Todo":
+            for var, ph in [(self._date_from, _PH_DATE), (self._time_from, _PH_TIME),
+                            (self._date_to,   _PH_DATE), (self._time_to,   _PH_TIME)]:
+                var.set(ph)
+        else:
+            since = now - deltas[value]
+            self._date_from.set(since.strftime("%Y-%m-%d"))
+            self._time_from.set(since.strftime("%H:%M"))
+            self._date_to.set(now.strftime("%Y-%m-%d"))
+            self._time_to.set(now.strftime("%H:%M"))
+        self._apply_filters()
+
+    def _apply_filters(self):
+        level  = self._level_var.get()
+        module = self._module_var.get()
+        search = self._entry_value(self._search_var, _PH_SEARCH).lower()
+        dt_from = self._parse_datetime(
+            self._entry_value(self._date_from, _PH_DATE),
+            self._entry_value(self._time_from, _PH_TIME), False)
+        dt_to = self._parse_datetime(
+            self._entry_value(self._date_to, _PH_DATE),
+            self._entry_value(self._time_to, _PH_TIME), True)
+
+        result = []
+        for line in self._all_lines:
+            if level  != "TODOS" and line["level"]  != level:  continue
+            if module != "TODOS" and line["module"] != module: continue
+            if search and search not in line["raw"].lower():   continue
+            if dt_from and line["ts"] < dt_from:               continue
+            if dt_to   and line["ts"] > dt_to:                 continue
+            result.append(line)
+
+        self._set_text(None, result)
+        self._count_label.configure(text=f"{len(result)} entradas")
+
+    def _parse_datetime(self, date_str, time_str, is_end):
+        if not date_str:
+            return None
+        if not time_str:
+            time_str = "23:59" if is_end else "00:00"
+        try:
+            return datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            return None
+
+    # ── Renderizado ──────────────────────────────────────────────────────────
+
+    def _set_text(self, loading_msg, lines):
+        self._textbox.configure(state="normal")
+        self._textbox._textbox.delete("1.0", "end")
+        if loading_msg:
+            self._textbox._textbox.insert("end", loading_msg)
+        else:
+            for line in lines:
+                lvl = line["level"]
+                tag = lvl if lvl in LEVEL_COLORS else "INFO"
+                self._textbox._textbox.insert(
+                    "end",
+                    f"{line['ts_str']} [{lvl}] {line['module']}: {line['message']}\n",
+                    tag
+                )
+            self._textbox._textbox.see("end")
+        self._textbox.configure(state="disabled")
+
+    # ── Exportar ─────────────────────────────────────────────────────────────
+
+    def _export(self):
+        level  = self._level_var.get()
+        module = self._module_var.get()
+        search = self._entry_value(self._search_var, _PH_SEARCH).lower()
+        dt_from = self._parse_datetime(
+            self._entry_value(self._date_from, _PH_DATE),
+            self._entry_value(self._time_from, _PH_TIME), False)
+        dt_to = self._parse_datetime(
+            self._entry_value(self._date_to, _PH_DATE),
+            self._entry_value(self._time_to, _PH_TIME), True)
+
+        result = []
+        for line in self._all_lines:
+            if level  != "TODOS" and line["level"]  != level:  continue
+            if module != "TODOS" and line["module"] != module: continue
+            if search and search not in line["raw"].lower():   continue
+            if dt_from and line["ts"] < dt_from:               continue
+            if dt_to   and line["ts"] > dt_to:                 continue
+            result.append(line["raw"])
+
+        from ui.widgets.dialogs import custom_msgbox
+        if not result:
+            custom_msgbox(self, "No hay entradas que exportar.", "Exportar")
+            return
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        export_path = DATA_DIR / f"log_export_{ts}.log"
+        try:
+            with open(export_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(result))
+            custom_msgbox(self, f"Exportado en:\n{export_path}", "Exportar")
+            logger.info(f"[LogViewerWindow] Log exportado: {export_path}")
+        except OSError as e:
+            custom_msgbox(self, f"Error al exportar:\n{e}", "Error")
+            logger.error(f"[LogViewerWindow] Error exportando: {e}")
+`````
 
 ## File: ui/__init__.py
-````python
+`````python
 
-````
+`````
 
 ## File: .gitignore
-````
+`````
 # ============================================
 # System Dashboard - .gitignore
 # ============================================
@@ -1253,10 +1650,10 @@ htmlcov/
 #   git add -f archivo.txt
 #
 # ============================================
-````
+`````
 
 ## File: COMPATIBILIDAD.md
-````markdown
+`````markdown
 # 🌐 Compatibilidad Multiplataforma - Resumen
 
 ## 🎯 ¿En qué sistemas funciona?
@@ -1347,10 +1744,10 @@ lsblk
 ---
 
 **Conclusión:** El dashboard funciona en cualquier Linux con interfaz gráfica. Solo el control de ventiladores es específico de Raspberry Pi con GPIO.
-````
+`````
 
 ## File: create_desktop_launcher.sh
-````bash
+`````bash
 #!/bin/bash
 
 # Script para crear lanzador de escritorio
@@ -1398,10 +1795,58 @@ fi
 
 echo ""
 echo "¡Listo! 🎉"
-````
+`````
+
+## File: fix_timestamps.py
+`````python
+"""
+Script puntual para corregir el desfase UTC en los registros históricos.
+Suma 1 hora a todos los timestamps de las tablas metrics y events.
+
+Uso: python3 fix_timestamps.py
+"""
+import sqlite3
+from datetime import datetime
+
+DB_PATH = "data/history.db"
+
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
+
+# Contar registros antes
+cursor.execute("SELECT COUNT(*) FROM metrics")
+n_metrics = cursor.fetchone()[0]
+cursor.execute("SELECT COUNT(*) FROM events")
+n_events = cursor.fetchone()[0]
+
+print(f"Registros encontrados: {n_metrics} métricas, {n_events} eventos")
+print("Aplicando corrección +1h...")
+
+# Sumar 1 hora a todos los timestamps
+cursor.execute("""
+    UPDATE metrics
+    SET timestamp = datetime(timestamp, '+1 hour')
+""")
+cursor.execute("""
+    UPDATE events
+    SET timestamp = datetime(timestamp, '+1 hour')
+""")
+
+conn.commit()
+
+# Verificar un par de registros para confirmar
+cursor.execute("SELECT timestamp FROM metrics ORDER BY timestamp DESC LIMIT 3")
+rows = cursor.fetchall()
+print("\nÚltimos timestamps tras la corrección:")
+for r in rows:
+    print(f"  {r[0]}")
+
+conn.close()
+print("\nHecho. Todos los registros corregidos.")
+`````
 
 ## File: INSTALL_GUIDE.md
-````markdown
+`````markdown
 # 🔧 Guía de Instalación Completa
 
 Guía detallada para instalar el Dashboard en cualquier sistema Linux.
@@ -1864,10 +2309,10 @@ python3 main.py
 ---
 
 **¡Instalación completa!** 🎉
-````
+`````
 
 ## File: install_system.sh
-````bash
+`````bash
 #!/bin/bash
 
 # Script de instalación DIRECTA en el sistema (sin venv)
@@ -1932,10 +2377,10 @@ echo ""
 echo "O crear un lanzador de escritorio (recomendado):"
 echo "  ./create_desktop_launcher.sh"
 echo ""
-````
+`````
 
 ## File: install.sh
-````bash
+`````bash
 #!/bin/bash
 
 # Script de instalación rápida para System Dashboard
@@ -1985,10 +2430,10 @@ echo "  - Asegúrate de tener lm-sensors instalado: sudo apt-get install lm-sens
 echo "  - Para speedtest: sudo apt-get install speedtest-cli"
 echo "  - Configura tus scripts en config/settings.py"
 echo ""
-````
+`````
 
 ## File: integration_fase1.py
-````python
+`````python
 import time
 import psutil
 import subprocess
@@ -2273,10 +2718,10 @@ finally:
     board.set_all_led_color(0, 0, 0)
     board.set_fan_duty(0, 0)
     print("Apagado completo.")
-````
+`````
 
 ## File: INTEGRATION_GUIDE.md
-````markdown
+`````markdown
 # 🔗 Guía de Integración con fase1.py
 
 Esta guía explica cómo integrar tu aplicación OLED (`fase1.py`) con el Dashboard para que ambos funcionen juntos.
@@ -2683,20 +3128,20 @@ Si tienes problemas con la integración:
 ---
 
 **¡Disfruta de tu sistema integrado!** 🎉
-````
+`````
 
 ## File: migratelogger.sh
-````bash
+`````bash
 # Script: migrate_to_logging.sh
 #!/bin/bash
 
 # Reemplazar prints por logging
 find . -name "*.py" -type f -exec sed -i 's/print(f"\[/logger.info("/g' {} \;
 find . -name "*.py" -type f -exec sed -i 's/print("Error/logger.error("/g' {} \;
-````
+`````
 
 ## File: REQUIREMENTS.md
-````markdown
+`````markdown
 # 📦 Guía Rápida: requirements.txt
 
 ## 🎯 ¿Qué es?
@@ -2802,10 +3247,10 @@ sudo dnf install lm-sensors usbutils udisks2
 ---
 
 **Tip:** En sistemas modernos (Ubuntu 23.04+), usa `--break-system-packages` para evitar errores de PEP 668.
-````
+`````
 
 ## File: setup.py
-````python
+`````python
 """
 Setup script para System Dashboard
 """
@@ -2851,10 +3296,284 @@ setup(
         "": ["*.md", "*.txt"],
     },
 )
-````
+`````
+
+## File: test_logging.py
+`````python
+#!/usr/bin/env python3
+"""
+Script de prueba manual del sistema de logging
+Ejecutar desde la raíz del proyecto: python3 test_logging.py
+Ver logs en tiempo real con: tail -f data/logs/dashboard.log
+"""
+import sys
+import os
+import json
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from utils.logger import get_logger
+
+logger = get_logger("test")
+
+def separador(titulo):
+    print(f"\n{'='*60}")
+    print(f"  {titulo}")
+    print(f"{'='*60}")
+
+def ok(msg):
+    print(f"  ✅ {msg}")
+
+def info(msg):
+    print(f"  ℹ️  {msg}")
+
+
+# ============================================================
+# TEST FILE_MANAGER
+# ============================================================
+def test_file_manager():
+    separador("FILE MANAGER")
+    from config.settings import STATE_FILE, CURVE_FILE
+    from utils.file_manager import FileManager
+
+    # --- Test 1: load_state cuando no existe el archivo ---
+    print("\n[1] load_state con archivo inexistente:")
+    backup = None
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
+            backup = f.read()
+        os.remove(STATE_FILE)
+
+    state = FileManager.load_state()
+    ok(f"Retornó estado por defecto: {state}")
+    info("Debe aparecer en log: [DEBUG] load_state: no existe, usando estado por defecto")
+
+    # Restaurar
+    if backup:
+        with open(STATE_FILE, "w") as f:
+            f.write(backup)
+
+    # --- Test 2: load_state con JSON corrupto ---
+    print("\n[2] load_state con JSON corrupto:")
+    with open(STATE_FILE, "w") as f:
+        f.write("{ esto no es json válido !!!}")
+
+    state = FileManager.load_state()
+    ok(f"Retornó estado por defecto: {state}")
+    info("Debe aparecer en log: [ERROR] load_state: JSON corrupto")
+
+    # Restaurar estado válido
+    FileManager.write_state({"mode": "auto", "target_pwm": None})
+    ok("Estado restaurado correctamente")
+
+    # --- Test 3: load_curve con archivo inexistente ---
+    print("\n[3] load_curve con archivo inexistente:")
+    curve_backup = None
+    if os.path.exists(CURVE_FILE):
+        with open(CURVE_FILE) as f:
+            curve_backup = f.read()
+        os.remove(CURVE_FILE)
+
+    curve = FileManager.load_curve()
+    ok(f"Retornó curva por defecto con {len(curve)} puntos")
+    info("Debe aparecer en log: [DEBUG] load_curve: no existe, usando curva por defecto")
+
+    if curve_backup:
+        with open(CURVE_FILE, "w") as f:
+            f.write(curve_backup)
+
+    # --- Test 4: load_curve con JSON corrupto ---
+    print("\n[4] load_curve con JSON corrupto:")
+    with open(CURVE_FILE, "w") as f:
+        f.write("{ corrupto }")
+
+    curve = FileManager.load_curve()
+    ok(f"Retornó curva por defecto con {len(curve)} puntos")
+    info("Debe aparecer en log: [ERROR] load_curve: JSON corrupto")
+
+    # Restaurar curva válida
+    if curve_backup:
+        with open(CURVE_FILE, "w") as f:
+            f.write(curve_backup)
+    else:
+        FileManager.save_curve([{"temp": 50, "pwm": 128}])
+
+    ok("Curva restaurada correctamente")
+
+    # --- Test 5: write_state correcto ---
+    print("\n[5] write_state normal:")
+    FileManager.write_state({"mode": "auto", "target_pwm": 128})
+    ok("Estado guardado sin errores")
+
+    # --- Test 6: save_curve correcta ---
+    print("\n[6] save_curve normal:")
+    FileManager.save_curve([{"temp": 50, "pwm": 100}, {"temp": 70, "pwm": 200}])
+    ok("Curva guardada sin errores")
+    info("Debe aparecer en log: [INFO] save_curve: curva guardada (2 puntos)")
+
+
+# ============================================================
+# TEST SYSTEM_UTILS
+# ============================================================
+def test_system_utils():
+    separador("SYSTEM UTILS")
+    from utils.system_utils import SystemUtils
+
+    # --- Test 1: get_cpu_temp ---
+    print("\n[1] get_cpu_temp:")
+    temp = SystemUtils.get_cpu_temp()
+    ok(f"Temperatura obtenida: {temp}°C")
+    if temp == 0.0:
+        info("Retornó 0.0 — revisa el log para ver qué método falló")
+    else:
+        info("Temperatura real leída correctamente")
+
+    # --- Test 2: get_hostname ---
+    print("\n[2] get_hostname:")
+    hostname = SystemUtils.get_hostname()
+    ok(f"Hostname: {hostname}")
+
+    # --- Test 3: get_nvme_temp ---
+    print("\n[3] get_nvme_temp:")
+    nvme = SystemUtils.get_nvme_temp()
+    ok(f"Temperatura NVMe: {nvme}°C")
+    if nvme == 0.0:
+        info("Retornó 0.0 — puede que no haya NVMe o falten permisos (normal)")
+        info("Revisa el log: debe aparecer qué método falló (smartctl/sysfs)")
+
+    # --- Test 4: list_usb_storage_devices ---
+    print("\n[4] list_usb_storage_devices:")
+    usb = SystemUtils.list_usb_storage_devices()
+    ok(f"Dispositivos USB encontrados: {len(usb)}")
+    for d in usb:
+        info(f"  → {d.get('name')} ({d.get('dev')})")
+
+    # --- Test 5: list_usb_other_devices ---
+    print("\n[5] list_usb_other_devices:")
+    otros = SystemUtils.list_usb_other_devices()
+    ok(f"Otros dispositivos USB: {len(otros)}")
+
+    # --- Test 6: get_interfaces_ips ---
+    print("\n[6] get_interfaces_ips:")
+    ips = SystemUtils.get_interfaces_ips()
+    ok(f"Interfaces detectadas: {len(ips)}")
+    for iface, ip in ips.items():
+        info(f"  → {iface}: {ip}")
+
+    # --- Test 7: run_script con script inexistente ---
+    print("\n[7] run_script con script inexistente:")
+    success, msg = SystemUtils.run_script("/ruta/que/no/existe.sh")
+    ok(f"Retornó success={success}, msg='{msg}'")
+    info("Debe aparecer en log: [ERROR] run_script: script no encontrado")
+
+    # --- Test 8: run_script real (crea uno temporal) ---
+    print("\n[8] run_script con script válido:")
+    tmp_script = "/tmp/test_dashboard.sh"
+    with open(tmp_script, "w") as f:
+        f.write("#!/bin/bash\necho 'Script de prueba OK'\nexit 0\n")
+    os.chmod(tmp_script, 0o755)
+
+    success, msg = SystemUtils.run_script(tmp_script)
+    ok(f"Retornó success={success}, msg='{msg}'")
+    info("Debe aparecer en log: [INFO] Script ejecutado correctamente")
+    os.remove(tmp_script)
+
+
+# ============================================================
+# TEST NETWORK_MONITOR
+# ============================================================
+def test_network_monitor():
+    separador("NETWORK MONITOR (SPEEDTEST)")
+    from core.network_monitor import NetworkMonitor
+
+    monitor = NetworkMonitor()
+
+    # --- Test 1: get_current_stats ---
+    print("\n[1] get_current_stats:")
+    stats = monitor.get_current_stats()
+    ok(f"Interfaz: {stats['interface']}, ↓{stats['download_mb']:.3f} MB/s, ↑{stats['upload_mb']:.3f} MB/s")
+
+    # --- Test 2: speedtest completo ---
+    print("\n[2] Speedtest (puede tardar ~30-60s):")
+    info("Iniciando speedtest... espera")
+    monitor.run_speedtest()
+
+    # Esperar resultado con timeout
+    timeout = 90
+    start = time.time()
+    while time.time() - start < timeout:
+        result = monitor.get_speedtest_result()
+        status = result['status']
+
+        if status == 'running':
+            print(f"  ⏳ Ejecutando... ({int(time.time()-start)}s)", end='\r')
+            time.sleep(2)
+        elif status == 'done':
+            print()
+            ok(f"Ping: {result['ping']}ms | ↓{result['download']:.2f} MB/s | ↑{result['upload']:.2f} MB/s")
+            info("Debe aparecer en log: [INFO] Speedtest completado con las métricas")
+            break
+        elif status == 'timeout':
+            print()
+            ok(f"Speedtest timeout (esperado si la conexión es lenta)")
+            info("Debe aparecer en log: [WARNING] Speedtest timeout")
+            break
+        elif status == 'error':
+            print()
+            ok(f"Speedtest error (puede que speedtest-cli no esté instalado)")
+            info("Debe aparecer en log: [ERROR] con el motivo del fallo")
+            break
+    else:
+        print()
+        info("Timeout de espera alcanzado en el script de prueba")
+
+    # --- Test 3: speedtest con binario inexistente (simulado) ---
+    print("\n[3] Verificar log de speedtest-cli no encontrado:")
+    info("Para probar esto, renombra temporalmente speedtest-cli y ejecuta de nuevo")
+    info("Debe aparecer en log: [ERROR] speedtest-cli no encontrado")
+
+
+# ============================================================
+# MAIN
+# ============================================================
+if __name__ == "__main__":
+    print("\n" + "="*60)
+    print("  TEST DE LOGGING - Dashboard v2.5.1")
+    print("  Abre otra terminal y ejecuta:")
+    print("  tail -f data/logs/dashboard.log")
+    print("="*60)
+
+    # Preguntar si hacer el speedtest (tarda mucho)
+    hacer_speedtest = "--speedtest" in sys.argv or "-s" in sys.argv
+
+    try:
+        test_file_manager()
+    except Exception as e:
+        print(f"\n❌ Error en test_file_manager: {e}")
+
+    try:
+        test_system_utils()
+    except Exception as e:
+        print(f"\n❌ Error en test_system_utils: {e}")
+
+    if hacer_speedtest:
+        try:
+            test_network_monitor()
+        except Exception as e:
+            print(f"\n❌ Error en test_network_monitor: {e}")
+    else:
+        separador("NETWORK MONITOR (SPEEDTEST)")
+        print("\n  ⏭️  Saltado. Para incluir el speedtest ejecuta:")
+        print("     python3 test_logging.py --speedtest")
+
+    separador("RESULTADO FINAL")
+    print("\n  Revisa data/logs/dashboard.log para verificar los mensajes.")
+    print("  Todos los tests deberían mostrar ✅ sin excepciones no capturadas.\n")
+`````
 
 ## File: config/__init__.py
-````python
+`````python
 """
 Paquete de configuración
 """
@@ -2899,10 +3618,10 @@ from .settings import (
     FONT_FAMILY,
     FONT_SIZES,
 )
-````
+`````
 
 ## File: core/disk_monitor.py
-````python
+`````python
 """
 Monitor de disco
 """
@@ -3006,10 +3725,10 @@ class DiskMonitor:
             return COLORS['warning']
         else:
             return COLORS['primary']
-````
+`````
 
 ## File: core/fan_controller.py
-````python
+`````python
 """
 Controlador de ventiladores
 """
@@ -3166,10 +3885,10 @@ class FanController:
         
         self.file_manager.save_curve(curve)
         return curve
-````
+`````
 
 ## File: ui/widgets/__init__.py
-````python
+`````python
 """
 Paquete de widgets personalizados
 """
@@ -3178,10 +3897,10 @@ from .dialogs import custom_msgbox, confirm_dialog, terminal_dialog
 
 __all__ = ['GraphWidget', 'update_graph_lines', 'recolor_lines', 
            'custom_msgbox', 'confirm_dialog', 'terminal_dialog']
-````
+`````
 
 ## File: ui/windows/homebridge.py
-````python
+`````python
 """
 Ventana de control de dispositivos Homebridge
 Muestra enchufes e interruptores y permite encenderlos / apagarlos
@@ -3440,10 +4159,10 @@ class HomebridgeWindow(ctk.CTkToplevel):
             self.after_cancel(self._update_job)
         logger.info("[HomebridgeWindow] Ventana cerrada")
         self.destroy()
-````
+`````
 
 ## File: utils/logger.py
-````python
+`````python
 """
 Sistema de logging robusto para el dashboard
 Funciona correctamente tanto desde terminal como desde auto-start
@@ -3579,10 +4298,10 @@ def log_startup_info():
     
     if display == 'not set':
         logger.warning("DISPLAY no configurado - posible problema de GUI")
-````
+`````
 
 ## File: THEMES_GUIDE.md
-````markdown
+`````markdown
 # 🎨 Guía de Temas - System Dashboard
 
 El dashboard incluye **15 temas profesionales** pre-configurados y la capacidad de crear temas personalizados.
@@ -4017,10 +4736,10 @@ data/theme_config.json
 ---
 
 **¡Personaliza tu dashboard!** 🎨✨
-````
+`````
 
 ## File: config/themes.py
-````python
+`````python
 """
 Sistema de temas personalizados
 """
@@ -4429,10 +5148,10 @@ def load_selected_theme() -> str:
                 return DEFAULT_THEME
     except (FileNotFoundError, json.JSONDecodeError):
         return DEFAULT_THEME
-````
+`````
 
 ## File: core/service_monitor.py
-````python
+`````python
 """
 Monitor de servicios systemd
 """
@@ -4764,10 +5483,10 @@ class ServiceMonitor:
         elif state == "failed":
             return "danger"
         return "text_dim"
-````
+`````
 
 ## File: core/update_monitor.py
-````python
+`````python
 """
 Monitor de actualizaciones del sistema
 """
@@ -4846,10 +5565,10 @@ class UpdateMonitor:
         except Exception as e:
             logger.error(f"[UpdateMonitor] check_updates: error inesperado: {e}")
             return {"pending": 0, "status": "Error", "message": str(e)}
-````
+`````
 
 ## File: ui/windows/service.py
-````python
+`````python
 """
 Ventana de monitor de servicios systemd
 """
@@ -5372,10 +6091,10 @@ class ServiceWindow(ctk.CTkToplevel):
     def _resume_updates(self):
         """Reanuda actualizaciones"""
         self.update_paused = False
-````
+`````
 
 ## File: ui/windows/usb.py
-````python
+`````python
 """
 Ventana de monitoreo de dispositivos USB
 """
@@ -5678,10 +6397,10 @@ class USBWindow(ctk.CTkToplevel):
                 f"❌ Error al expulsar {device_name}:\n\n{message}",
                 "Error"
             )
-````
+`````
 
 ## File: utils/__init__.py
-````python
+`````python
 """
 Paquete de utilidades
 """
@@ -5690,10 +6409,10 @@ from .system_utils import SystemUtils
 from .logger import DashboardLogger
 
 __all__ = ['FileManager', 'SystemUtils', 'DashboardLogger']
-````
+`````
 
 ## File: utils/file_manager.py
-````python
+`````python
 """
 Gestión de archivos JSON para estado y configuración
 """
@@ -5824,10 +6543,10 @@ class FileManager:
         except OSError as e:
             logger.error(f"[FileManager] save_curve: error guardando curva: {e}")
             raise
-````
+`````
 
 ## File: core/process_monitor.py
-````python
+`````python
 """
 Monitor de procesos del sistema
 """
@@ -6065,10 +6784,10 @@ class ProcessMonitor:
             return "warning"
         else:
             return "success"
-````
+`````
 
 ## File: core/system_monitor.py
-````python
+`````python
 """
 Monitor del sistema
 """
@@ -6202,10 +6921,10 @@ class SystemMonitor:
         elif value >= warn:
             return COLORS['warning']
         return COLORS['primary']
-````
+`````
 
 ## File: ui/widgets/dialogs.py
-````python
+`````python
 """
 Diálogos y ventanas modales personalizadas
 """
@@ -6405,10 +7124,10 @@ def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=No
 
     threading.Thread(target=run_command, daemon=True).start()
     popup.grab_set()
-````
+`````
 
 ## File: ui/windows/monitor.py
-````python
+`````python
 """
 Ventana de monitoreo del sistema
 """
@@ -6537,10 +7256,10 @@ class MonitorWindow(ctk.CTkToplevel):
         self.widgets[f"{key}_label"].configure(text_color=color)
         g = self.graphs[key]
         g['widget'].update(history, g['max_val'], color)
-````
+`````
 
 ## File: ui/windows/process_window.py
-````python
+`````python
 """
 Ventana de monitor de procesos
 """
@@ -6970,10 +7689,10 @@ class ProcessWindow(ctk.CTkToplevel):
             on_confirm=do_kill,
             on_cancel=None
         )
-````
+`````
 
 ## File: ui/windows/theme_selector.py
-````python
+`````python
 """
 Ventana de selección de temas
 """
@@ -7207,10 +7926,10 @@ class ThemeSelector(ctk.CTkToplevel):
             on_confirm=do_restart,
             on_cancel=self.destroy
         )
-````
+`````
 
 ## File: ui/windows/update.py
-````python
+`````python
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import make_futuristic_button
@@ -7341,10 +8060,10 @@ class UpdatesWindow(ctk.CTkToplevel):
             "CONSOLA DE ACTUALIZACIÓN",
             on_close=al_terminar_actualizacion
         )
-````
+`````
 
 ## File: utils/system_utils.py
-````python
+`````python
 """
 Utilidades para obtener información del sistema
 """
@@ -7775,10 +8494,10 @@ class SystemUtils:
             logger.warning("[SystemUtils] get_nvme_temp: sin permisos para leer sysfs")
         
         return 0.0
-````
+`````
 
 ## File: requirements.txt
-````
+`````
 # ============================================
 # System Dashboard - Python Dependencies
 # ============================================
@@ -7828,10 +8547,10 @@ python-dotenv>=1.0.0
 #   sudo apt-get install speedtest
 #
 # ============================================
-````
+`````
 
 ## File: config/settings.py
-````python
+`````python
 """
 Configuración centralizada del sistema de monitoreo
 """
@@ -7934,10 +8653,10 @@ FONT_SIZES = {
     "xlarge": 24,
     "xxlarge": 30
 }
-````
+`````
 
 ## File: core/data_logger.py
-````python
+`````python
 """
 Sistema de logging de datos históricos
 """
@@ -8093,10 +8812,10 @@ class DataLogger:
             log.warning(f"[DataLogger] BD supera {max_mb} MB. Limpiando...")
             self.clean_old_data(days=7)
             log.info(f"[DataLogger] Limpieza completada. Nuevo tamaño: {self.get_db_size_mb():.2f} MB")
-````
+`````
 
 ## File: core/fan_auto_service.py
-````python
+`````python
 """
 Servicio en segundo plano para modo AUTO de ventiladores
 """
@@ -8270,10 +8989,10 @@ class FanAutoService:
             'interval': self._update_interval,
             'thread_alive': self._thread.is_alive() if self._thread else False
         }
-````
+`````
 
 ## File: core/network_monitor.py
-````python
+`````python
 """
 Monitor de red
 """
@@ -8490,10 +9209,10 @@ class NetworkMonitor:
             return COLORS['warning']
         else:
             return COLORS['primary']
-````
+`````
 
 ## File: ui/windows/disk.py
-````python
+`````python
 """
 Ventana de monitoreo de disco
 """
@@ -8615,10 +9334,10 @@ class DiskWindow(ctk.CTkToplevel):
         self.widgets[f"{key}_label"].configure(text_color=color)
         g = self.graphs[key]
         g['widget'].update(history, g['max_val'], color)
-````
+`````
 
 ## File: ui/windows/network.py
-````python
+`````python
 """
 Ventana de monitoreo de red
 """
@@ -8846,10 +9565,10 @@ class NetworkWindow(ctk.CTkToplevel):
             self._interface_update_counter = 0
 
         self.after(UPDATE_MS, self._update)
-````
+`````
 
 ## File: ui/styles.py
-````python
+`````python
 """
 Estilos y temas para la interfaz
 """
@@ -9224,197 +9943,10 @@ def make_homebridge_switch(
             sw.deselect()
 
     return sw
-````
-
-## File: QUICKSTART.md
-````markdown
-# 🚀 Inicio Rápido - Dashboard v2.8
-
----
-
-## ⚡ Instalación (2 Comandos)
-
-```bash
-git clone https://github.com/tu-usuario/system-dashboard.git
-cd system-dashboard
-chmod +x install_system.sh
-sudo ./install_system.sh
-python3 main.py
-```
-
-El script instala automáticamente las dependencias del sistema y Python, la CLI oficial de Ookla para speedtest, y pregunta si quieres configurar sensores de temperatura.
-
----
-
-## 🔁 Alternativa con Entorno Virtual
-
-Si prefieres aislar las dependencias:
-
-```bash
-chmod +x install.sh
-./install.sh
-source venv/bin/activate
-python3 main.py
-```
-
-> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
-
----
-
-## 📋 Requisitos Mínimos
-
-- ✅ Raspberry Pi 3/4/5
-- ✅ Raspberry Pi OS (cualquier versión)
-- ✅ Python 3.8+
-- ✅ Conexión a internet (para instalación)
-
----
-
-## 🎯 Menú Principal (14 botones)
-
-```
-┌───────────────────────────────────┐
-│  Control        │  Monitor         │
-│  Ventiladores   │  Placa           │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Red            │  USB             │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Lanzadores      │
-│  Disco          │                  │
-├─────────────────┼──────────────────┤
-│  Monitor        │  Monitor         │
-│  Procesos       │  Servicios       │
-├─────────────────┼──────────────────┤
-│  Histórico      │  Actualizaciones │
-│  Datos          │                  │
-├─────────────────┼──────────────────┤
-│  Homebridge     │  Cambiar Tema    │
-├─────────────────┼──────────────────┤
-│  Reiniciar      │  Salir           │
-└─────────────────┴──────────────────┘
-```
-
----
-
-## 🖥️ Las 14 Ventanas
-
-**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real (status en header)
-
-**2. Monitor Red** — Download/Upload en vivo, speedtest Ookla, lista de IPs (status en header)
-
-**3. Monitor USB** — Dispositivos conectados, expulsión segura
-
-**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O (status en header)
-
-**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
-
-**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
-
-**7. Histórico Datos** — 8 gráficas CPU/RAM/Temp/Red/Disco/PWM en 24h, 7d, 30d, exportar CSV
-
-**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
-
-**9. Lanzadores** — Scripts personalizados con terminal en vivo
-
-**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
-
-**11. Homebridge** — Control de enchufes e interruptores HomeKit, toggle táctil por dispositivo
-
-**12. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
-
-**13. Reiniciar** — Reinicia el dashboard aplicando cambios de código
-
-**14. Salir** — Salir de la app o apagar el sistema
-
-> **Todas las ventanas** incluyen header unificado con título, status en tiempo real y botón ✕ táctil (52×42px) optimizado para pantalla DSI.
-
----
-
-## 🔧 Configuración Básica
-
-### Ajustar posición en pantalla DSI (`config/settings.py`):
-```python
-DSI_X = 0     # Posición horizontal
-DSI_Y = 0     # Posición vertical
-```
-
-### Añadir scripts en Lanzadores:
-```python
-LAUNCHERS = [
-    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
-]
-```
-
----
-
-## 🏠 Configurar Homebridge
-
-Crea el archivo `.env` en la raíz del proyecto (cópialo desde `.env.example`):
-
-```env
-HOMEBRIDGE_HOST=192.168.1.X    # IP de la Pi con Homebridge
-HOMEBRIDGE_PORT=8581
-HOMEBRIDGE_USER=admin
-HOMEBRIDGE_PASS=tu_contraseña
-```
-
-> **Importante**: Activa el **Insecure Mode** en Homebridge (`homebridge-config-ui-x → Configuración → Homebridge`). Sin él, la API no permite acceder a los accesorios.
-
-El panel Homebridge del dashboard muestra los accesorios en grid de 2 columnas. Cada botón muestra el nombre del dispositivo, un indicador ● de color (on/off) y permite hacer toggle con un toque. Si un dispositivo tiene `StatusFault=1` aparece ⚠ en rojo.
-
----
-
-## 📋 Ver Logs del Sistema
-
-```bash
-# En tiempo real
-tail -f data/logs/dashboard.log
-
-# Solo errores
-grep ERROR data/logs/dashboard.log
-```
-
----
-
-## ❓ Problemas Comunes
-
-| Problema | Solución |
-|----------|----------|
-| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
-| Temperatura 0 | `sudo sensors-detect --auto` |
-| NVMe temp 0 | `sudo apt install smartmontools` |
-| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
-| USB no expulsa | `sudo apt install udisks2` |
-| Homebridge no conecta | Revisar `.env` y activar Insecure Mode en Homebridge |
-| Badge hb_offline siempre rojo | Comprobar conectividad entre Pis y `HOMEBRIDGE_HOST` |
-| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
-
----
-
-## 🆕 Novedades v2.8
-
-✅ **Integración Homebridge** — Ventana de control de accesorios HomeKit (enchufes e interruptores)  
-✅ **HomebridgeMonitor** — Sondeo ligero en background cada 30s, JWT con renovación automática  
-✅ **3 badges Homebridge** — offline 🔴, enchufes encendidos 🟠, dispositivos con fallo 🔴  
-✅ **Toggle táctil** — Activa/desactiva cada dispositivo directamente desde la pantalla DSI  
-✅ **Configuración `.env`** — Credenciales separadas del código fuente  
-
----
-
-## 📚 Más Información
-
-**[README.md](README.md)** — Documentación completa  
-**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
-**[INDEX.md](INDEX.md)** — Índice de toda la documentación
-
----
-
-**Dashboard v2.8** 🚀🏠✨
-````
+`````
 
 ## File: core/data_analyzer.py
-````python
+`````python
 """
 Análisis de datos históricos
 """
@@ -9673,10 +10205,10 @@ class DataAnalyzer:
             logger.error(f"[DataAnalyzer] _write_csv: error escribiendo {output_path}: {e}")
         except Exception as e:
             logger.error(f"[DataAnalyzer] _write_csv: error inesperado: {e}")
-````
+`````
 
 ## File: core/data_collection_service.py
-````python
+`````python
 """
 Servicio de recolección automática de datos
 """
@@ -9803,10 +10335,10 @@ class DataCollectionService:
     def force_collection(self):
         """Fuerza una recolección inmediata (útil para testing)"""
         self._collect_and_save()
-````
+`````
 
 ## File: ui/windows/__init__.py
-````python
+`````python
 """
 Paquete de ventanas secundarias
 """
@@ -9837,10 +10369,10 @@ __all__ = [
     'ThemeSelector',
     'HomebridgeWindow'
 ]
-````
+`````
 
 ## File: ui/windows/launchers.py
-````python
+`````python
 """
 Ventana de lanzadores de scripts
 """
@@ -9975,11 +10507,668 @@ class LaunchersWindow(ctk.CTkToplevel):
             title="⚠️ Lanzador de Sistema",
             on_confirm=do_execute
         )
-````
+`````
+
+## File: QUICKSTART.md
+`````markdown
+# 🚀 Inicio Rápido - Dashboard v2.9
+
+---
+
+## ⚡ Instalación (2 Comandos)
+
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
+
+El script instala automáticamente las dependencias del sistema y Python, la CLI oficial de Ookla para speedtest, y pregunta si quieres configurar sensores de temperatura.
+
+---
+
+## 🔁 Alternativa con Entorno Virtual
+
+Si prefieres aislar las dependencias:
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar el dashboard.
+
+---
+
+## 📋 Requisitos Mínimos
+
+- ✅ Raspberry Pi 3/4/5
+- ✅ Raspberry Pi OS (cualquier versión)
+- ✅ Python 3.8+
+- ✅ Conexión a internet (para instalación)
+
+---
+
+## 🎯 Menú Principal (14 botones)
+
+```
+┌───────────────────────────────────┐
+│  Control        │  Monitor         │
+│  Ventiladores   │  Placa           │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Red            │  USB             │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Lanzadores      │
+│  Disco          │                  │
+├─────────────────┼──────────────────┤
+│  Monitor        │  Monitor         │
+│  Procesos       │  Servicios       │
+├─────────────────┼──────────────────┤
+│  Histórico      │  Actualizaciones │
+│  Datos          │                  │
+├─────────────────┼──────────────────┤
+│  Homebridge     │  Cambiar Tema    │
+├─────────────────┼──────────────────┤
+│  Reiniciar      │  Salir           │
+└─────────────────┴──────────────────┘
+```
+
+---
+
+## 🖥️ Las 14 Ventanas
+
+**1. Monitor Placa** — CPU, RAM y temperatura en tiempo real (status en header)
+
+**2. Monitor Red** — Download/Upload en vivo, speedtest Ookla, lista de IPs (status en header)
+
+**3. Monitor USB** — Dispositivos conectados, expulsión segura
+
+**4. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O (status en header)
+
+**5. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
+
+**6. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
+
+**7. Histórico Datos** — 8 gráficas CPU/RAM/Temp/Red/Disco/PWM en 24h, 7d, 30d, exportar CSV
+
+**8. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
+
+**9. Lanzadores** — Scripts personalizados con terminal en vivo
+
+**10. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
+
+**11. Homebridge** — Control de accesorios HomeKit con **switches táctiles** (90×46px) por dispositivo
+
+**12. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
+
+**13. Reiniciar** — Reinicia el dashboard aplicando cambios de código
+
+**14. Salir** — Salir de la app o apagar el sistema
+
+> **Todas las ventanas** incluyen header unificado con título, status en tiempo real y botón ✕ táctil (52×42px) optimizado para pantalla DSI.
+
+---
+
+## 🔧 Configuración Básica
+
+### Ajustar posición en pantalla DSI (`config/settings.py`):
+```python
+DSI_X = 0     # Posición horizontal
+DSI_Y = 0     # Posición vertical
+```
+
+### Añadir scripts en Lanzadores:
+```python
+LAUNCHERS = [
+    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
+]
+```
+
+---
+
+## 🏠 Configurar Homebridge
+
+Crea el archivo `.env` en la raíz del proyecto (cópialo desde `.env.example`):
+
+```env
+HOMEBRIDGE_HOST=192.168.1.X    # IP de la Pi con Homebridge
+HOMEBRIDGE_PORT=8581
+HOMEBRIDGE_USER=admin
+HOMEBRIDGE_PASS=tu_contraseña
+```
+
+> **Importante**: Activa el **Insecure Mode** en Homebridge (`homebridge-config-ui-x → Configuración → Homebridge`). Sin él, la API no permite acceder a los accesorios.
+
+La ventana Homebridge muestra los accesorios en grid de 2 columnas. Cada tarjeta incluye un **switch táctil (90×46px)** con el nombre del dispositivo como etiqueta. Desliza o pulsa el switch para encender/apagar con el dedo. Si un dispositivo tiene `StatusFault=1` aparece ⚠ FALLO en rojo y el switch queda bloqueado.
+
+---
+
+## 📋 Ver Logs del Sistema
+
+```bash
+# En tiempo real
+tail -f data/logs/dashboard.log
+
+# Solo errores
+grep ERROR data/logs/dashboard.log
+```
+
+---
+
+## ❓ Problemas Comunes
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Homebridge no conecta | Revisar `.env` y activar Insecure Mode en Homebridge |
+| Badge hb_offline siempre rojo | Comprobar conectividad entre Pis y `HOMEBRIDGE_HOST` |
+| Servicios tardan en aparecer | Normal — ServiceMonitor sondea systemctl cada 10s al arrancar |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 🆕 Novedades v2.9
+
+✅ **Switches táctiles Homebridge** — CTkSwitch de 90×46px, optimizado para el dedo en DSI  
+✅ **Sin bloqueos en UI** — SystemMonitor y ServiceMonitor con caché en background thread  
+✅ **ServiceMonitor optimizado** — is-enabled en llamada batch, sondeo cada 10s  
+✅ **Logging completo** — Todos los servicios registran inicio y parada  
+
+### v2.8 (referencia)
+✅ **Integración Homebridge** — Ventana de control de accesorios HomeKit (enchufes e interruptores)  
+✅ **HomebridgeMonitor** — Sondeo ligero en background cada 30s, JWT con renovación automática  
+✅ **3 badges Homebridge** — offline 🔴, enchufes encendidos 🟠, dispositivos con fallo 🔴  
+✅ **Toggle táctil** — Activa/desactiva cada dispositivo directamente desde la pantalla DSI  
+✅ **Configuración `.env`** — Credenciales separadas del código fuente  
+
+---
+
+## 📚 Más Información
+
+**[README.md](README.md)** — Documentación completa  
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada  
+**[INDEX.md](INDEX.md)** — Índice de toda la documentación
+
+---
+
+**Dashboard v2.9** 🚀🏠✨
+`````
+
+## File: core/__init__.py
+`````python
+"""
+Paquete core con lógica de negocio
+"""
+from .fan_controller import FanController
+from .system_monitor import SystemMonitor
+from .network_monitor import NetworkMonitor
+from .fan_auto_service import FanAutoService
+from .disk_monitor import DiskMonitor
+from .process_monitor import ProcessMonitor
+from .service_monitor import ServiceMonitor
+from .update_monitor import UpdateMonitor
+from .cleanup_service import CleanupService
+from .homebridge_monitor import HomebridgeMonitor          
+
+__all__ = [
+    'FanController',
+    'SystemMonitor',
+    'NetworkMonitor',
+    'FanAutoService',
+    'DiskMonitor',
+    'ProcessMonitor',
+    'ServiceMonitor',
+    'UpdateMonitor',
+    'CleanupService',
+    'HomebridgeMonitor',                                 
+]
+`````
+
+## File: ui/windows/fan_control.py
+`````python
+"""
+Ventana de control de ventiladores
+"""
+import tkinter as tk
+import customtkinter as ctk
+from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, 
+                             DSI_HEIGHT, DSI_X, DSI_Y)
+from ui.styles import make_futuristic_button, StyleManager, make_window_header
+from ui.widgets import custom_msgbox
+from core.fan_controller import FanController
+from core.system_monitor import SystemMonitor
+from utils.file_manager import FileManager
+
+
+class FanControlWindow(ctk.CTkToplevel):
+    """Ventana de control de ventiladores y curvas PWM"""
+    
+    def __init__(self, parent, fan_controller: FanController, 
+                 system_monitor: SystemMonitor):
+        super().__init__(parent)
+        
+        # Referencias
+        self.fan_controller = fan_controller
+        self.system_monitor = system_monitor
+        self.file_manager = FileManager()
+        
+        # Variables de estado
+        self.mode_var = tk.StringVar()
+        self.manual_pwm_var = tk.IntVar(value=128)
+        self.curve_vars = []
+
+        # Variables para entries de nuevo punto (con placeholder)
+        self._PLACEHOLDER_TEMP = "0-100"
+        self._PLACEHOLDER_PWM  = "0-255"
+        self.new_temp_var = tk.StringVar(value=self._PLACEHOLDER_TEMP)
+        self.new_pwm_var  = tk.StringVar(value=self._PLACEHOLDER_PWM)
+        
+        # Cargar estado inicial
+        self._load_initial_state()
+        
+        # Configurar ventana
+        self.title("Control de Ventiladores")
+        self.configure(fg_color=COLORS['bg_medium'])
+        self.overrideredirect(True)
+        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
+        self.resizable(False, False)
+        self.focus_force()
+        self.lift()
+        self.after(100, lambda: self.grab_set())
+        
+        # Crear interfaz
+        self._create_ui()
+        
+        # Iniciar bucle de actualización del slider/valor
+        self._update_pwm_display()
+    
+    def _load_initial_state(self):
+        """Carga el estado inicial desde archivo"""
+        state = self.file_manager.load_state()
+        self.mode_var.set(state.get("mode", "auto"))
+        
+        target = state.get("target_pwm")
+        if target is not None:
+            self.manual_pwm_var.set(target)
+    
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        # Frame principal
+        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        main.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # ── Header unificado ──────────────────────────────────────────────────
+        self._header = make_window_header(
+            main,
+            title="CONTROL DE VENTILADORES",
+            on_close=self.destroy,
+        )
+        
+        # Área de scroll
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Canvas y scrollbar
+        canvas = ctk.CTkCanvas(
+            scroll_container, 
+            bg=COLORS['bg_medium'], 
+            highlightthickness=0
+        )
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container,
+            orientation="vertical",
+            command=canvas.yview,
+            width=30
+        )
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Frame interno
+        inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window((0, 0), window=inner, anchor="nw", width=DSI_WIDTH-50)
+        inner.bind("<Configure>", 
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        # Secciones
+        self._create_mode_section(inner)
+        self._create_manual_pwm_section(inner)
+        self._create_curve_section(inner)
+        self._create_bottom_buttons(main)
+    
+    def _create_mode_section(self, parent):
+        """Crea la sección de selección de modo"""
+        mode_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        mode_frame.pack(fill="x", pady=5, padx=10)
+        
+        ctk.CTkLabel(
+            mode_frame,
+            text="MODO DE OPERACIÓN",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        modes_container = ctk.CTkFrame(mode_frame, fg_color=COLORS['bg_medium'])
+        modes_container.pack(fill="x", pady=5)
+        
+        modes = [
+            ("Auto", "auto"),
+            ("Silent", "silent"),
+            ("Normal", "normal"),
+            ("Performance", "performance"),
+            ("Manual", "manual")
+        ]
+        
+        for text, value in modes:
+            rb = ctk.CTkRadioButton(
+                modes_container,
+                text=text,
+                variable=self.mode_var,
+                value=value,
+                command=lambda v=value: self._on_mode_change(v),
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            )
+            rb.pack(side="left", padx=8)
+            StyleManager.style_radiobutton_ctk(rb)
+    
+    def _create_manual_pwm_section(self, parent):
+        """Crea la sección de PWM manual"""
+        manual_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        manual_frame.pack(fill="x", pady=5, padx=10)
+        
+        ctk.CTkLabel(
+            manual_frame,
+            text="PWM MANUAL (0-255)",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        self.pwm_value_label = ctk.CTkLabel(
+            manual_frame,
+            text=f"Valor: {self.manual_pwm_var.get()} ({int(self.manual_pwm_var.get()/255*100)}%)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'])
+        )
+        self.pwm_value_label.pack(anchor="w", pady=(0, 10))
+        
+        slider = ctk.CTkSlider(
+            manual_frame,
+            from_=0,
+            to=255,
+            variable=self.manual_pwm_var,
+            command=self._on_pwm_change,
+            width=DSI_WIDTH - 100
+        )
+        slider.pack(fill="x", pady=5)
+        StyleManager.style_slider_ctk(slider)
+    
+    def _create_curve_section(self, parent):
+        """Crea la sección de curva temperatura-PWM"""
+        curve_frame = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        curve_frame.pack(fill="x", pady=5, padx=10)
+
+        ctk.CTkLabel(
+            curve_frame,
+            text="CURVA TEMPERATURA-PWM",
+            text_color=COLORS['primary'],
+            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        # Lista de puntos actuales
+        self.points_frame = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
+        self.points_frame.pack(fill="x", pady=5, padx=5)
+        self._refresh_curve_points()
+        
+        # Sección añadir punto con ENTRIES
+        add_section = ctk.CTkFrame(curve_frame, fg_color=COLORS['bg_dark'])
+        add_section.pack(fill="x", pady=5, padx=5)
+
+        ctk.CTkLabel(
+            add_section,
+            text="AÑADIR NUEVO PUNTO",
+            text_color=COLORS['success'],
+            font=(FONT_FAMILY, FONT_SIZES['small'], "bold")
+        ).pack(anchor="w", padx=5, pady=5)
+
+        # Fila con los dos entries en línea
+        entries_row = ctk.CTkFrame(add_section, fg_color=COLORS['bg_dark'])
+        entries_row.pack(fill="x", padx=5, pady=5)
+
+        # — Temperatura —
+        temp_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
+        temp_col.pack(side="top", padx=(0, 20))
+
+        ctk.CTkLabel(
+            temp_col,
+            text="Temperatura (°C)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        ).pack(anchor="n")
+
+        self._entry_temp = ctk.CTkEntry(
+            temp_col,
+            textvariable=self.new_temp_var,
+            width=120,
+            height=36,
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
+            text_color=COLORS['text_dim'],      # color placeholder
+            fg_color=COLORS['bg_medium'],
+            border_color=COLORS['primary']
+        )
+        self._entry_temp.pack(pady=4)
+        self._entry_temp.bind("<FocusIn>",  lambda e: self._entry_focus_in(self._entry_temp, self.new_temp_var, self._PLACEHOLDER_TEMP))
+        self._entry_temp.bind("<FocusOut>", lambda e: self._entry_focus_out(self._entry_temp, self.new_temp_var, self._PLACEHOLDER_TEMP))
+
+        # — PWM —
+        pwm_col = ctk.CTkFrame(entries_row, fg_color=COLORS['bg_dark'])
+        pwm_col.pack(side="top", padx=(0, 20))
+
+        ctk.CTkLabel(
+            pwm_col,
+            text="PWM (0-255)",
+            text_color=COLORS['text'],
+            font=(FONT_FAMILY, FONT_SIZES['small'])
+        ).pack(anchor="n")
+
+        self._entry_pwm = ctk.CTkEntry(
+            pwm_col,
+            textvariable=self.new_pwm_var,
+            width=120,
+            height=36,
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
+            text_color=COLORS['text_dim'],      # color placeholder
+            fg_color=COLORS['bg_medium'],
+            border_color=COLORS['primary']
+        )
+        self._entry_pwm.pack(pady=4)
+        self._entry_pwm.bind("<FocusIn>",  lambda e: self._entry_focus_in(self._entry_pwm, self.new_pwm_var, self._PLACEHOLDER_PWM))
+        self._entry_pwm.bind("<FocusOut>", lambda e: self._entry_focus_out(self._entry_pwm, self.new_pwm_var, self._PLACEHOLDER_PWM))
+
+        # Botón añadir
+        make_futuristic_button(
+            add_section,
+            text="✓ Añadir Punto a la Curva",
+            command=self._add_curve_point_from_entries,
+            width=25,
+            height=6,
+            font_size=16
+        ).pack(pady=10)
+
+    # ── Helpers de placeholder ──────────────────────────────────────────────
+
+    def _entry_focus_in(self, entry: ctk.CTkEntry, var: tk.StringVar, placeholder: str):
+        """Borra el placeholder al enfocar y cambia color a texto normal"""
+        if var.get() == placeholder:
+            var.set("")
+            entry.configure(text_color=COLORS['text'])
+
+    def _entry_focus_out(self, entry: ctk.CTkEntry, var: tk.StringVar, placeholder: str):
+        """Restaura el placeholder si el campo queda vacío"""
+        if var.get().strip() == "":
+            var.set(placeholder)
+            entry.configure(text_color=COLORS['text_dim'])
+
+    # ── Lógica de añadir punto ──────────────────────────────────────────────
+
+    def _add_curve_point_from_entries(self):
+        """Valida los entries y añade el punto a la curva"""
+        temp_raw = self.new_temp_var.get().strip()
+        pwm_raw  = self.new_pwm_var.get().strip()
+
+        # Validar que no son placeholders ni vacíos
+        if temp_raw in ("", self._PLACEHOLDER_TEMP) or pwm_raw in ("", self._PLACEHOLDER_PWM):
+            custom_msgbox(self, "Introduce un valor en ambos campos.", "Error")
+            return
+
+        try:
+            temp = int(temp_raw)
+            pwm  = int(pwm_raw)
+        except ValueError:
+            custom_msgbox(self, "Los valores deben ser números enteros.", "Error")
+            return
+
+        if not (0 <= temp <= 100):
+            custom_msgbox(self, "La temperatura debe estar entre 0 y 100 °C.", "Error")
+            return
+        if not (0 <= pwm <= 255):
+            custom_msgbox(self, "El PWM debe estar entre 0 y 255.", "Error")
+            return
+
+        # Añadir punto
+        self.fan_controller.add_curve_point(temp, pwm)
+
+        # Resetear entries a placeholder
+        self.new_temp_var.set(self._PLACEHOLDER_TEMP)
+        self.new_pwm_var.set(self._PLACEHOLDER_PWM)
+        self._entry_temp.configure(text_color=COLORS['text_dim'])
+        self._entry_pwm.configure(text_color=COLORS['text_dim'])
+
+        # Refrescar lista y confirmar
+        self._refresh_curve_points()
+        custom_msgbox(self, f"✓ Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
+
+    # ── Curva ───────────────────────────────────────────────────────────────
+
+    def _refresh_curve_points(self):
+        """Refresca la lista de puntos de la curva"""
+        for widget in self.points_frame.winfo_children():
+            widget.destroy()
+        
+        curve = self.file_manager.load_curve()
+        
+        if not curve:
+            ctk.CTkLabel(
+                self.points_frame,
+                text="No hay puntos en la curva",
+                text_color=COLORS['warning'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            ).pack(pady=10)
+            return
+        
+        for point in curve:
+            temp = point['temp']
+            pwm  = point['pwm']
+            
+            point_frame = ctk.CTkFrame(self.points_frame, fg_color=COLORS['bg_medium'])
+            point_frame.pack(fill="x", pady=2, padx=5)
+            
+            ctk.CTkLabel(
+                point_frame,
+                text=f"{temp}°C → PWM {pwm}",
+                text_color=COLORS['text'],
+                font=(FONT_FAMILY, FONT_SIZES['small'])
+            ).pack(side="left", padx=10)
+            
+            make_futuristic_button(
+                point_frame,
+                text="Eliminar",
+                command=lambda t=temp: self._remove_curve_point(t),
+                width=10,
+                height=3,
+                font_size=12
+            ).pack(side="right", padx=5)
+
+    def _remove_curve_point(self, temp: int):
+        """Elimina un punto de la curva"""
+        self.fan_controller.remove_curve_point(temp)
+        self._refresh_curve_points()
+
+    # ── Botones inferiores ──────────────────────────────────────────────────
+
+    def _create_bottom_buttons(self, parent):
+        """Crea los botones inferiores"""
+        bottom = ctk.CTkFrame(parent, fg_color=COLORS['bg_medium'])
+        bottom.pack(fill="x", pady=10, padx=10)
+        
+
+        
+        make_futuristic_button(
+            bottom,
+            text="Refrescar Curva",
+            command=self._refresh_curve_points,
+            width=15,
+            height=6
+        ).pack(side="left", padx=5)
+
+    # ── Callbacks modo / PWM ────────────────────────────────────────────────
+
+    def _on_mode_change(self, mode: str):
+        """Callback cuando cambia el modo"""
+        temp = self.system_monitor.get_current_stats()['temp']
+        target_pwm = self.fan_controller.get_pwm_for_mode(
+            mode=mode,
+            temp=temp,
+            manual_pwm=self.manual_pwm_var.get()
+        )
+        percent = int(target_pwm / 255 * 100)
+        self.manual_pwm_var.set(target_pwm)
+        self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
+        self.file_manager.write_state({"mode": mode, "target_pwm": target_pwm})
+    
+    def _on_pwm_change(self, value):
+        """Callback cuando cambia el PWM manual"""
+        pwm = int(float(value))
+        percent = int(pwm / 255 * 100)
+        self.pwm_value_label.configure(text=f"Valor: {pwm} ({percent}%)")
+        if self.mode_var.get() == "manual":
+            self.file_manager.write_state({"mode": "manual", "target_pwm": pwm})
+    
+    def _update_pwm_display(self):
+        """Actualiza el slider y valor para reflejar el PWM activo"""
+        if not self.winfo_exists():
+            return
+        
+        mode = self.mode_var.get()
+        if mode != "manual":
+            temp = self.system_monitor.get_current_stats()['temp']
+            target_pwm = self.fan_controller.get_pwm_for_mode(
+                mode=mode,
+                temp=temp,
+                manual_pwm=self.manual_pwm_var.get()
+            )
+            percent = int(target_pwm / 255 * 100)
+            self.manual_pwm_var.set(target_pwm)
+            self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
+        
+        self.after(2000, self._update_pwm_display)
+`````
 
 ## File: INDEX.md
-````markdown
-# 📚 Índice de Documentación - System Dashboard v2.8
+`````markdown
+# 📚 Índice de Documentación - System Dashboard v2.9
 
 Guía completa de toda la documentación del proyecto actualizada.
 
@@ -9989,7 +11178,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ### **Para Empezar:**
 1. **[README.md](README.md)** ⭐  
-   Documentación completa del proyecto v2.8. **Empieza aquí.**
+   Documentación completa del proyecto v2.9. **Empieza aquí.**
 
 2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
    Instalación y ejecución en 5 minutos.
@@ -10064,8 +11253,11 @@ Guía completa de toda la documentación del proyecto actualizada.
 - Verificar conectividad entre Pis
 
 **Arquitectura**:
-- `core/homebridge_monitor.py` — Sondeo, JWT, caché en memoria
-- `ui/windows/homebridge.py` — Ventana con grid de accesorios
+- `core/homebridge_monitor.py` — Sondeo 30s, JWT, caché en memoria
+- `core/system_monitor.py` — Caché en background thread (cada 2s)
+- `core/service_monitor.py` — Caché en background thread (cada 10s), is-enabled batch
+- `ui/windows/homebridge.py` — Ventana con switches CTkSwitch (90×46px)
+- `ui/styles.py` — `make_homebridge_switch()` añadida
 - Badges `hb_offline`, `hb_on`, `hb_fault` en `ui/main_window.py`
 
 ---
@@ -10120,11 +11312,11 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ---
 
-## 🗂️ Estructura de Documentos v2.8
+## 🗂️ Estructura de Documentos v2.9
 
 ```
 📚 Documentación/
-├── README.md                    ⭐ Documento principal v2.8
+├── README.md                    ⭐ Documento principal v2.9
 ├── QUICKSTART.md                ⚡ Inicio rápido
 ├── INDEX.md                     📑 Este archivo
 ├── INSTALL_GUIDE.md             🔧 Instalación
@@ -10190,19 +11382,19 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ---
 
-## 📊 Estadísticas del Proyecto v2.8
+## 📊 Estadísticas del Proyecto v2.9
 
 - **Archivos Python**: 43
 - **Líneas de código**: ~13,000
 - **Ventanas**: 14 ventanas funcionales
 - **Temas**: 15 temas pre-configurados
 - **Documentos**: 12 guías
-- **Servicios background**: 4 (FanAuto + DataCollection + Cleanup + Homebridge)
+- **Servicios background**: 7 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + main)
 - **Badges en menú**: 9
 
 ---
 
-## 🆕 Novedades en v2.8
+## 🆕 Novedades en v2.9
 
 ### **Funcionalidades Nuevas:**
 - ✅ **Integración Homebridge** — Control de enchufes e interruptores HomeKit desde el dashboard
@@ -10222,7 +11414,8 @@ Guía completa de toda la documentación del proyecto actualizada.
 | **v2.5** | 12 | + Servicios, Histórico |
 | **v2.6** | 12 | + Badges, CleanupService |
 | **v2.7** | 12 | + Header unificado, Speedtest Ookla |
-| **v2.8** | 12 | + Homebridge, 9 badges ⭐ |
+| **v2.8** | 12 | + Homebridge, 9 badges |
+| **v2.9** | 14 | + Switches táctiles, caché background ⭐ |
 
 ---
 
@@ -10718,11 +11911,11 @@ class FanControlWindow(ctk.CTkToplevel):
             self.pwm_value_label.configure(text=f"Valor: {target_pwm} ({percent}%)")
         
         self.after(2000, self._update_pwm_display)
-````
+`````
 
 ## File: IDEAS_EXPANSION.md
-````markdown
-# 💡 Ideas de Expansión - Dashboard v2.8
+`````markdown
+# 💡 Ideas de Expansión - Dashboard v2.9
 
 ---
 
@@ -10874,6 +12067,29 @@ class FanControlWindow(ctk.CTkToplevel):
 
 ---
 
+
+---
+
+### ~~**13. Optimización de Rendimiento — UI sin bloqueos**~~ ✅ Implementado en v2.9
+**Implementado en v2.9**
+- ✅ `SystemMonitor` con thread de background (cada 2s) — `get_current_stats()` devuelve caché sin llamar psutil
+- ✅ `ServiceMonitor` con thread de background (cada 10s) — `get_services()` / `get_stats()` devuelven caché
+- ✅ `is-enabled` obtenido en una sola llamada batch (`systemctl is-enabled u1 u2 ...`) en lugar de N subprocesses
+- ✅ `refresh_now()` fuerza refresco inmediato tras start/stop/restart/enable/disable
+- ✅ `_update()` de `MainWindow` solo lee cachés — hilo de Tkinter completamente libre de syscalls bloqueantes
+- ✅ Todos los servicios background registran inicio y parada en el log (`FanAutoService` incluido)
+- ✅ `make_homebridge_switch()` en `ui/styles.py` — CTkSwitch (90×46px) estilado con colores del tema
+
+---
+
+### ~~**14. Control Homebridge con Switches Táctiles**~~ ✅ Implementado en v2.9
+**Implementado en v2.9**
+- ✅ `CTkSwitch` en lugar de botones ON/OFF — más intuitivo y adaptado al uso táctil
+- ✅ Tamaño 90×46px óptimo para operar con el dedo en pantalla DSI de 4,5"
+- ✅ Estado disabled en rojo para dispositivos con fallo (no interactivo)
+- ✅ Colores del tema activo: success (ON), bg_light (OFF), danger (fallo)
+- ✅ Nombre del dispositivo integrado como etiqueta del switch
+
 ## 🔄 En Evaluación
 
 ### **Monitor de Contenedores Docker**
@@ -10950,12 +12166,19 @@ class FanControlWindow(ctk.CTkToplevel):
 - ✅ Botón ✕ táctil 52×42px para pantalla DSI
 - ✅ Speedtest migrado a CLI oficial de Ookla (JSON, MB/s reales)
 
-### **v2.8** ✅ ACTUAL — 2026-02-23
+### **v2.8** ✅ — 2026-02-23
 - ✅ Integración Homebridge completa
 - ✅ HomebridgeMonitor con JWT, sondeo 30s, caché en memoria
 - ✅ HomebridgeWindow con toggle táctil en grid 2 columnas
 - ✅ 3 badges Homebridge en menú principal
 - ✅ Configuración por .env (credenciales seguras)
+
+### **v2.9** ✅ ACTUAL — 2026-02-24
+- ✅ SystemMonitor y ServiceMonitor con caché en background thread
+- ✅ ServiceMonitor: is-enabled batch, sondeo 10s, refresh_now() tras acciones
+- ✅ HomebridgeWindow: CTkSwitch táctil 90×46px en lugar de botones
+- ✅ make_homebridge_switch() en ui/styles.py
+- ✅ Logging completo en todos los servicios background (FanAutoService incluido)
 
 ### **v3.0** (Futuro)
 - [ ] Alertas externas (Telegram/webhook)
@@ -10984,498 +12207,11 @@ class FanControlWindow(ctk.CTkToplevel):
 
 ---
 
-**Versión actual**: v2.8 — **Última actualización**: 2026-02-23
-````
-
-## File: README.md
-````markdown
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.8
-
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge y logging completo.
-
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-2.8-orange.svg)]()
-
----
-
-## ✨ Características Principales
-
-### 🖥️ **Monitoreo Completo del Sistema**
-- **CPU**: Uso en tiempo real, frecuencia, gráficas históricas
-- **RAM**: Memoria usada/total, porcentaje, visualización dinámica
-- **Temperatura**: Monitoreo de CPU con alertas por color
-- **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
-
-### 🪟 **UI Unificada con Header Táctil**
-- **Header en todas las ventanas**: título + status dinámico + botón ✕ (52×42px táctil)
-- **Status en tiempo real** en el header: CPU/RAM/Temp (Monitor Placa), Disco/NVMe (Monitor Disco), interfaz/velocidades (Monitor Red)
-- **Botón ✕ táctil** optimizado para pantalla DSI de 4,5" sin teclado
-- Función `make_window_header()` centralizada en `ui/styles.py`
-
-### 🌡️ **Control Inteligente de Ventiladores**
-- **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
-- **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
-- **Servicio background**: Funciona incluso con ventana cerrada
-- **Visualización en vivo**: Gráfica de curva activa y PWM actual
-
-### 🌐 **Monitor de Red Avanzado**
-- **Tráfico en tiempo real**: Download/Upload con gráficas
-- **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
-- **Lista de IPs**: Todas las interfaces con iconos por tipo
-- **Speedtest integrado**: CLI oficial de Ookla (JSON nativo, resultados en MB/s reales)
-- **Status en header**: interfaz activa + velocidades actuales
-
-### 🏠 **Integración Homebridge**
-- **Control de accesorios HomeKit**: Enchufes e interruptores desde el dashboard
-- **Toggle táctil**: Activa/desactiva cada dispositivo directamente en pantalla
-- **Indicador visual**: ● color por dispositivo, ⚠ rojo si `StatusFault=1`
-- **Sondeo ligero en background**: Cada 30 segundos sin bloquear la UI
-- **Autenticación JWT** con renovación automática en 401
-- **3 badges en el menú**: offline (🔴), enchufes encendidos (🟠), dispositivos con fallo (🔴)
-- **Configuración por `.env`**: IP, puerto, usuario y contraseña de Homebridge
-- Requiere **Insecure Mode** activado en Homebridge para acceder a accesorios
-
-### ⚙️ **Monitor de Procesos**
-- **Lista en tiempo real**: Top 20 procesos con CPU/RAM
-- **Búsqueda inteligente**: Por nombre o comando completo
-- **Filtros**: Todos / Usuario / Sistema
-- **Terminar procesos**: Con confirmación y feedback
-
-### ⚙️ **Monitor de Servicios systemd**
-- **Gestión completa**: Start/Stop/Restart servicios
-- **Estado visual**: active, inactive, failed con iconos
-- **Autostart**: Enable/Disable con confirmación
-- **Logs en tiempo real**: Ver últimas 50 líneas
-
-### 📊 **Histórico de Datos**
-- **Recolección automática**: Cada 5 minutos en background
-- **Base de datos SQLite**: Ligera y eficiente
-- **Visualización gráfica**: 8 gráficas (CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM)
-- **Periodos**: 24 horas, 7 días, 30 días
-- **Estadísticas**: Promedios, mínimos, máximos
-- **Detección de anomalías**: Alertas automáticas
-- **Exportación CSV**: Para análisis externo
-
-### 󱇰 **Monitor USB**
-- **Detección automática**: Dispositivos conectados
-- **Separación inteligente**: Mouse/teclado vs almacenamiento
-- **Expulsión segura**: Unmount + eject con confirmación
-
-###  **Monitor de Disco**
-- **Particiones**: Uso de espacio de todas las unidades
-- **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
-- **Velocidad I/O**: Lectura/escritura en MB/s
-- **Status en header**: espacio disponible + temperatura NVMe en tiempo real
-
-### 󱓞 **Lanzadores de Scripts**
-- **Terminal integrada**: Visualiza la ejecución en tiempo real
-- **Layout en grid**: Organización visual en columnas
-- **Confirmación previa**: Diálogo antes de ejecutar
-
-### 󰆧 **Actualizaciones del Sistema**
-- **Verificación al arranque**: En background sin bloquear la UI
-- **Sistema de caché 12h**: No repite `apt update` innecesariamente
-- **Terminal integrada**: Instala viendo el output en vivo
-- **Botón Buscar**: Fuerza comprobación manual
-
-### 󰆧 **15 Temas Personalizables**
-- **Cambio con un clic**: Reinicio automático
-- **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
-- **Preview en vivo**: Ve los colores antes de aplicar
-
-### /󰿅 **Reinicio y Apagado**
-- **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
-- **Botón Salir**: Salir de la app o apagar el sistema
-- **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
-- **Con confirmación**: Evita acciones accidentales
-
-### 🔔 **Badges de Notificación Visual**
-- **9 badges** en el menú principal con alertas en tiempo real
-- **Temperatura**: naranja >60°C, rojo >70°C (Control Ventiladores + Monitor Placa)
-- **CPU y RAM**: naranja >75%, rojo >90% (Monitor Placa)
-- **Disco**: naranja >80%, rojo >90% (Monitor Disco)
-- **Servicios fallidos**: rojo con contador (Monitor Servicios)
-- **Actualizaciones pendientes**: naranja con contador (Actualizaciones)
-- **Homebridge offline**: rojo si sin conexión
-- **Enchufes encendidos**: naranja con contador de dispositivos ON
-- **Dispositivos con fallo**: rojo si `StatusFault=1`
-
-### 🧹 **Limpieza Automática**
-- **CleanupService**: servicio background singleton
-- Limpia CSV exportados (máx. 10), PNG exportados (máx. 10)
-- Limpia BD SQLite: registros >30 días cada 24h
-- Red de seguridad: si BD supera 5MB limpia a 7 días al arrancar
-- Botón "Limpiar Antiguos" fuerza limpieza manual completa
-
-### 📋 **Sistema de Logging Completo**
-- **Cobertura total**: Todos los módulos core y UI
-- **Niveles diferenciados**: DEBUG, INFO, WARNING, ERROR
-- **Rotación automática**: 2MB máximo con backup
-- **Ubicación**: `data/logs/dashboard.log`
-
----
-
-## 📦 Instalación
-
-###  **Requisitos del Sistema**
-- **Hardware**: Raspberry Pi 3/4/5
-- **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
-- **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
-- **Python**: 3.8 o superior
-
-### ⚡ **Instalación Recomendada**
-
-Usa el script de instalación directa (sin entorno virtual):
-
-```bash
-git clone https://github.com/tu-usuario/system-dashboard.git
-cd system-dashboard
-chmod +x install_system.sh
-sudo ./install_system.sh
-python3 main.py
-```
-
-El script `install_system.sh` instala automáticamente:
-- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
-- Dependencias Python con `--break-system-packages`
-- CLI oficial de Ookla para speedtest
-- Ofrece configurar sensores de temperatura
-
-### 🛠️ **Instalación Manual**
-
-Si prefieres instalar paso a paso:
-
-```bash
-# 1. Dependencias del sistema
-sudo apt-get update
-sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
-
-# 2. CLI oficial de Ookla (speedtest)
-curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
-sudo apt-get install speedtest
-
-# 3. Detectar sensores
-sudo sensors-detect --auto
-
-# 4. Dependencias Python
-pip3 install --break-system-packages -r requirements.txt
-
-# 5. Ejecutar
-python3 main.py
-```
-
-###  **Alternativa con Entorno Virtual**
-
-Si prefieres aislar las dependencias Python:
-
-```bash
-chmod +x install.sh
-./install.sh
-source venv/bin/activate
-python3 main.py
-```
-
-> **Nota**: Con venv necesitas activar el entorno (`source venv/bin/activate`) cada vez antes de ejecutar.
-
----
-
-## 🏠 Configuración de Homebridge
-
-La integración con Homebridge requiere un archivo `.env` en la raíz del proyecto:
-
-```env
-HOMEBRIDGE_HOST=192.168.1.X    # IP de la Raspberry Pi con Homebridge
-HOMEBRIDGE_PORT=8581
-HOMEBRIDGE_USER=admin
-HOMEBRIDGE_PASS=tu_contraseña
-```
-
-> **Importante**: Activa el **Insecure Mode** en Homebridge (`homebridge-config-ui-x → Configuración → Homebridge`) para que la API permita acceder y controlar los accesorios.
-
-El archivo `.env` está en `.gitignore` y nunca se sube al repositorio.
-
----
-
-## 󰍜 Menú Principal (14 botones)
-
-```
-┌─────────────────────────────────────┐
-│  Control         │  Monitor          │
-│  Ventiladores    │  Placa            │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Monitor          │
-│  Red             │  USB              │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Lanzadores       │
-│  Disco           │                   │
-├──────────────────┼───────────────────┤
-│  Monitor         │  Monitor          │
-│  Procesos        │  Servicios        │
-├──────────────────┼───────────────────┤
-│  Histórico       │  Actualizaciones  │
-│  Datos           │                   │
-├──────────────────┼───────────────────┤
-│  Homebridge      │  Cambiar Tema     │
-├──────────────────┼───────────────────┤
-│  Reiniciar       │  Salir            │
-└──────────────────┴───────────────────┘
-```
-
-### **Las 14 Ventanas:**
-
-1. **Control Ventiladores** - Configura modos y curvas PWM
-2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real (status en header)
-3. **Monitor Red** - Tráfico, speedtest Ookla, interfaces e IPs (status en header)
-4. **Monitor USB** - Dispositivos y expulsión segura
-5. **Monitor Disco** - Espacio, temperatura NVMe, I/O (status en header)
-6. **Lanzadores** - Ejecuta scripts con terminal en vivo
-7. **Monitor Procesos** - Gestión avanzada de procesos
-8. **Monitor Servicios** - Control de servicios systemd
-9. **Histórico Datos** - Visualización de métricas históricas
-10. **Actualizaciones** - Gestión de paquetes del sistema
-11. **Homebridge** - Control de accesorios HomeKit (enchufes e interruptores)
-12. **Cambiar Tema** - Selecciona entre 15 temas
-13. **Reiniciar** - Reinicia el dashboard
-14. **Salir** - Cierra la app o apaga el sistema
-
----
-
-## 󰔎 Temas Disponibles
-
-| Tema | Colores | Estilo |
-|------|---------|--------|
-| **Cyberpunk** | Cyan + Verde | Original neón |
-| **Matrix** | Verde brillante | Película Matrix |
-| **Sunset** | Naranja + Púrpura | Atardecer cálido |
-| **Ocean** | Azul + Aqua | Océano refrescante |
-| **Dracula** | Púrpura + Rosa | Elegante oscuro |
-| **Nord** | Azul hielo | Minimalista nórdico |
-| **Tokyo Night** | Azul + Púrpura | Noche de Tokio |
-| **Monokai** | Cyan + Verde | IDE clásico |
-| **Gruvbox** | Naranja + Beige | Retro cálido |
-| **Solarized** | Azul + Cyan | Científico |
-| **One Dark** | Azul claro | Atom editor |
-| **Synthwave** | Rosa + Verde | Neón 80s |
-| **GitHub Dark** | Azul GitHub | Profesional |
-| **Material** | Azul material | Google Design |
-| **Ayu Dark** | Azul cielo | Minimalista |
-
----
-
-## 📊 Arquitectura del Proyecto
-
-```
-system_dashboard/
-├── config/
-│   ├── settings.py                 # Constantes globales y LAUNCHERS
-│   └── themes.py                   # 15 temas pre-configurados
-├── core/
-│   ├── fan_controller.py           # Control PWM y curvas
-│   ├── fan_auto_service.py         # Servicio background ventiladores
-│   ├── system_monitor.py           # CPU, RAM, temperatura
-│   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
-│   ├── disk_monitor.py             # Disco, NVMe, I/O
-│   ├── process_monitor.py          # Gestión de procesos
-│   ├── service_monitor.py          # Servicios systemd
-│   ├── update_monitor.py           # Actualizaciones con caché 12h
-│   ├── homebridge_monitor.py       # Integración Homebridge (JWT, sondeo 30s)
-│   ├── data_logger.py              # SQLite logging
-│   ├── data_analyzer.py            # Análisis histórico
-│   ├── data_collection_service.py  # Recolección automática (singleton)
-│   ├── cleanup_service.py          # Limpieza automática background (singleton)
-│   └── __init__.py
-├── ui/
-│   ├── main_window.py              # Ventana principal (14 botones + badges)
-│   ├── styles.py                   # make_window_header(), make_futuristic_button(), StyleManager
-│   ├── widgets/
-│   │   ├── graphs.py               # Gráficas personalizadas
-│   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
-│   └── windows/
-│       ├── monitor.py, network.py, usb.py, disk.py
-│       ├── process_window.py, service.py, history.py
-│       ├── update.py, fan_control.py
-│       ├── launchers.py, theme_selector.py
-│       ├── homebridge.py           # Ventana de control Homebridge
-│       └── __init__.py
-├── utils/
-│   ├── file_manager.py             # Gestión de JSON (escritura atómica)
-│   ├── system_utils.py             # Utilidades del sistema
-│   └── logger.py                   # DashboardLogger (rotación 2MB)
-├── data/                            # Auto-generado al ejecutar
-│   ├── fan_state.json, fan_curve.json, theme_config.json
-│   ├── history.db                  # SQLite histórico
-│   └── logs/dashboard.log          # Log del sistema
-├── scripts/                         # Scripts personalizados del usuario
-├── .env                             # Credenciales Homebridge (NO en git)
-├── .env.example                     # Plantilla de configuración
-├── install_system.sh               # Instalación directa (recomendada)
-├── install.sh                      # Instalación con venv (alternativa)
-├── test_logging.py                 # Prueba del sistema de logging
-├── main.py
-└── requirements.txt
-```
-
----
-
-##  Configuración
-
-### **`config/settings.py`**
-
-```python
-# Posición en pantalla DSI
-DSI_WIDTH = 800
-DSI_HEIGHT = 480
-DSI_X = 0
-DSI_Y = 0
-
-# Scripts personalizados en Lanzadores
-LAUNCHERS = [
-    {"label": "Montar NAS",   "script": str(SCRIPTS_DIR / "montarnas.sh")},
-    {"label": "Conectar VPN", "script": str(SCRIPTS_DIR / "conectar_vpn.sh")},
-    # Añade tus scripts aquí
-]
-```
-
-### **`.env` (Homebridge)**
-
-```env
-HOMEBRIDGE_HOST=192.168.1.X
-HOMEBRIDGE_PORT=8581
-HOMEBRIDGE_USER=admin
-HOMEBRIDGE_PASS=tu_contraseña
-```
-
----
-
-## 📋 Sistema de Logging
-
-```bash
-# Ver logs en tiempo real
-tail -f data/logs/dashboard.log
-
-# Solo errores
-grep ERROR data/logs/dashboard.log
-
-# Eventos de hoy
-grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
-```
-
-**Niveles:** `DEBUG` (operaciones normales) · `INFO` (eventos importantes) · `WARNING` (degradación) · `ERROR` (fallos)
-
----
-
-## 📈 Rendimiento
-
-- **Uso CPU**: ~5-10% en idle
-- **Uso RAM**: ~100-150 MB
-- **Base de datos**: ~5 MB por 10,000 registros
-- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`)
-- **Threads background**: 5 (main + FanAuto + DataCollection + Cleanup + Homebridge)
-- **Log**: máx. 2MB con rotación automática
-
----
-
-##  Troubleshooting
-
-| Problema | Solución |
-|----------|----------|
-| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
-| Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
-| NVMe temp 0 | `sudo apt install smartmontools` |
-| Ventiladores no responden | `sudo python3 main.py` |
-| Speedtest falla | Instalar CLI oficial Ookla: ver sección Instalación Manual |
-| USB no expulsa | `sudo apt install udisks2` |
-| Homebridge no conecta | Verificar IP/puerto en `.env` y que Insecure Mode esté activo |
-| Badge hb_offline siempre rojo | Comprobar `HOMEBRIDGE_HOST` en `.env` y red entre Pis |
-| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
-
----
-
-## 📚 Documentación
-
-- [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
-- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) — Instalación detallada
-- [THEMES_GUIDE.md](THEMES_GUIDE.md) — Guía de temas
-- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — Integración con OLED
-- [INDEX.md](INDEX.md) — Índice completo
-
----
-
-## 📊 Estadísticas del Proyecto
-
-| Métrica | Valor |
-|---------|-------|
-| Versión | 2.8 |
-| Archivos Python | 43 |
-| Líneas de código | ~13,000 |
-| Ventanas | 14 |
-| Temas | 15 |
-| Servicios background | 4 (FanAuto + DataCollection + Cleanup + Homebridge) |
-| Badges en menú | 9 |
-| Cobertura logging | 100% módulos core y UI |
-
----
-
-## Changelog
-
-### **v2.8** - 2026-02-23 ⭐ ACTUAL
-- ✅ **NUEVO**: Integración Homebridge — ventana de control de accesorios HomeKit (enchufes e interruptores)
-- ✅ **NUEVO**: `HomebridgeMonitor` en `core/` — sondeo ligero cada 30s, autenticación JWT con renovación automática
-- ✅ **NUEVO**: 3 badges Homebridge en menú principal (`hb_offline` 🔴, `hb_on` 🟠, `hb_fault` 🔴)
-- ✅ **NUEVO**: Toggle táctil por dispositivo con indicador ● color y ⚠ en StatusFault
-- ✅ **NUEVO**: Configuración por `.env` (credenciales fuera del código)
-
-### **v2.7** - 2026-02-23
-- ✅ **NUEVO**: Header unificado `make_window_header()` en todas las ventanas (título + status + botón ✕ táctil 52×42px)
-- ✅ **NUEVO**: Status dinámico en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
-- ✅ **MEJORA**: Speedtest migrado a CLI oficial de Ookla (`--format=json`), resultados en MB/s reales
-- ✅ **MEJORA**: Botón ✕ táctil optimizado para pantalla DSI sin teclado
-
-### **v2.6** - 2026-02-22
-- ✅ **NUEVO**: 6 badges de notificación visual en menú principal
-- ✅ **NUEVO**: `CleanupService` — limpieza automática background de CSV, PNG y BD
-- ✅ **NUEVO**: Fan control con entries (placeholder) en lugar de sliders
-- ✅ **MEJORA**: Botón "Limpiar Antiguos" delega en CleanupService (inyección de dependencias)
-- ✅ **MEJORA**: Badges con texto dinámico y color adaptativo
-
-### **v2.5.1** - 2026-02-19
-- ✅ **NUEVO**: Sistema de logging completo en todos los módulos core y UI
-- ✅ **NUEVO**: Ventana Actualizaciones con terminal integrada y caché 12h
-- ✅ **NUEVO**: Comprobación de actualizaciones al arranque en background
-- ✅ **FIX**: Bug `atexit` en `DataCollectionService`
-- ✅ **FIX**: Apagado usa `terminal_dialog` en lugar de subprocess silencioso
-
-### **v2.5** - 2026-02-17
-- ✅ Monitor de Servicios systemd, Histórico de Datos SQLite, Botón Reiniciar
-- ✅ Recolección automática background, Exportación CSV, Detección de anomalías
-
-### **v2.0** - 2026-02-16
-- ✅ Monitor de Procesos, 15 temas, fix Speedtest Mbit/s → MB/s
-
-### **v1.0** - 2025-01
-- ✅ Release inicial, 8 ventanas, control ventiladores, tema Cyberpunk
-
----
-
-## Licencia
-
-MIT License
-
----
-
-## Agradecimientos
-
-**CustomTkinter** · **psutil** · **matplotlib** · **Ookla Speedtest CLI** · **Homebridge** · **Raspberry Pi Foundation**
-
----
-
-**Dashboard v2.8: Profesional, Unificado, Táctil, Auto-mantenido y conectado a HomeKit**
-````
+**Versión actual**: v2.9 — **Última actualización**: 2026-02-24
+`````
 
 ## File: ui/windows/history.py
-````python
+`````python
 """
 Ventana de histórico de datos
 """
@@ -12002,10 +12738,515 @@ class HistoryWindow(ctk.CTkToplevel):
 
     def _on_motion(self, event):
         pass
-````
+`````
+
+## File: README.md
+`````markdown
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v2.9
+
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge y logging completo.
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![Version](https://img.shields.io/badge/Version-2.9-orange.svg)]()
+
+---
+
+## ✨ Características Principales
+
+### 🖥️ **Monitoreo Completo del Sistema**
+- **CPU**: Uso en tiempo real, frecuencia, gráficas históricas
+- **RAM**: Memoria usada/total, porcentaje, visualización dinámica
+- **Temperatura**: Monitoreo de CPU con alertas por color
+- **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
+
+### 🪟 **UI Unificada con Header Táctil**
+- **Header en todas las ventanas**: título + status dinámico + botón ✕ (52×42px táctil)
+- **Status en tiempo real** en el header: CPU/RAM/Temp (Monitor Placa), Disco/NVMe (Monitor Disco), interfaz/velocidades (Monitor Red)
+- **Botón ✕ táctil** optimizado para pantalla DSI de 4,5" sin teclado
+- Función `make_window_header()` centralizada en `ui/styles.py`
+
+### 🌡️ **Control Inteligente de Ventiladores**
+- **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
+- **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
+- **Servicio background**: Funciona incluso con ventana cerrada
+- **Visualización en vivo**: Gráfica de curva activa y PWM actual
+
+### 🌐 **Monitor de Red Avanzado**
+- **Tráfico en tiempo real**: Download/Upload con gráficas
+- **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
+- **Lista de IPs**: Todas las interfaces con iconos por tipo
+- **Speedtest integrado**: CLI oficial de Ookla (JSON nativo, resultados en MB/s reales)
+- **Status en header**: interfaz activa + velocidades actuales
+
+### 🏠 **Integración Homebridge**
+- **Control de accesorios HomeKit**: Enchufes e interruptores desde el dashboard
+- **CTkSwitch táctil** (90×46px): Toggle grande optimizado para uso con el dedo en pantalla DSI
+- **Indicador visual**: switch verde ON / gris OFF, ⚠ rojo bloqueado si `StatusFault=1`
+- **Sondeo ligero en background**: Cada 30 segundos sin bloquear la UI
+- **Autenticación JWT** con renovación automática en 401
+- **3 badges en el menú**: offline (🔴), enchufes encendidos (🟠), dispositivos con fallo (🔴)
+- **Configuración por `.env`**: IP, puerto, usuario y contraseña de Homebridge
+- Requiere **Insecure Mode** activado en Homebridge para acceder a accesorios
+
+### ⚙️ **Monitor de Procesos**
+- **Lista en tiempo real**: Top 20 procesos con CPU/RAM
+- **Búsqueda inteligente**: Por nombre o comando completo
+- **Filtros**: Todos / Usuario / Sistema
+- **Terminar procesos**: Con confirmación y feedback
+
+### ⚙️ **Monitor de Servicios systemd**
+- **Gestión completa**: Start/Stop/Restart servicios
+- **Estado visual**: active, inactive, failed con iconos
+- **Autostart**: Enable/Disable con confirmación
+- **Logs en tiempo real**: Ver últimas 50 líneas
+- **Caché en background**: Sondeo cada 10s sin bloquear la UI; `is-enabled` en llamada batch
+
+### 📊 **Histórico de Datos**
+- **Recolección automática**: Cada 5 minutos en background
+- **Base de datos SQLite**: Ligera y eficiente
+- **Visualización gráfica**: 8 gráficas (CPU, RAM, Temperatura, Red Download, Red Upload, Disk Read, Disk Write, PWM)
+- **Periodos**: 24 horas, 7 días, 30 días
+- **Estadísticas**: Promedios, mínimos, máximos
+- **Detección de anomalías**: Alertas automáticas
+- **Exportación CSV**: Para análisis externo
+
+### 󱇰 **Monitor USB**
+- **Detección automática**: Dispositivos conectados
+- **Separación inteligente**: Mouse/teclado vs almacenamiento
+- **Expulsión segura**: Unmount + eject con confirmación
+
+###  **Monitor de Disco**
+- **Particiones**: Uso de espacio de todas las unidades
+- **Temperatura NVMe**: Monitoreo térmico del SSD (smartctl/sysfs)
+- **Velocidad I/O**: Lectura/escritura en MB/s
+- **Status en header**: espacio disponible + temperatura NVMe en tiempo real
+
+### 󱓞 **Lanzadores de Scripts**
+- **Terminal integrada**: Visualiza la ejecución en tiempo real
+- **Layout en grid**: Organización visual en columnas
+- **Confirmación previa**: Diálogo antes de ejecutar
+
+### 󰆧 **Actualizaciones del Sistema**
+- **Verificación al arranque**: En background sin bloquear la UI
+- **Sistema de caché 12h**: No repite `apt update` innecesariamente
+- **Terminal integrada**: Instala viendo el output en vivo
+- **Botón Buscar**: Fuerza comprobación manual
+
+### 󰆧 **15 Temas Personalizables**
+- **Cambio con un clic**: Reinicio automático
+- **Paletas completas**: Cyberpunk, Matrix, Dracula, Nord, Tokyo Night, etc.
+- **Preview en vivo**: Ve los colores antes de aplicar
+
+### /󰿅 **Reinicio y Apagado**
+- **Botón Reiniciar**: Reinicia el dashboard aplicando cambios de código
+- **Botón Salir**: Salir de la app o apagar el sistema
+- **Terminal de apagado**: Visualiza `apagado.sh` en tiempo real
+- **Con confirmación**: Evita acciones accidentales
+
+### 🔔 **Badges de Notificación Visual**
+- **9 badges** en el menú principal con alertas en tiempo real
+- **Temperatura**: naranja >60°C, rojo >70°C (Control Ventiladores + Monitor Placa)
+- **CPU y RAM**: naranja >75%, rojo >90% (Monitor Placa)
+- **Disco**: naranja >80%, rojo >90% (Monitor Disco)
+- **Servicios fallidos**: rojo con contador (Monitor Servicios)
+- **Actualizaciones pendientes**: naranja con contador (Actualizaciones)
+- **Homebridge offline**: rojo si sin conexión
+- **Enchufes encendidos**: naranja con contador de dispositivos ON
+- **Dispositivos con fallo**: rojo si `StatusFault=1`
+
+### 🧹 **Limpieza Automática**
+- **CleanupService**: servicio background singleton
+- Limpia CSV exportados (máx. 10), PNG exportados (máx. 10)
+- Limpia BD SQLite: registros >30 días cada 24h
+- Red de seguridad: si BD supera 5MB limpia a 7 días al arrancar
+- Botón "Limpiar Antiguos" fuerza limpieza manual completa
+
+### 📋 **Sistema de Logging Completo**
+- **Cobertura total**: Todos los módulos core y UI incluyendo todos los servicios background
+- **Niveles diferenciados**: DEBUG, INFO, WARNING, ERROR
+- **Rotación automática**: 2MB máximo con backup
+- **Ubicación**: `data/logs/dashboard.log`
+- **Todos los servicios** registran inicio y parada en el log
+
+---
+
+## 📦 Instalación
+
+###  **Requisitos del Sistema**
+- **Hardware**: Raspberry Pi 3/4/5
+- **OS**: Raspberry Pi OS (Bullseye/Bookworm) o Kali Linux
+- **Pantalla**: Touchscreen DSI 4,5" (800x480) o HDMI
+- **Python**: 3.8 o superior
+
+### ⚡ **Instalación Recomendada**
+
+Usa el script de instalación directa (sin entorno virtual):
+
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
+
+El script `install_system.sh` instala automáticamente:
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
+- Dependencias Python con `--break-system-packages`
+- CLI oficial de Ookla para speedtest
+- Ofrece configurar sensores de temperatura
+
+### 🛠️ **Instalación Manual**
+
+Si prefieres instalar paso a paso:
+
+```bash
+# 1. Dependencias del sistema
+sudo apt-get update
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
+
+# 2. CLI oficial de Ookla (speedtest)
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest
+
+# 3. Detectar sensores
+sudo sensors-detect --auto
+
+# 4. Dependencias Python
+pip3 install --break-system-packages -r requirements.txt
+
+# 5. Ejecutar
+python3 main.py
+```
+
+###  **Alternativa con Entorno Virtual**
+
+Si prefieres aislar las dependencias Python:
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> **Nota**: Con venv necesitas activar el entorno (`source venv/bin/activate`) cada vez antes de ejecutar.
+
+---
+
+## 🏠 Configuración de Homebridge
+
+La integración con Homebridge requiere un archivo `.env` en la raíz del proyecto:
+
+```env
+HOMEBRIDGE_HOST=192.168.1.X    # IP de la Raspberry Pi con Homebridge
+HOMEBRIDGE_PORT=8581
+HOMEBRIDGE_USER=admin
+HOMEBRIDGE_PASS=tu_contraseña
+```
+
+> **Importante**: Activa el **Insecure Mode** en Homebridge (`homebridge-config-ui-x → Configuración → Homebridge`) para que la API permita acceder y controlar los accesorios.
+
+El archivo `.env` está en `.gitignore` y nunca se sube al repositorio.
+
+La ventana Homebridge muestra los accesorios en un grid de 2 columnas. Cada tarjeta incluye un **switch grande (90×46px)** con el nombre del dispositivo como etiqueta, optimizado para activar/desactivar con el dedo. Si un dispositivo tiene `StatusFault=1` el switch aparece bloqueado con un aviso ⚠ FALLO en rojo.
+
+---
+
+## 󰍜 Menú Principal (14 botones)
+
+```
+┌─────────────────────────────────────┐
+│  Control         │  Monitor          │
+│  Ventiladores    │  Placa            │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Red             │  USB              │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Lanzadores       │
+│  Disco           │                   │
+├──────────────────┼───────────────────┤
+│  Monitor         │  Monitor          │
+│  Procesos        │  Servicios        │
+├──────────────────┼───────────────────┤
+│  Histórico       │  Actualizaciones  │
+│  Datos           │                   │
+├──────────────────┼───────────────────┤
+│  Homebridge      │  Cambiar Tema     │
+├──────────────────┼───────────────────┤
+│  Reiniciar       │  Salir            │
+└──────────────────┴───────────────────┘
+```
+
+### **Las 14 Ventanas:**
+
+1. **Control Ventiladores** - Configura modos y curvas PWM
+2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real (status en header)
+3. **Monitor Red** - Tráfico, speedtest Ookla, interfaces e IPs (status en header)
+4. **Monitor USB** - Dispositivos y expulsión segura
+5. **Monitor Disco** - Espacio, temperatura NVMe, I/O (status en header)
+6. **Lanzadores** - Ejecuta scripts con terminal en vivo
+7. **Monitor Procesos** - Gestión avanzada de procesos
+8. **Monitor Servicios** - Control de servicios systemd
+9. **Histórico Datos** - Visualización de métricas históricas
+10. **Actualizaciones** - Gestión de paquetes del sistema
+11. **Homebridge** - Control de accesorios HomeKit con switches táctiles
+12. **Cambiar Tema** - Selecciona entre 15 temas
+13. **Reiniciar** - Reinicia el dashboard
+14. **Salir** - Cierra la app o apaga el sistema
+
+---
+
+## 󰔎 Temas Disponibles
+
+| Tema | Colores | Estilo |
+|------|---------|--------|
+| **Cyberpunk** | Cyan + Verde | Original neón |
+| **Matrix** | Verde brillante | Película Matrix |
+| **Sunset** | Naranja + Púrpura | Atardecer cálido |
+| **Ocean** | Azul + Aqua | Océano refrescante |
+| **Dracula** | Púrpura + Rosa | Elegante oscuro |
+| **Nord** | Azul hielo | Minimalista nórdico |
+| **Tokyo Night** | Azul + Púrpura | Noche de Tokio |
+| **Monokai** | Cyan + Verde | IDE clásico |
+| **Gruvbox** | Naranja + Beige | Retro cálido |
+| **Solarized** | Azul + Cyan | Científico |
+| **One Dark** | Azul claro | Atom editor |
+| **Synthwave** | Rosa + Verde | Neón 80s |
+| **GitHub Dark** | Azul GitHub | Profesional |
+| **Material** | Azul material | Google Design |
+| **Ayu Dark** | Azul cielo | Minimalista |
+
+---
+
+## 📊 Arquitectura del Proyecto
+
+```
+system_dashboard/
+├── config/
+│   ├── settings.py                 # Constantes globales y LAUNCHERS
+│   └── themes.py                   # 15 temas pre-configurados
+├── core/
+│   ├── fan_controller.py           # Control PWM y curvas
+│   ├── fan_auto_service.py         # Servicio background ventiladores
+│   ├── system_monitor.py           # CPU, RAM, temp — caché en background thread
+│   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
+│   ├── disk_monitor.py             # Disco, NVMe, I/O
+│   ├── process_monitor.py          # Gestión de procesos
+│   ├── service_monitor.py          # Servicios systemd — caché 10s, batch is-enabled
+│   ├── update_monitor.py           # Actualizaciones con caché 12h
+│   ├── homebridge_monitor.py       # Integración Homebridge (JWT, sondeo 30s)
+│   ├── data_logger.py              # SQLite logging
+│   ├── data_analyzer.py            # Análisis histórico
+│   ├── data_collection_service.py  # Recolección automática (singleton)
+│   ├── cleanup_service.py          # Limpieza automática background (singleton)
+│   └── __init__.py
+├── ui/
+│   ├── main_window.py              # Ventana principal (14 botones + badges)
+│   ├── styles.py                   # make_window_header(), make_futuristic_button(),
+│   │                               # make_homebridge_switch(), StyleManager
+│   ├── widgets/
+│   │   ├── graphs.py               # Gráficas personalizadas
+│   │   └── dialogs.py              # custom_msgbox, confirm_dialog, terminal_dialog
+│   └── windows/
+│       ├── monitor.py, network.py, usb.py, disk.py
+│       ├── process_window.py, service.py, history.py
+│       ├── update.py, fan_control.py
+│       ├── launchers.py, theme_selector.py
+│       ├── homebridge.py           # Ventana de control Homebridge con CTkSwitch
+│       └── __init__.py
+├── utils/
+│   ├── file_manager.py             # Gestión de JSON (escritura atómica)
+│   ├── system_utils.py             # Utilidades del sistema
+│   └── logger.py                   # DashboardLogger (rotación 2MB)
+├── data/                            # Auto-generado al ejecutar
+│   ├── fan_state.json, fan_curve.json, theme_config.json
+│   ├── history.db                  # SQLite histórico
+│   └── logs/dashboard.log          # Log del sistema
+├── scripts/                         # Scripts personalizados del usuario
+├── .env                             # Credenciales Homebridge (NO en git)
+├── .env.example                     # Plantilla de configuración
+├── install_system.sh               # Instalación directa (recomendada)
+├── install.sh                      # Instalación con venv (alternativa)
+├── test_logging.py                 # Prueba del sistema de logging
+├── main.py
+└── requirements.txt
+```
+
+---
+
+##  Configuración
+
+### **`config/settings.py`**
+
+```python
+# Posición en pantalla DSI
+DSI_WIDTH = 800
+DSI_HEIGHT = 480
+DSI_X = 0
+DSI_Y = 0
+
+# Scripts personalizados en Lanzadores
+LAUNCHERS = [
+    {"label": "Montar NAS",   "script": str(SCRIPTS_DIR / "montarnas.sh")},
+    {"label": "Conectar VPN", "script": str(SCRIPTS_DIR / "conectar_vpn.sh")},
+    # Añade tus scripts aquí
+]
+```
+
+### **`.env` (Homebridge)**
+
+```env
+HOMEBRIDGE_HOST=192.168.1.X
+HOMEBRIDGE_PORT=8581
+HOMEBRIDGE_USER=admin
+HOMEBRIDGE_PASS=tu_contraseña
+```
+
+---
+
+## 📋 Sistema de Logging
+
+```bash
+# Ver logs en tiempo real
+tail -f data/logs/dashboard.log
+
+# Solo errores
+grep ERROR data/logs/dashboard.log
+
+# Eventos de hoy
+grep "$(date +%Y-%m-%d)" data/logs/dashboard.log
+```
+
+**Niveles:** `DEBUG` (operaciones normales) · `INFO` (eventos importantes) · `WARNING` (degradación) · `ERROR` (fallos)
+
+Todos los servicios background registran su inicio y parada. Al arrancar verás entradas como:
+```
+[SystemMonitor]   Sondeo iniciado (cada 2.0s)
+[ServiceMonitor]  Sondeo iniciado (cada 10s)
+[HomebridgeMonitor] Sondeo iniciado (cada 30s)
+[FanAutoService]  Servicio iniciado
+[DataCollection]  Servicio iniciado (cada 5 min)
+[CleanupService]  Servicio iniciado
+```
+
+---
+
+## 📈 Rendimiento
+
+- **Uso CPU**: ~5-10% en idle
+- **Uso RAM**: ~100-150 MB
+- **Base de datos**: ~5 MB por 10,000 registros
+- **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`) — solo lectura de caché, sin syscalls bloqueantes
+- **Threads background**: 7 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + main)
+- **Log**: máx. 2MB con rotación automática
+
+---
+
+##  Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Ventiladores no responden | `sudo python3 main.py` |
+| Speedtest falla | Instalar CLI oficial Ookla: ver sección Instalación Manual |
+| USB no expulsa | `sudo apt install udisks2` |
+| Homebridge no conecta | Verificar IP/puerto en `.env` y que Insecure Mode esté activo |
+| Badge hb_offline siempre rojo | Comprobar `HOMEBRIDGE_HOST` en `.env` y red entre Pis |
+| Servicios tardan en aparecer | Normal — ServiceMonitor sondea systemctl cada 10s al arrancar |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 📚 Documentación
+
+- [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
+- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) — Instalación detallada
+- [THEMES_GUIDE.md](THEMES_GUIDE.md) — Guía de temas
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — Integración con OLED
+- [INDEX.md](INDEX.md) — Índice completo
+
+---
+
+## 📊 Estadísticas del Proyecto
+
+| Métrica | Valor |
+|---------|-------|
+| Versión | 2.9 |
+| Archivos Python | 43 |
+| Líneas de código | ~13,200 |
+| Ventanas | 14 |
+| Temas | 15 |
+| Servicios background | 7 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + main) |
+| Badges en menú | 9 |
+| Cobertura logging | 100% módulos core y UI |
+
+---
+
+## Changelog
+
+### **v2.9** - 2026-02-24 ⭐ ACTUAL
+- ✅ **MEJORA**: `SystemMonitor` — caché en background thread (cada 2s); la UI nunca llama psutil directamente
+- ✅ **MEJORA**: `ServiceMonitor` — caché en background thread (cada 10s); `is-enabled` en llamada batch en lugar de N subprocesses
+- ✅ **MEJORA**: `_update()` de `MainWindow` solo lee cachés — hilo de UI completamente libre de syscalls bloqueantes
+- ✅ **MEJORA**: `HomebridgeWindow` usa `CTkSwitch` (90×46px) en lugar de botones ON/OFF — más intuitivo y táctil
+- ✅ **MEJORA**: `make_homebridge_switch()` añadida a `ui/styles.py` con soporte de estado disabled (fallo)
+- ✅ **MEJORA**: Todos los servicios background registran inicio y parada en el log (`FanAutoService` incluido)
+
+### **v2.8** - 2026-02-23
+- ✅ **NUEVO**: Integración Homebridge — ventana de control de accesorios HomeKit (enchufes e interruptores)
+- ✅ **NUEVO**: `HomebridgeMonitor` en `core/` — sondeo ligero cada 30s, autenticación JWT con renovación automática
+- ✅ **NUEVO**: 3 badges Homebridge en menú principal (`hb_offline` 🔴, `hb_on` 🟠, `hb_fault` 🔴)
+- ✅ **NUEVO**: Toggle táctil por dispositivo con indicador ● color y ⚠ en StatusFault
+- ✅ **NUEVO**: Configuración por `.env` (credenciales fuera del código)
+
+### **v2.7** - 2026-02-23
+- ✅ **NUEVO**: Header unificado `make_window_header()` en todas las ventanas (título + status + botón ✕ táctil 52×42px)
+- ✅ **NUEVO**: Status dinámico en tiempo real en el header (CPU/RAM/Temp, Disco/NVMe, interfaz/velocidades)
+- ✅ **MEJORA**: Speedtest migrado a CLI oficial de Ookla (`--format=json`), resultados en MB/s reales
+- ✅ **MEJORA**: Botón ✕ táctil optimizado para pantalla DSI sin teclado
+
+### **v2.6** - 2026-02-22
+- ✅ **NUEVO**: 6 badges de notificación visual en menú principal
+- ✅ **NUEVO**: `CleanupService` — limpieza automática background de CSV, PNG y BD
+- ✅ **NUEVO**: Fan control
+ con entries en lugar de sliders
+
+### v2.5.1 - 2026-02-19
+- Logging completo, Ventana Actualizaciones, Fix atexit DataCollectionService
+
+### v2.5 - 2026-02-17
+- Monitor Servicios systemd, Historico SQLite, Boton Reiniciar
+
+### v2.0 - 2026-02-16
+- Monitor Procesos, 15 temas, fix Speedtest
+
+### v1.0 - 2025-01
+- Release inicial
+
+---
+
+## Licencia
+
+MIT License
+
+---
+
+## Agradecimientos
+
+CustomTkinter - psutil - matplotlib - Ookla Speedtest CLI - Homebridge - Raspberry Pi Foundation
+
+---
+
+Dashboard v2.9: Profesional, Unificado, Tactil, Auto-mantenido, conectado a HomeKit y sin bloqueos en UI
+`````
 
 ## File: main.py
-````python
+`````python
 #!/usr/bin/env python3
 """
 Sistema de Monitoreo y Control
@@ -12079,7 +13320,7 @@ def main():
         data_logger=DataLogger(),
         max_csv=10,
         max_png=10,
-        db_days=30,
+        db_days=90,
         interval_hours=24,
     )
     cleanup_service.start()
@@ -12123,10 +13364,10 @@ def main():
 
 if __name__ == "__main__":
     main()
-````
+`````
 
 ## File: ui/main_window.py
-````python
+`````python
 """
 Ventana principal del sistema de monitoreo
 """
@@ -12135,6 +13376,7 @@ import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, DSI_Y, SCRIPTS_DIR
 from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow
+from ui.windows.log_viewer import LogViewerWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
 from utils.logger import get_logger
@@ -12183,6 +13425,7 @@ class MainWindow:
         self.update_window = None
         self.theme_window = None
         self.homebridge_window = None
+        self.log_viewer_window = None
 
         logger.info(f"[MainWindow] Dashboard iniciado en {self.system_utils.get_hostname()}")
 
@@ -12282,6 +13525,7 @@ class MainWindow:
             ("󱘿  Histórico Datos",       self.open_history_window,  []),
             ("󰆧  Actualizaciones",       self.open_update_window,   ["updates"]),
             ("󰟐  Homebridge",        self.open_homebridge,     ["hb_offline", "hb_on", "hb_fault"]),
+            ("󰷐  Visor de Logs",        self.open_log_viewer,      []),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -12515,6 +13759,16 @@ class MainWindow:
             self.homebridge_window = HomebridgeWindow(self.root, self.homebridge_monitor)
         else:
             self.homebridge_window.lift()
+
+    def open_log_viewer(self):
+        """Abre el visor de logs del dashboard"""
+        if self.log_viewer_window is None or not self.log_viewer_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Visor de Logs")
+            self._btn_active("󰷐  Visor de Logs")
+            self.log_viewer_window = LogViewerWindow(self.root)
+            self.log_viewer_window.bind("<Destroy>", lambda e: self._btn_idle("󰷐  Visor de Logs"))
+        else:
+            self.log_viewer_window.lift()
 
     
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
@@ -12760,4 +14014,4 @@ class MainWindow:
         txt_color = "black" if color == COLORS.get('warning', '#ffaa00') else "white"
         canvas.itemconfigure(txt, fill=txt_color)
         canvas.place(relx=1.0, rely=0.0, anchor="ne", x=x_offset, y=6)
-````
+`````
