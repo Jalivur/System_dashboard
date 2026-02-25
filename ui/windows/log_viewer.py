@@ -16,6 +16,7 @@ from config.settings import (
 )
 from ui.styles import make_window_header, make_futuristic_button, StyleManager
 from utils.logger import get_logger
+from core.cleanup_service import CleanupService
 
 logger = get_logger(__name__)
 
@@ -386,6 +387,11 @@ class LogViewerWindow(ctk.CTkToplevel):
                 f.write("\n".join(result))
             custom_msgbox(self, f"Exportado en:\n{export_path}", "Exportar")
             logger.info(f"[LogViewerWindow] Log exportado: {export_path}")
+            # Aplicar límite de 10 archivos igual que CSV y PNG
+            try:
+                CleanupService().clean_log_exports()
+            except Exception as e:
+                logger.warning(f"[LogViewerWindow] No se pudo limpiar exports: {e}")
         except OSError as e:
             custom_msgbox(self, f"Error al exportar:\n{e}", "Error")
             logger.error(f"[LogViewerWindow] Error exportando: {e}")
