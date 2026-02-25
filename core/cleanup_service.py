@@ -30,6 +30,7 @@ class CleanupService:
     # ── Configuración por defecto ─────────────────────────────────────────────
     DEFAULT_MAX_CSV        = 10      # Máx. archivos CSV a conservar
     DEFAULT_MAX_PNG        = 10      # Máx. archivos PNG a conservar
+    DEFAULT_MAX_LOG        = 10      # Máx. archivos log exportados a conservar
     DEFAULT_DB_DAYS        = 30      # Días de datos a conservar en BD
     DEFAULT_INTERVAL_HOURS = 24      # Cada cuántas horas limpiar
 
@@ -46,6 +47,7 @@ class CleanupService:
         data_logger=None,
         max_csv: int = DEFAULT_MAX_CSV,
         max_png: int = DEFAULT_MAX_PNG,
+        max_log: int = DEFAULT_MAX_LOG,
         db_days: int = DEFAULT_DB_DAYS,
         interval_hours: float = DEFAULT_INTERVAL_HOURS,
     ):
@@ -66,6 +68,7 @@ class CleanupService:
         self.data_logger    = data_logger
         self.max_csv        = max_csv
         self.max_png        = max_png
+        self.max_log        = max_log
         self.db_days        = db_days
         self.interval_hours = interval_hours
 
@@ -75,7 +78,7 @@ class CleanupService:
 
         logger.info(
             f"[CleanupService] Configurado — "
-            f"CSV: {max_csv}, PNG: {max_png}, "
+            f"CSV: {max_csv}, PNG: {max_png}, LOG: {max_log}, "
             f"BD: {db_days}d, intervalo: {interval_hours}h"
         )
 
@@ -126,6 +129,7 @@ class CleanupService:
         logger.info("[CleanupService] Iniciando ciclo de limpieza")
         self.clean_csv()
         self.clean_png()
+        self.clean_log_exports()
         if self.data_logger:
             self.clean_db()
         logger.info("[CleanupService] Ciclo de limpieza completado")
@@ -157,6 +161,21 @@ class CleanupService:
         limit = max_files if max_files is not None else self.max_png
         pattern = os.path.join(str(DATA_DIR), "screenshots", "*.png")
         return self._trim_files(pattern, limit, "PNG")
+
+
+    def clean_log_exports(self, max_files: int = None) -> int:
+        """
+        Elimina los archivos de exportación de logs más antiguos que superen el límite.
+
+        Args:
+            max_files: Límite a aplicar. Si es None usa self.max_log.
+
+        Returns:
+            Número de archivos eliminados.
+        """
+        limit = max_files if max_files is not None else self.max_log
+        pattern = os.path.join(str(DATA_DIR), "log_export_*.log")
+        return self._trim_files(pattern, limit, "LOG_EXPORT")
 
     def clean_db(self, days: int = None) -> bool:
         """
@@ -223,15 +242,18 @@ class CleanupService:
         """
         csv_files = glob.glob(os.path.join(str(DATA_DIR), "history_*.csv"))
         png_files = glob.glob(os.path.join(str(DATA_DIR), "screenshots", "*.png"))
+        log_files = glob.glob(os.path.join(str(DATA_DIR), "log_export_*.log"))
         return {
             'running':        self._running,
             'thread_alive':   self._thread.is_alive() if self._thread else False,
             'interval_hours': self.interval_hours,
             'max_csv':        self.max_csv,
             'max_png':        self.max_png,
+            'max_log':        self.max_log,
             'db_days':        self.db_days,
             'csv_count':      len(csv_files),
             'png_count':      len(png_files),
+            'log_count':      len(log_files),
         }
 
     def force_cleanup(self) -> dict:
@@ -245,12 +267,13 @@ class CleanupService:
         logger.info("[CleanupService] Limpieza forzada manualmente")
         deleted_csv = self.clean_csv()
         deleted_png = self.clean_png()
+        deleted_log = self.clean_log_exports()
         db_ok = self.clean_db() if self.data_logger else False
         logger.info(
             f"[CleanupService] Limpieza manual completada — "
-            f"CSV: {deleted_csv}, PNG: {deleted_png}, BD: {db_ok}"
+            f"CSV: {deleted_csv}, PNG: {deleted_png}, LOG: {deleted_log}, BD: {db_ok}"
         )
-        return {'deleted_csv': deleted_csv, 'deleted_png': deleted_png, 'db_ok': db_ok}
+        return {'deleted_csv': deleted_csv, 'deleted_png': deleted_png, 'deleted_log': deleted_log, 'db_ok': db_ok}
 
     def is_running(self) -> bool:
         """Verifica si el servicio está corriendo."""
