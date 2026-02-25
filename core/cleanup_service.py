@@ -6,7 +6,7 @@ import glob
 import threading
 import time
 from typing import Optional
-from config.settings import DATA_DIR
+from config.settings import DATA_DIR, EXPORTS_CSV_DIR, EXPORTS_LOG_DIR, EXPORTS_SCR_DIR
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -145,7 +145,7 @@ class CleanupService:
             Número de archivos eliminados.
         """
         limit = max_files if max_files is not None else self.max_csv
-        pattern = os.path.join(str(DATA_DIR), "history_*.csv")
+        pattern = os.path.join(str(EXPORTS_CSV_DIR), "history_*.csv")
         return self._trim_files(pattern, limit, "CSV")
 
     def clean_png(self, max_files: int = None) -> int:
@@ -159,7 +159,7 @@ class CleanupService:
             Número de archivos eliminados.
         """
         limit = max_files if max_files is not None else self.max_png
-        pattern = os.path.join(str(DATA_DIR), "screenshots", "*.png")
+        pattern = os.path.join(str(EXPORTS_SCR_DIR), "*.png")
         return self._trim_files(pattern, limit, "PNG")
 
 
@@ -174,7 +174,7 @@ class CleanupService:
             Número de archivos eliminados.
         """
         limit = max_files if max_files is not None else self.max_log
-        pattern = os.path.join(str(DATA_DIR), "log_export_*.log")
+        pattern = os.path.join(str(EXPORTS_LOG_DIR), "log_export_*.log")
         return self._trim_files(pattern, limit, "LOG_EXPORT")
 
     def clean_db(self, days: int = None) -> bool:
@@ -240,9 +240,9 @@ class CleanupService:
         Returns:
             Diccionario con configuración y estado del hilo.
         """
-        csv_files = glob.glob(os.path.join(str(DATA_DIR), "history_*.csv"))
-        png_files = glob.glob(os.path.join(str(DATA_DIR), "screenshots", "*.png"))
-        log_files = glob.glob(os.path.join(str(DATA_DIR), "log_export_*.log"))
+        csv_files = glob.glob(os.path.join(str(EXPORTS_CSV_DIR), "history_*.csv"))
+        png_files = glob.glob(os.path.join(str(EXPORTS_SCR_DIR), "*.png"))
+        log_files = glob.glob(os.path.join(str(EXPORTS_LOG_DIR), "log_export_*.log"))
         return {
             'running':        self._running,
             'thread_alive':   self._thread.is_alive() if self._thread else False,

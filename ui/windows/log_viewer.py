@@ -12,7 +12,7 @@ import customtkinter as ctk
 
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
-    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR
+    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR, EXPORTS_LOG_DIR
 )
 from ui.styles import make_window_header, make_futuristic_button, StyleManager
 from utils.logger import get_logger
@@ -381,13 +381,12 @@ class LogViewerWindow(ctk.CTkToplevel):
             return
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        export_path = DATA_DIR / f"log_export_{ts}.log"
+        export_path = EXPORTS_LOG_DIR / f"log_export_{ts}.log"
         try:
             with open(export_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(result))
             custom_msgbox(self, f"Exportado en:\n{export_path}", "Exportar")
             logger.info(f"[LogViewerWindow] Log exportado: {export_path}")
-            # Aplicar límite de 10 archivos igual que CSV y PNG
             try:
                 CleanupService().clean_log_exports()
             except Exception as e:

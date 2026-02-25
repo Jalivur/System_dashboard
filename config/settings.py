@@ -8,9 +8,19 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
+# Subdirectorios de exportación
+EXPORTS_DIR      = DATA_DIR / "exports"
+EXPORTS_CSV_DIR  = EXPORTS_DIR / "csv"
+EXPORTS_LOG_DIR  = EXPORTS_DIR / "logs"
+EXPORTS_SCR_DIR  = EXPORTS_DIR / "screenshots"
+
 # Asegurar que los directorios existan
 DATA_DIR.mkdir(exist_ok=True)
 SCRIPTS_DIR.mkdir(exist_ok=True)
+EXPORTS_DIR.mkdir(exist_ok=True)
+EXPORTS_CSV_DIR.mkdir(exist_ok=True)
+EXPORTS_LOG_DIR.mkdir(exist_ok=True)
+EXPORTS_SCR_DIR.mkdir(exist_ok=True)
 
 # Archivos de estado
 STATE_FILE = DATA_DIR / "fan_state.json"
