@@ -7,7 +7,7 @@ from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, D
 from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, 
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow, 
-                        NetworkLocalWindow)
+                        NetworkLocalWindow, PiholeWindow)
 from ui.windows.log_viewer import LogViewerWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
@@ -23,7 +23,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor, network_scanner,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor, network_scanner, pihole_monitor,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -36,6 +36,7 @@ class MainWindow:
         self.cleanup_service = cleanup_service
         self.homebridge_monitor = homebridge_monitor
         self.network_scanner = network_scanner
+        self.pihole_monitor = pihole_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -61,6 +62,7 @@ class MainWindow:
         self.homebridge_window = None
         self.log_viewer_window = None
         self.network_local_window = None
+        self.pihole_window = None
 
         self._uptime_tick = 0  # uptime badge: contador para actualizar cada ~60s
 
@@ -173,6 +175,7 @@ class MainWindow:
             ("󰟐  Homebridge",        self.open_homebridge,     ["hb_offline", "hb_on", "hb_fault"]),
             ("󰷐  Visor de Logs",        self.open_log_viewer,      []),
             ("🖧  Red Local",   self.open_network_local,   []),
+            ("🕳  Pi-hole",   self.open_pihole,   ["pihole_offline"]),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -427,6 +430,15 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("🖧  Red Local"))
         else:
             self.network_local_window.lift()
+    def open_pihole(self):
+        """Abre la ventana de Pi-hole."""
+        if self.pihole_window is None or not self.pihole_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Pi-hole")
+            self._btn_active("🕳  Pi-hole")
+            self.pihole_window = PiholeWindow(self.root, self.pihole_monitor)
+            self.pihole_window.bind("<Destroy>", lambda e: self._btn_idle("🕳  Pi-hole"))
+        else:
+            self.pihole_window.lift()
 
     
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
@@ -611,6 +623,7 @@ class MainWindow:
                 color=COLORS.get('warning', '#ffaa00'),
             )
             self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
+            self._update_badge("pihole_offline", self.pihole_monitor.get_offline_count())
 
         except Exception:
             pass

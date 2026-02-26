@@ -10,7 +10,8 @@ import threading
 import customtkinter as ctk
 from config import DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
 from core import (SystemMonitor, FanController, NetworkMonitor, FanAutoService, DiskMonitor, ProcessMonitor, 
-                  ServiceMonitor, UpdateMonitor, CleanupService, HomebridgeMonitor, AlertService, NetworkScanner)
+                  ServiceMonitor, UpdateMonitor, CleanupService, HomebridgeMonitor, AlertService, NetworkScanner,
+                  PiholeMonitor)
 from core.data_collection_service import DataCollectionService
 from core.data_logger import DataLogger
 from ui.main_window import MainWindow
@@ -48,6 +49,8 @@ def main():
     homebridge_monitor = HomebridgeMonitor()
     homebridge_monitor.start()
     network_scanner = NetworkScanner()
+    pihole_monitor = PiholeMonitor()
+    pihole_monitor.start()
 
     # Comprobación inicial de actualizaciones en background
     # No bloquea el arranque y llena el caché para toda la sesión
@@ -99,6 +102,7 @@ def main():
         system_monitor.stop()
         service_monitor.stop()
         alert_service.stop()
+        pihole_monitor.stop()
     
     atexit.register(cleanup)
     
@@ -115,7 +119,8 @@ def main():
         update_monitor=update_monitor,
         cleanup_service=cleanup_service,
         homebridge_monitor=homebridge_monitor,
-        network_scanner=network_scanner
+        network_scanner=network_scanner,
+        pihole_monitor=pihole_monitor,
     )
 
     try:
