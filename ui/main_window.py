@@ -422,7 +422,7 @@ class MainWindow:
         selection_window.grab_set()
         
         main_frame = ctk.CTkFrame(selection_window, fg_color=COLORS['bg_medium'])
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=5)
         
         title_label = ctk.CTkLabel(
             main_frame,
@@ -430,12 +430,12 @@ class MainWindow:
             text_color=COLORS['secondary'],
             font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold")
         )
-        title_label.pack(pady=(10, 20))
+        title_label.pack(pady=(10, 10))
         
         selection_var = ctk.StringVar(value="exit")
         
         options_frame = ctk.CTkFrame(main_frame, fg_color=COLORS['bg_dark'])
-        options_frame.pack(fill="x", pady=10, padx=20)
+        options_frame.pack(fill="x", pady=5, padx=20)
         
         exit_radio = ctk.CTkRadioButton(
             options_frame,
@@ -443,7 +443,7 @@ class MainWindow:
             variable=selection_var,
             value="exit",
             text_color=COLORS['text'],
-            font=(FONT_FAMILY, FONT_SIZES['medium'])
+            font=(FONT_FAMILY, FONT_SIZES['medium']),
         )
         exit_radio.pack(anchor="w", padx=20, pady=12)
         
@@ -458,11 +458,11 @@ class MainWindow:
         shutdown_radio.pack(anchor="w", padx=20, pady=12)
         
 
-        StyleManager.style_radiobutton_ctk(exit_radio)
-        StyleManager.style_radiobutton_ctk(shutdown_radio)
+        StyleManager.style_radiobutton_ctk(exit_radio, radiobutton_width=30, radiobutton_height=30)
+        StyleManager.style_radiobutton_ctk(shutdown_radio, radiobutton_width=30, radiobutton_height=30)
         
         buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        buttons_frame.pack(fill="x", pady=(20, 0))
+        buttons_frame.pack(side="bottom", fill="x", pady=(5, 10))
         
         def on_confirm():
             selected = selection_var.get()
@@ -504,23 +504,23 @@ class MainWindow:
             logger.debug("[MainWindow] Diálogo de salida cancelado")
             selection_window.destroy()
         
-        confirm_btn = make_futuristic_button(
-            buttons_frame,
-            text="Continuar",
-            command=on_confirm,
-            width=18,
-            height=6
-        )
-        confirm_btn.pack(side="right", padx=5)
-        
         cancel_btn = make_futuristic_button(
             buttons_frame,
             text="Cancelar",
             command=on_cancel,
-            width=18,
-            height=6
+            width=20,
+            height=10
         )
         cancel_btn.pack(side="right", padx=5)
+        
+        confirm_btn = make_futuristic_button(
+            buttons_frame,
+            text="Continuar",
+            command=on_confirm,
+            width=15,
+            height=8
+        )
+        confirm_btn.pack(side="right", padx=5)
         
         selection_window.bind("<Escape>", lambda e: on_cancel())
     

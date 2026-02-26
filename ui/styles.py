@@ -47,7 +47,7 @@ class StyleManager:
         rb.bind("<Leave>", on_leave)
     
     @staticmethod
-    def style_radiobutton_ctk(rb: ctk.CTkRadioButton) -> None:
+    def style_radiobutton_ctk(rb: ctk.CTkRadioButton, radiobutton_width: int = 25, radiobutton_height: int = 25) -> None:
         """
         Aplica estilo a radiobutton de customtkinter
         
@@ -55,8 +55,8 @@ class StyleManager:
             rb: Widget radiobutton
         """
         rb.configure(
-            radiobutton_width=25,
-            radiobutton_height=25,
+            radiobutton_width=radiobutton_width,
+            radiobutton_height=radiobutton_height,
             font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
             fg_color=COLORS['primary'],
         )
