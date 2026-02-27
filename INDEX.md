@@ -1,4 +1,4 @@
-# 📚 Índice de Documentación - System Dashboard v3.1
+# 📚 Índice de Documentación - System Dashboard v3.2
 
 Guía completa de toda la documentación del proyecto actualizada.
 
@@ -8,7 +8,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ### **Para Empezar:**
 1. **[README.md](README.md)** ⭐  
-   Documentación completa del proyecto v3.1. **Empieza aquí.**
+   Documentación completa del proyecto v3.2. **Empieza aquí.**
 
 2. **[QUICKSTART.md](QUICKSTART.md)** ⚡  
    Instalación y ejecución en 5 minutos.
@@ -91,11 +91,34 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 **Arquitectura**:
 - `core/homebridge_monitor.py` — Sondeo 30s, JWT, caché en memoria, 5 tipos, `set_brightness()`, `set_target_temp()`
-- `core/system_monitor.py` — Caché en background thread (cada 2s)
-- `core/service_monitor.py` — Caché en background thread (cada 10s), is-enabled batch
 - `ui/windows/homebridge.py` — Tarjetas adaptativas por tipo de dispositivo
 - `ui/styles.py` — `make_homebridge_switch()` para switch/light
 - Badges `hb_offline`, `hb_on`, `hb_fault` en `ui/main_window.py`
+
+---
+
+### 🕳️ **Pi-hole** *(v3.2)*
+
+**Configuración rápida** — Ver sección en [README.md](README.md):
+- Añadir `PIHOLE_HOST`, `PIHOLE_PORT` y `PIHOLE_PASSWORD` al `.env`
+- Compatible exclusivamente con **Pi-hole v6**
+
+**Arquitectura**:
+- `core/pihole_monitor.py` — API v6 (sesión sid), sondeo 60s, renovación automática, logout limpio
+- `ui/windows/pihole_window.py` — Estadísticas en tiempo real
+- Badge `pihole_offline` en `ui/main_window.py`
+
+---
+
+### 🖧 **Red Local** *(v3.2)*
+
+**Configuración rápida**:
+- `sudo apt install arp-scan`
+- Configurar sudoers: `usuario ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan`
+
+**Arquitectura**:
+- `core/network_scanner.py` — arp-scan con paths explícitos, auto-refresco 60s, thread background
+- `ui/windows/network_local.py` — Lista scrollable con IP, MAC y fabricante
 
 ---
 
@@ -106,9 +129,10 @@ Guía completa de toda la documentación del proyecto actualizada.
 - Verificar con `alert_service.send_test()`
 
 **Arquitectura**:
-- `core/alert_service.py` — 8º servicio background, urllib stdlib, anti-spam edge-trigger + sustain 60s
+- `core/alert_service.py` — servicio background, urllib stdlib, anti-spam edge-trigger + sustain 60s, historial JSON
 - Métricas: temperatura, CPU, RAM, disco (warn + crit) y servicios fallidos
-- Sin dependencias nuevas — usa `urllib` de la stdlib de Python
+- Historial persistido en `data/alert_history.json` (máx. 100 entradas)
+- `ui/windows/alert_history.py` — Tarjetas coloreadas por nivel, orden cronológico inverso
 
 ---
 
@@ -135,10 +159,10 @@ Guía completa de toda la documentación del proyecto actualizada.
 ### 💡 **Ideas y Expansión**
 
 **[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)**  
-- ✅ Funcionalidades implementadas (hasta v3.1 inclusive)
+- ✅ Funcionalidades implementadas (hasta v3.2 inclusive)
 - 🔄 En evaluación (Docker, Automatización)
 - 💭 Ideas futuras (API REST, Red avanzada, Backup)
-- Roadmap v3.1 y v3.2
+- Roadmap v3.3+
 
 ---
 
@@ -146,7 +170,7 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ### **Configuración:**
 - `requirements.txt` - Dependencias Python
-- `.env` - Credenciales Homebridge + Telegram (NO en git)
+- `.env` - Credenciales Homebridge + Telegram + Pi-hole (NO en git)
 - `.env.example` - Plantilla de configuración
 - `install.sh` - Script de instalación automática
 - `config/settings.py` - Configuración global
@@ -162,11 +186,11 @@ Guía completa de toda la documentación del proyecto actualizada.
 
 ---
 
-## 🗂️ Estructura de Documentos v3.1
+## 🗂️ Estructura de Documentos v3.2
 
 ```
 📚 Documentación/
-├── README.md                    ⭐ Documento principal v3.1
+├── README.md                    ⭐ Documento principal v3.2
 ├── QUICKSTART.md                ⚡ Inicio rápido
 ├── INDEX.md                     📑 Este archivo
 ├── INSTALL_GUIDE.md             🔧 Instalación
@@ -188,15 +212,16 @@ Guía completa de toda la documentación del proyecto actualizada.
 1. README.md - Leer sección "Características"
 2. QUICKSTART.md - Instalar y ejecutar
 3. THEMES_GUIDE.md - Personalizar colores
-4. Explorar las 15 ventanas del dashboard 🎉
+4. Explorar las 18 ventanas del dashboard 🎉
 
 ### **Usuario Avanzado:**
 1. README.md completo
 2. PROCESS_MONITOR_GUIDE.md - Gestión avanzada
 3. SERVICE_MONITOR_GUIDE.md - Control de servicios
 4. HISTORICO_DATOS_GUIDE.md - Análisis de datos
-5. QUICKSTART.md sección Homebridge - Control de accesorios HomeKit
-6. QUICKSTART.md sección Telegram - Alertas externas
+5. README.md sección Homebridge - Control de accesorios HomeKit
+6. README.md sección Telegram - Alertas externas
+7. README.md sección Pi-hole - Estadísticas DNS
 
 ### **Desarrollador:**
 1. ARCHITECTURE.md - Estructura del proyecto
@@ -217,8 +242,11 @@ Guía completa de toda la documentación del proyecto actualizada.
 - **Ver histórico** → HISTORICO_DATOS_GUIDE.md
 - **Configurar ventiladores** → FAN_CONTROL_GUIDE.md
 - **Integrar con OLED** → INTEGRATION_GUIDE.md
-- **Configurar Homebridge** → QUICKSTART.md sección Homebridge
-- **Configurar alertas Telegram** → QUICKSTART.md sección Telegram / README.md
+- **Configurar Homebridge** → README.md sección Homebridge
+- **Configurar alertas Telegram** → README.md sección Telegram
+- **Ver historial de alertas** → Botón "🔔 Historial Alertas" en el menú principal
+- **Configurar Pi-hole** → README.md sección Pi-hole
+- **Escanear red local** → Botón "🖧 Red Local" en el menú principal
 - **Ver logs del dashboard** → Botón "Visor de Logs" en el menú principal
 - **Añadir nueva ventana con header** → `ui/styles.py` → `make_window_header()`
 - **Añadir funciones** → ARCHITECTURE.md + IDEAS_EXPANSION.md
@@ -230,31 +258,35 @@ Guía completa de toda la documentación del proyecto actualizada.
 - **Speedtest falla** → README.md sección "Instalación Manual" (CLI Ookla)
 - **Base de datos crece** → HISTORICO_DATOS_GUIDE.md
 - **Servicios no se gestionan** → SERVICE_MONITOR_GUIDE.md
-- **Homebridge no conecta** → QUICKSTART.md sección Homebridge / README.md Troubleshooting
+- **Homebridge no conecta** → README.md Troubleshooting
+- **Pi-hole no conecta** → README.md Troubleshooting (solo compatible con v6)
+- **Red Local no escanea** → README.md Troubleshooting (arp-scan + sudoers)
 - **Alertas Telegram no llegan** → README.md sección Telegram / verificar `.env`
+- **Historial alertas vacío** → Telegram debe estar configurado y el envío debe tener éxito
 - **Otro problema** → README.md sección "Troubleshooting"
 
 ---
 
-## 📊 Estadísticas del Proyecto v3.1
+## 📊 Estadísticas del Proyecto v3.2
 
-- **Archivos Python**: 45
-- **Ventanas**: 15 ventanas funcionales
+- **Archivos Python**: 48
+- **Ventanas**: 18 ventanas funcionales
 - **Temas**: 15 temas pre-configurados
 - **Documentos**: 12 guías
-- **Servicios background**: 8 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + main)
-- **Badges en menú**: 9
+- **Servicios background**: 10 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + PiholeMonitor + NetworkScanner + main)
+- **Badges en menú**: 10
 - **Exports organizados**: 3 carpetas (csv, logs, screenshots) — máx. 10 por tipo
 - **Tipos Homebridge**: 5 (switch, light, thermostat, sensor, blind)
 
 ---
 
-## 🆕 Novedades en v3.1
+## 🆕 Novedades en v3.2
 
 ### **Funcionalidades Nuevas:**
-- ✅ **Alertas Telegram** — `AlertService` con anti-spam (edge-trigger + sustain 60s), monitoriza temp/CPU/RAM/disco y servicios fallidos, sin dependencias nuevas
-- ✅ **Homebridge extendido** — 5 tipos de dispositivo: switch, luz regulable, termostato, sensor temperatura/humedad, persiana/estor
-- ✅ **UI diálogo salir** — radiobuttons táctiles 30×30px, botones ajustados, layout corregido
+- ✅ **Escáner Red Local** — `NetworkScanner` con arp-scan, detecta IP/MAC/fabricante, auto-refresco 60s, ventana `NetworkLocalWindow`
+- ✅ **Pi-hole v6** — `PiholeMonitor` con API v6 (sesión sid), estadísticas en tiempo real, badge offline en menú, ventana `PiholeWindow`
+- ✅ **Historial de Alertas** — registro persistente en `data/alert_history.json` (máx. 100), ventana `AlertHistoryWindow` con tarjetas coloreadas por nivel
+- ✅ **Mejora Visor de Logs** — filtro de módulo migrado de `CTkOptionMenu` a `CTkEntry` (evita desbordamiento en pantalla DSI)
 
 ---
 
@@ -270,7 +302,8 @@ Guía completa de toda la documentación del proyecto actualizada.
 | **v2.8** | 12 | + Homebridge, 9 badges |
 | **v2.9** | 14 | + Switches táctiles, caché background |
 | **v3.0** | 15 | + Visor Logs, exports organizados, fix entries |
-| **v3.1** | 15 | + Alertas Telegram, Homebridge extendido ⭐ |
+| **v3.1** | 15 | + Alertas Telegram, Homebridge extendido |
+| **v3.2** | 15 | + Red Local, Pi-hole v6, Historial Alertas ⭐ |
 
 ---
 
@@ -296,8 +329,9 @@ Guía completa de toda la documentación del proyecto actualizada.
 | **Procesos** | [PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md) |
 | **Servicios** | [SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md) |
 | **Histórico** | [HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md) |
-| **Homebridge** | [QUICKSTART.md#homebridge](QUICKSTART.md#-configurar-homebridge) |
-| **Telegram** | [QUICKSTART.md#telegram](QUICKSTART.md#-configurar-alertas-telegram) |
+| **Homebridge** | [README.md#homebridge](README.md#-configuración-de-homebridge) |
+| **Pi-hole** | [README.md#pihole](README.md#️-configuración-de-pi-hole) |
+| **Telegram** | [README.md#telegram](README.md#-configuración-de-alertas-telegram) |
 | **Troubleshooting** | [README.md#troubleshooting](README.md#troubleshooting) |
 | **Ideas Futuras** | [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) |
 

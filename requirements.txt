@@ -22,7 +22,7 @@ psutil>=5.9.0
 # Gráficas históricas (ventana Histórico Datos)
 matplotlib>=3.5.0
 
-# Variables de entorno desde .env (credenciales Homebridge)
+# Variables de entorno desde .env (credenciales Homebridge, Telegram, Pi-hole)
 python-dotenv>=1.0.0
 
 
@@ -33,7 +33,7 @@ python-dotenv>=1.0.0
 # El script install_system.sh las instala automáticamente.
 # O manualmente con apt-get:
 #
-#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools
+#   sudo apt-get install lm-sensors usbutils udisks2 smartmontools arp-scan
 #
 # Descripción:
 #   - lm-sensors:     Lectura de temperatura CPU (sensors)
@@ -41,6 +41,10 @@ python-dotenv>=1.0.0
 #   - udisks2:        Expulsar dispositivos USB de forma segura
 #   - util-linux:     Comando lsblk (suele venir instalado)
 #   - smartmontools:  Temperatura NVMe (smartctl)
+#   - arp-scan:       Escáner de red local (Red Local — v3.2)
+#
+# Sudoers para arp-scan (necesario para ejecutar sin contraseña):
+#   echo "usuario ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan" | sudo tee /etc/sudoers.d/arp-scan
 #
 # Opcional para speedtest (CLI oficial de Ookla, NO speedtest-cli de pip):
 #   curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash

@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v3.1
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v3.2
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge y alertas externas por Telegram.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge, alertas externas por Telegram y escáner de red local con integración Pi-hole.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-3.1-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-3.2-orange.svg)]()
 
 ---
 
@@ -36,6 +36,38 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Speedtest integrado**: CLI oficial de Ookla (JSON nativo, resultados en MB/s reales)
 - **Status en header**: interfaz activa + velocidades actuales
 
+### 🖧 **Escáner de Red Local** *(nuevo en v3.2)*
+- **Escaneo con arp-scan**: Detecta todos los dispositivos activos en la red local
+- **Información por dispositivo**: IP, MAC y fabricante (OUI lookup)
+- **Auto-refresco cada 60s** en background sin bloquear la UI
+- **Lista scrollable** con todos los dispositivos encontrados
+- **Sudoers preconfigurado**: `usuario ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan`
+
+### 🕳️ **Integración Pi-hole v6** *(nuevo en v3.2)*
+- **API v6 nativa**: autenticación por sesión (`POST /api/auth` → sid), compatible con Pi-hole v6
+- **Estadísticas en tiempo real**: consultas totales, bloqueadas, porcentaje de bloqueo, clientes activos, dominios en lista negra
+- **Renovación automática de sesión**: refresca antes de que expire (margen de 60s sobre 1800s)
+- **Logout limpio**: `DELETE /api/auth` al parar el servicio
+- **Badge en menú**: 🔴 si Pi-hole está offline
+- **Configuración por `.env`**: `PIHOLE_HOST`, `PIHOLE_PORT`, `PIHOLE_PASSWORD`
+
+### 📲 **Alertas Externas por Telegram**
+- **Sin dependencias nuevas**: usa `urllib` de la stdlib de Python
+- **Métricas monitorizadas**: temperatura, CPU, RAM, disco y servicios fallidos
+- **Umbrales configurables**: warn y crit independientes por métrica
+- **Anti-spam inteligente**: edge-trigger + sustain de 60s (condición debe mantenerse antes de enviar)
+- **Reseteo automático**: cuando la condición baja del umbral, permite una nueva alerta en el siguiente flanco
+- **Configurable por `.env`**: `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID`
+- **Mensaje de prueba**: `alert_service.send_test()` para verificar la configuración
+
+### 🔔 **Historial de Alertas** *(nuevo en v3.2)*
+- **Registro persistente**: guarda en `data/alert_history.json` cada alerta enviada a Telegram
+- **Máximo 100 entradas** (FIFO — las más antiguas se descartan)
+- **Ventana dedicada**: tarjetas con franja de color lateral (naranja=aviso, rojo=crítico)
+- **Información completa**: tipo de alerta, valor, unidad y timestamp
+- **Orden cronológico inverso**: la alerta más reciente aparece primero
+- **Acciones**: actualizar lista y borrar historial completo con confirmación
+
 ### 🏠 **Integración Homebridge Extendida**
 - **5 tipos de dispositivo**: switch/enchufe, luz regulable (brillo), termostato, sensor temperatura/humedad, persiana/estor
 - **CTkSwitch táctil** (90×46px): Toggle grande optimizado para uso con el dedo en pantalla DSI
@@ -50,16 +82,6 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **3 badges en el menú**: offline (🔴), dispositivos encendidos (🟠), dispositivos con fallo (🔴)
 - **Configuración por `.env`**: IP, puerto, usuario y contraseña de Homebridge
 - Requiere **Insecure Mode** activado en Homebridge para acceder a accesorios
-
-### 📲 **Alertas Externas por Telegram**
-- **Sin dependencias nuevas**: usa `urllib` de la stdlib de Python
-- **Métricas monitorizadas**: temperatura, CPU, RAM, disco y servicios fallidos
-- **Umbrales configurables**: warn y crit independientes por métrica
-- **Anti-spam inteligente**: edge-trigger + sustain de 60s (condición debe mantenerse antes de enviar)
-- **Reseteo automático**: cuando la condición baja del umbral, permite una nueva alerta en el siguiente flanco
-- **Configurable por `.env`**: `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID`
-- **Mensaje de prueba**: `alert_service.send_test()` para verificar la configuración
-- **8º servicio background**: integrado en `main.py` con `start()`/`stop()` igual que el resto
 
 ### ⚙️ **Monitor de Procesos**
 - **Lista en tiempo real**: Top 20 procesos con CPU/RAM
@@ -124,7 +146,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Recarga manual**: Lee también el archivo rotado `.log.1`
 
 ### 🔔 **Badges de Notificación Visual**
-- **9 badges** en el menú principal con alertas en tiempo real
+- **10 badges** en el menú principal con alertas en tiempo real
 - **Temperatura**: naranja >60°C, rojo >70°C (Control Ventiladores + Monitor Placa)
 - **CPU y RAM**: naranja >75%, rojo >90% (Monitor Placa)
 - **Disco**: naranja >80%, rojo >90% (Monitor Disco)
@@ -133,6 +155,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 - **Homebridge offline**: rojo si sin conexión
 - **Dispositivos encendidos**: naranja con contador
 - **Dispositivos con fallo**: rojo si `StatusFault=1`
+- **Pi-hole offline**: rojo si sin conexión *(nuevo en v3.2)*
 
 ### 🧹 **Limpieza Automática**
 - **CleanupService**: servicio background singleton
@@ -172,7 +195,7 @@ python3 main.py
 ```
 
 El script `install_system.sh` instala automáticamente:
-- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`)
+- Dependencias del sistema (`lm-sensors`, `usbutils`, `udisks2`, `arp-scan`)
 - Dependencias Python con `--break-system-packages`
 - CLI oficial de Ookla para speedtest
 - Ofrece configurar sensores de temperatura
@@ -184,7 +207,7 @@ Si prefieres instalar paso a paso:
 ```bash
 # 1. Dependencias del sistema
 sudo apt-get update
-sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools arp-scan
 
 # 2. CLI oficial de Ookla (speedtest)
 curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
@@ -196,7 +219,10 @@ sudo sensors-detect --auto
 # 4. Dependencias Python
 pip3 install --break-system-packages -r requirements.txt
 
-# 5. Ejecutar
+# 5. Sudoers para arp-scan (Red Local)
+echo "usuario ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan" | sudo tee /etc/sudoers.d/arp-scan
+
+# 6. Ejecutar
 python3 main.py
 ```
 
@@ -234,6 +260,22 @@ La ventana Homebridge muestra los accesorios en un grid de 2 columnas con tarjet
 
 ---
 
+## 🕳️ Configuración de Pi-hole
+
+Añade al archivo `.env` existente:
+
+```env
+PIHOLE_HOST=192.168.1.X        # IP del servidor Pi-hole
+PIHOLE_PORT=80                 # Puerto (80 por defecto)
+PIHOLE_PASSWORD=tu_contraseña  # Contraseña del panel web Pi-hole v6
+```
+
+> Compatible exclusivamente con **Pi-hole v6**. La API v5 (`api.php` + token) no está soportada.
+
+Si `PIHOLE_PASSWORD` no está configurado, `PiholeMonitor` arranca igualmente pero registra un warning y muestra el badge offline.
+
+---
+
 ## 📲 Configuración de Alertas Telegram
 
 Añade al archivo `.env` existente:
@@ -263,7 +305,7 @@ alert_service.send_test()
 
 ---
 
-## 󰍜 Menú Principal (15 botones)
+## 󰍜 Menú Principal (18 botones)
 
 ```
 ┌─────────────────────────────────────┐
@@ -284,13 +326,16 @@ alert_service.send_test()
 ├──────────────────┼───────────────────┤
 │  Homebridge      │  Visor de Logs    │
 ├──────────────────┼───────────────────┤
-│  Cambiar Tema    │  Reiniciar        │
+│  🖧 Red Local    │  🕳 Pi-hole       │
 ├──────────────────┼───────────────────┤
-│  Salir           │                   │
+│  🔔 Historial    │  Cambiar Tema     │
+│  Alertas         │                   │
+├──────────────────┼───────────────────┤
+│  Reiniciar       │  Salir            │
 └──────────────────┴───────────────────┘
 ```
 
-### **Las 15 Ventanas:**
+### **Las 18 Ventanas:**
 
 1. **Control Ventiladores** - Configura modos y curvas PWM
 2. **Monitor Placa** - CPU, RAM, temperatura en tiempo real (status en header)
@@ -304,9 +349,12 @@ alert_service.send_test()
 10. **Actualizaciones** - Gestión de paquetes del sistema
 11. **Homebridge** - Control de 5 tipos de dispositivos HomeKit
 12. **Visor de Logs** - Visualización y exportación del log del dashboard
-13. **Cambiar Tema** - Selecciona entre 15 temas
-14. **Reiniciar** - Reinicia el dashboard
-15. **Salir** - Cierra la app o apaga el sistema
+13. **🖧 Red Local** *(v3.2)* - Escáner arp-scan con IP, MAC y fabricante
+14. **🕳 Pi-hole** *(v3.2)* - Estadísticas de bloqueo DNS en tiempo real
+15. **🔔 Historial Alertas** *(v3.2)* - Registro persistente de alertas Telegram enviadas
+16. **Cambiar Tema** - Selecciona entre 15 temas
+17. **Reiniciar** - Reinicia el dashboard
+18. **Salir** - Cierra la app o apaga el sistema
 
 ---
 
@@ -344,19 +392,21 @@ system_dashboard/
 │   ├── fan_auto_service.py         # Servicio background ventiladores
 │   ├── system_monitor.py           # CPU, RAM, temp — caché en background thread
 │   ├── network_monitor.py          # Red, speedtest Ookla CLI, interfaces
+│   ├── network_scanner.py          # Escáner arp-scan (Red Local) — v3.2
 │   ├── disk_monitor.py             # Disco, NVMe, I/O
 │   ├── process_monitor.py          # Gestión de procesos
 │   ├── service_monitor.py          # Servicios systemd — caché 10s, batch is-enabled
 │   ├── update_monitor.py           # Actualizaciones con caché 12h
 │   ├── homebridge_monitor.py       # Integración Homebridge (JWT, sondeo 30s, 5 tipos)
-│   ├── alert_service.py            # Alertas Telegram (urllib, anti-spam, 5 métricas)
+│   ├── pihole_monitor.py           # Integración Pi-hole v6 (sesión sid, sondeo) — v3.2
+│   ├── alert_service.py            # Alertas Telegram + historial JSON — v3.2
 │   ├── data_logger.py              # SQLite logging
 │   ├── data_analyzer.py            # Análisis histórico
 │   ├── data_collection_service.py  # Recolección automática (singleton)
 │   ├── cleanup_service.py          # Limpieza automática background (singleton)
 │   └── __init__.py
 ├── ui/
-│   ├── main_window.py              # Ventana principal (15 botones + badges)
+│   ├── main_window.py              # Ventana principal (18 botones + badges)
 │   ├── styles.py                   # make_window_header(), make_futuristic_button(),
 │   │                               # make_homebridge_switch(), StyleManager
 │   ├── widgets/
@@ -369,6 +419,9 @@ system_dashboard/
 │       ├── launchers.py, theme_selector.py
 │       ├── homebridge.py           # 5 tarjetas adaptativas por tipo de dispositivo
 │       ├── log_viewer.py           # Visor de logs con filtros y exportación
+│       ├── network_local.py        # Escáner de red local (arp-scan) — v3.2
+│       ├── pihole_window.py        # Estadísticas Pi-hole v6 — v3.2
+│       ├── alert_history.py        # Historial de alertas Telegram — v3.2
 │       └── __init__.py
 ├── utils/
 │   ├── file_manager.py             # Gestión de JSON (escritura atómica)
@@ -376,6 +429,7 @@ system_dashboard/
 │   └── logger.py                   # DashboardLogger (rotación 2MB)
 ├── data/                            # Auto-generado al ejecutar
 │   ├── fan_state.json, fan_curve.json, theme_config.json
+│   ├── alert_history.json          # Historial de alertas (máx. 100) — v3.2
 │   ├── history.db                  # SQLite histórico
 │   ├── logs/dashboard.log          # Log del sistema
 │   └── exports/                    # Archivos exportados (máx. 10 por tipo)
@@ -383,7 +437,7 @@ system_dashboard/
 │       ├── logs/                   # Exportaciones del visor de logs
 │       └── screenshots/            # Capturas de gráficas
 ├── scripts/                         # Scripts personalizados del usuario
-├── .env                             # Credenciales Homebridge + Telegram (NO en git)
+├── .env                             # Credenciales Homebridge + Telegram + Pi-hole (NO en git)
 ├── .env.example                     # Plantilla de configuración
 ├── install_system.sh               # Instalación directa (recomendada)
 ├── install.sh                      # Instalación con venv (alternativa)
@@ -412,7 +466,7 @@ LAUNCHERS = [
 ]
 ```
 
-### **`.env` (Homebridge + Telegram)**
+### **`.env` (Homebridge + Telegram + Pi-hole)**
 
 ```env
 HOMEBRIDGE_HOST=192.168.1.X
@@ -422,6 +476,10 @@ HOMEBRIDGE_PASS=tu_contraseña
 
 TELEGRAM_TOKEN=123456789:ABCdefGHI...
 TELEGRAM_CHAT_ID=987654321
+
+PIHOLE_HOST=192.168.1.X
+PIHOLE_PORT=80
+PIHOLE_PASSWORD=tu_contraseña_pihole
 ```
 
 ---
@@ -446,6 +504,7 @@ Todos los servicios background registran su inicio y parada. Al arrancar verás 
 [SystemMonitor]     Sondeo iniciado (cada 2.0s)
 [ServiceMonitor]    Sondeo iniciado (cada 10s)
 [HomebridgeMonitor] Sondeo iniciado (cada 30s)
+[PiholeMonitor]     Sondeo iniciado (cada 60s)
 [FanAutoService]    Servicio iniciado
 [DataCollection]    Servicio iniciado (cada 5 min)
 [CleanupService]    Servicio iniciado
@@ -460,7 +519,7 @@ Todos los servicios background registran su inicio y parada. Al arrancar verás 
 - **Uso RAM**: ~100-150 MB
 - **Base de datos**: ~5 MB por 10,000 registros
 - **Actualización UI**: 2 segundos (configurable en `UPDATE_MS`) — solo lectura de caché, sin syscalls bloqueantes
-- **Threads background**: 8 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + main)
+- **Threads background**: 10 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + PiholeMonitor + NetworkScanner + main)
 - **Log**: máx. 2MB con rotación automática
 
 ---
@@ -477,9 +536,12 @@ Todos los servicios background registran su inicio y parada. Al arrancar verás 
 | USB no expulsa | `sudo apt install udisks2` |
 | Homebridge no conecta | Verificar IP/puerto en `.env` y que Insecure Mode esté activo |
 | Badge hb_offline siempre rojo | Comprobar `HOMEBRIDGE_HOST` en `.env` y red entre Pis |
+| Red Local no escanea | `sudo apt install arp-scan` y configurar sudoers |
+| Pi-hole no conecta | Verificar `PIHOLE_HOST` y `PIHOLE_PASSWORD` en `.env`; solo compatible con v6 |
 | Servicios tardan en aparecer | Normal — ServiceMonitor sondea systemctl cada 10s al arrancar |
 | No puedo escribir en los entries | Asegúrate de usar v3.0+ — el bug de `grab_set` está corregido |
 | Alertas Telegram no llegan | Verificar `TELEGRAM_TOKEN` y `TELEGRAM_CHAT_ID` en `.env`; ejecutar `send_test()` |
+| Historial alertas vacío | Las alertas solo se guardan si Telegram está configurado y el envío tiene éxito |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
@@ -498,12 +560,12 @@ Todos los servicios background registran su inicio y parada. Al arrancar verás 
 
 | Métrica | Valor |
 |---------|-------|
-| Versión | 3.1 |
-| Archivos Python | 45 |
-| Ventanas | 15 |
+| Versión | 3.2 |
+| Archivos Python | 48 |
+| Ventanas | 18 |
 | Temas | 15 |
-| Servicios background | 8 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + main) |
-| Badges en menú | 9 |
+| Servicios background | 10 (FanAuto + SystemMonitor + ServiceMonitor + DataCollection + Cleanup + Homebridge + AlertService + PiholeMonitor + NetworkScanner + main) |
+| Badges en menú | 10 |
 | Cobertura logging | 100% módulos core y UI |
 | Exports organizados | 3 carpetas (csv, logs, screenshots) — máx. 10 por tipo |
 | Tipos Homebridge | 5 (switch, light, thermostat, sensor, blind) |
@@ -512,7 +574,14 @@ Todos los servicios background registran su inicio y parada. Al arrancar verás 
 
 ## Changelog
 
-### **v3.1** - 2026-02-26 ⭐ ACTUAL
+### **v3.2** - 2026-02-27 ⭐ ACTUAL
+- ✅ **NUEVO**: Escáner de Red Local — `NetworkScanner` con arp-scan, IP/MAC/fabricante, auto-refresco 60s, ventana `NetworkLocalWindow`
+- ✅ **NUEVO**: Integración Pi-hole v6 — `PiholeMonitor` con API v6 (sesión sid), estadísticas en tiempo real, badge offline en menú, ventana `PiholeWindow`
+- ✅ **NUEVO**: Historial de Alertas — persistencia en `data/alert_history.json` (máx. 100), ventana `AlertHistoryWindow` con tarjetas coloreadas por nivel
+- ✅ **MEJORA**: Visor de Logs — filtro de módulo migrado de `CTkOptionMenu` a `CTkEntry` (evita desbordamiento en pantalla DSI)
+- ✅ **MEJORA**: Menú principal ampliado de 15 a 18 botones
+
+### **v3.1** - 2026-02-26
 - ✅ **NUEVO**: Alertas externas por Telegram — `AlertService` con anti-spam (edge-trigger + sustain 60s), umbrales para temp/CPU/RAM/disco y servicios, sin dependencias nuevas (urllib stdlib)
 - ✅ **NUEVO**: Homebridge extendido — soporte para 5 tipos de dispositivo: switch, luz regulable, termostato, sensor temperatura/humedad, persiana
 - ✅ **NUEVO**: `set_brightness()` y `set_target_temp()` en `HomebridgeMonitor`
@@ -575,8 +644,8 @@ MIT License
 
 ## Agradecimientos
 
-CustomTkinter - psutil - matplotlib - Ookla Speedtest CLI - Homebridge - Raspberry Pi Foundation
+CustomTkinter - psutil - matplotlib - Ookla Speedtest CLI - Homebridge - Pi-hole - Raspberry Pi Foundation
 
 ---
 
-Dashboard v3.1: Profesional, Unificado, Táctil, Auto-mantenido, conectado a HomeKit, con Alertas Telegram y sin bloqueos en UI
+Dashboard v3.2: Profesional, Unificado, Táctil, Auto-mantenido, conectado a HomeKit y Pi-hole, con Alertas Telegram, Historial y sin bloqueos en UI
