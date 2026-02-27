@@ -1,0 +1,90 @@
+"""
+Servicio de control de LEDs RGB del GPIO Board (Freenove FNK0100K).
+El dashboard escribe led_state.json que fase1.py lee y aplica via I2C.
+"""
+import json
+import os
+import threading
+from pathlib import Path
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+_LED_FILE = Path(__file__).resolve().parent.parent / "data" / "led_state.json"
+
+# Modos disponibles (deben coincidir con apply_led_state en fase1.py)
+LED_MODES = ["auto", "off", "static", "follow", "breathing", "rainbow"]
+
+# Descripciones legibles para la UI
+LED_MODE_LABELS = {
+    "auto":     "Auto (temperatura)",
+    "off":      "Apagado",
+    "static":   "Color fijo",
+    "follow":   "Secuencial",
+    "breathing": "Respiración",
+    "rainbow":  "Arcoíris",
+}
+
+class LedService:
+    """
+    Escribe led_state.json para controlar los LEDs via fase1.py.
+    No tiene thread permanente — escritura directa al pulsar en la UI.
+    """
+
+    def __init__(self):
+        self._lock  = threading.Lock()
+        self._state = self._load()
+        logger.info("[LedService] Iniciado. Modo actual: %s", self._state.get("mode", "auto"))
+
+    # ── API pública ──────────────────────────────────────────────────────────
+
+    def get_state(self) -> dict:
+        with self._lock:
+            return dict(self._state)
+
+    def set_mode(self, mode: str, r: int = 0, g: int = 255, b: int = 0) -> bool:
+        """
+        Cambia el modo y el color de los LEDs.
+        mode: uno de LED_MODES
+        r, g, b: 0-255 (solo se usan en static/follow/breathing)
+        """
+        if mode not in LED_MODES:
+            logger.warning("[LedService] Modo desconocido: %s", mode)
+            return False
+        r, g, b = max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))
+        new_state = {"mode": mode, "r": r, "g": g, "b": b}
+        with self._lock:
+            self._state = new_state
+        ok = self._save(new_state)
+        if ok:
+            logger.info("[LedService] Modo → %s  RGB(%d,%d,%d)", mode, r, g, b)
+        return ok
+
+    def set_color(self, r: int, g: int, b: int) -> bool:
+        """Cambia el color sin cambiar el modo."""
+        with self._lock:
+            mode = self._state.get("mode", "static")
+        return self.set_mode(mode, r, g, b)
+
+    # ── Persistencia ─────────────────────────────────────────────────────────
+
+    def _save(self, state: dict) -> bool:
+        try:
+            _LED_FILE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = str(_LED_FILE) + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(state, f)
+            os.replace(tmp, str(_LED_FILE))
+            return True
+        except Exception as e:
+            logger.error("[LedService] Error guardando led_state: %s", e)
+            return False
+
+    def _load(self) -> dict:
+        try:
+            if _LED_FILE.exists():
+                with open(_LED_FILE) as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {"mode": "auto", "r": 0, "g": 255, "b": 0}

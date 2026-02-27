@@ -7,7 +7,8 @@ from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, D
 from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, 
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow, 
-                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow)
+                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow,
+                        LedWindow)
 from ui.windows.log_viewer import LogViewerWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
@@ -25,7 +26,7 @@ class MainWindow:
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
                  disk_monitor, process_monitor, service_monitor, update_monitor, 
                  cleanup_service, homebridge_monitor, network_scanner, pihole_monitor, 
-                 alert_service, display_service, vpn_monitor,
+                 alert_service, display_service, vpn_monitor, led_service,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -42,6 +43,7 @@ class MainWindow:
         self.alert_service = alert_service
         self.display_service = display_service
         self.vpn_monitor = vpn_monitor
+        self.led_service = led_service
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -72,6 +74,7 @@ class MainWindow:
         self.display_window = None
         self.vpn_window = None
         self.overview_window = None
+        self.led_window = None
 
         self._uptime_tick = 0  # uptime badge: contador para actualizar cada ~60s
 
@@ -172,6 +175,7 @@ class MainWindow:
         """Crea los botones del menú principal"""
         buttons_config = [
             ("󰈐  Control Ventiladores", self.open_fan_control,     ["temp_fan"]),
+            ("󰟖  LEDs RGB",      self.open_led_window,    []),
             ("󰚗  Monitor Placa",         self.open_monitor_window,  ["temp_monitor", "cpu", "ram"]),
             ("  Monitor Red",               self.open_network_window,  []),
             ("󱇰 Monitor USB",            self.open_usb_window,      []),
@@ -507,6 +511,16 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("📊  Resumen Sistema"))
         else:
             self.overview_window.lift()
+            
+    def open_led_window(self):
+        """Abre la ventana de control de LEDs RGB."""
+        if self.led_window is None or not self.led_window.winfo_exists():
+            self._btn_active("󰟖  LEDs RGB")
+            self.led_window = LedWindow(self.root, self.led_service)
+            self.led_window.bind("<Destroy>", lambda e: self._btn_idle("󰟖  LEDs RGB"))
+        else:
+            self.led_window.lift()
+
     
     
 

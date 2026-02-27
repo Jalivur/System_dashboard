@@ -16,6 +16,7 @@ from .network_scanner import NetworkScanner
 from .pihole_monitor import PiholeMonitor
 from .display_service import DisplayService       
 from .vpn_monitor import VpnMonitor
+from .led_service import LedService
 
 __all__ = [
     'FanController',
@@ -33,4 +34,5 @@ __all__ = [
     'PiholeMonitor',
     'DisplayService',
     'VpnMonitor',
+    'LedService',
 ]
