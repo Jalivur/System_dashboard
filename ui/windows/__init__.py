@@ -19,6 +19,8 @@ from .alert_history import AlertHistoryWindow
 from .display_window import DisplayWindow
 from .vpn_window import VpnWindow
 from .overview import OverviewWindow
+from .led_window import LedWindow
+from .camera_window import CameraWindow
 
 __all__ = [
     'FanControlWindow',
@@ -39,5 +41,7 @@ __all__ = [
     'DisplayWindow',
     'VpnWindow',
     'OverviewWindow',
+    'LedWindow',
+    'CameraWindow',
     
 ]
