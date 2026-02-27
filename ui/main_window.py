@@ -7,7 +7,7 @@ from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, D
 from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, 
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow, 
-                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow)
+                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow)
 from ui.windows.log_viewer import LogViewerWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
@@ -23,7 +23,9 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor, network_scanner, pihole_monitor, alert_service,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, 
+                 cleanup_service, homebridge_monitor, network_scanner, pihole_monitor, 
+                 alert_service, display_service, vpn_monitor,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -38,6 +40,8 @@ class MainWindow:
         self.network_scanner = network_scanner
         self.pihole_monitor = pihole_monitor
         self.alert_service = alert_service
+        self.display_service = display_service
+        self.vpn_monitor = vpn_monitor
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -65,6 +69,9 @@ class MainWindow:
         self.network_local_window = None
         self.pihole_window = None
         self.alert_history_window = None
+        self.display_window = None
+        self.vpn_window = None
+        self.overview_window = None
 
         self._uptime_tick = 0  # uptime badge: contador para actualizar cada ~60s
 
@@ -178,7 +185,10 @@ class MainWindow:
             ("󰷐  Visor de Logs",        self.open_log_viewer,      []),
             ("🖧  Red Local",   self.open_network_local,   []),
             ("🕳  Pi-hole",   self.open_pihole,   ["pihole_offline"]),
+            ("🔒  Gestor VPN", self.open_vpn_window, ["vpn_offline"]),
             ("  Historial Alertas",  self.open_alert_history,   []),
+            ("󰃟  Brillo Pantalla", self.open_display_window, []),
+            ("📊  Resumen Sistema", self.open_overview, []),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -455,6 +465,50 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("  Historial Alertas"))
         else:
             self.alert_history_window.lift()
+            
+            
+            
+    def open_display_window(self):
+        """Abre la ventana de control de brillo y apagado de pantalla."""
+        if self.display_window is None or not self.display_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Brillo Pantalla")
+            self._btn_active("󰃟  Brillo Pantalla")
+            self.display_window = DisplayWindow(self.root, self.display_service)
+            self.display_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("󰃟  Brillo Pantalla"))
+        else:
+            self.display_window.lift()
+            
+    def open_vpn_window(self):
+        """Abre el gestor de VPN."""
+        if self.vpn_window is None or not self.vpn_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Gestor VPN")
+            self._btn_active("🔒  Gestor VPN")
+            self.vpn_window = VpnWindow(self.root, self.vpn_monitor)
+            self.vpn_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("🔒  Gestor VPN"))
+        else:
+            self.vpn_window.lift()
+            
+    def open_overview(self):
+        """Abre la ventana de resumen del sistema."""
+        if self.overview_window is None or not self.overview_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Resumen Sistema")
+            self._btn_active("📊  Resumen Sistema")
+            self.overview_window = OverviewWindow(
+                self.root,
+                system_monitor=self.system_monitor,
+                service_monitor=self.service_monitor,
+                pihole_monitor=self.pihole_monitor,
+                network_monitor=self.network_monitor,
+                disk_monitor=self.disk_monitor,
+            )
+            self.overview_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("📊  Resumen Sistema"))
+        else:
+            self.overview_window.lift()
+    
+    
 
     
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
@@ -640,6 +694,7 @@ class MainWindow:
             )
             self._update_badge("hb_fault", self.homebridge_monitor.get_fault_count())
             self._update_badge("pihole_offline", self.pihole_monitor.get_offline_count())
+            self._update_badge("vpn_offline", self.vpn_monitor.get_offline_count())
 
         except Exception:
             pass

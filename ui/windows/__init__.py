@@ -16,6 +16,9 @@ from .homebridge import HomebridgeWindow
 from .network_local import NetworkLocalWindow
 from .pihole_window import PiholeWindow
 from .alert_history import AlertHistoryWindow
+from .display_window import DisplayWindow
+from .vpn_window import VpnWindow
+from .overview import OverviewWindow
 
 __all__ = [
     'FanControlWindow',
@@ -33,5 +36,8 @@ __all__ = [
     'NetworkLocalWindow',
     'PiholeWindow',
     'AlertHistoryWindow',
+    'DisplayWindow',
+    'VpnWindow',
+    'OverviewWindow',
     
 ]
