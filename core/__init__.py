@@ -13,7 +13,8 @@ from .cleanup_service import CleanupService
 from .homebridge_monitor import HomebridgeMonitor  
 from .alert_service import AlertService
 from .network_scanner import NetworkScanner
-from .pihole_monitor import PiholeMonitor        
+from .pihole_monitor import PiholeMonitor
+from .display_service import DisplayService        
 
 __all__ = [
     'FanController',
@@ -29,4 +30,5 @@ __all__ = [
     'AlertService',
     'NetworkScanner',
     'PiholeMonitor',
+    'DisplayService',
 ]

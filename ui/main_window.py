@@ -7,7 +7,7 @@ from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_X, D
 from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow, 
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow, 
-                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow)
+                        NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow)
 from ui.windows.log_viewer import LogViewerWindow
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
@@ -23,7 +23,7 @@ class MainWindow:
     """Ventana principal del dashboard"""
     
     def __init__(self, root, system_monitor, fan_controller, network_monitor,
-                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor, network_scanner, pihole_monitor, alert_service,
+                 disk_monitor, process_monitor, service_monitor, update_monitor, cleanup_service, homebridge_monitor, network_scanner, pihole_monitor, alert_service, display_service,
                  update_interval=2000):
         self.root = root
         self.system_monitor = system_monitor
@@ -38,6 +38,7 @@ class MainWindow:
         self.network_scanner = network_scanner
         self.pihole_monitor = pihole_monitor
         self.alert_service = alert_service
+        self.display_service = display_service
         
         self.update_interval = update_interval
         self.system_utils = SystemUtils()
@@ -65,6 +66,7 @@ class MainWindow:
         self.network_local_window = None
         self.pihole_window = None
         self.alert_history_window = None
+        self.display_window = None
 
         self._uptime_tick = 0  # uptime badge: contador para actualizar cada ~60s
 
@@ -179,6 +181,7 @@ class MainWindow:
             ("🖧  Red Local",   self.open_network_local,   []),
             ("🕳  Pi-hole",   self.open_pihole,   ["pihole_offline"]),
             ("  Historial Alertas",  self.open_alert_history,   []),
+            ("󰃟  Brillo Pantalla", self.open_display_window, []),
             ("󰔎  Cambiar Tema",          self.open_theme_selector,  []),
             ("  Reiniciar",                 self.restart_application,  []),
             ("󰿅  Salir",                 self.exit_application,     []),
@@ -455,6 +458,22 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("  Historial Alertas"))
         else:
             self.alert_history_window.lift()
+            
+            
+            
+    def open_display_window(self):
+        """Abre la ventana de control de brillo y apagado de pantalla."""
+        if self.display_window is None or not self.display_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Brillo Pantalla")
+            self._btn_active("󰃟  Brillo Pantalla")
+            self.display_window = DisplayWindow(self.root, self.display_service)
+            self.display_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("󰃟  Brillo Pantalla"))
+        else:
+            self.display_window.lift()
+    
+    
+    
 
     
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
