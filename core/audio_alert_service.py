@@ -2,9 +2,11 @@
 Servicio de alertas sonoras via los altavoces del FNK0100K.
 
 Comportamiento:
-  - warn.wav : suena cada WARN_REPEAT_S (5 min) MIENTRAS siga en zona de aviso
-  - crit.wav : suena cada CRIT_REPEAT_S (30 s)  MIENTRAS siga en zona crítica
-  - ok.wav   : suena UNA VEZ al recuperarse (salir de warn o de crit)
+  - {metric}_warn.wav : cada WARN_REPEAT_S (5 min) mientras siga en aviso
+  - {metric}_crit.wav : cada CRIT_REPEAT_S (30 s)  mientras siga crítico
+  - {metric}_ok.wav   : una sola vez al recuperarse
+
+Archivos generados por: scripts/generate_sounds.py
 """
 import subprocess
 import threading
@@ -17,29 +19,29 @@ logger = get_logger(__name__)
 
 # ── Umbrales ──────────────────────────────────────────────────────────────────
 _THRESHOLDS = {
-    "temp":     {"crit": 70, "warn": 60, "unit": "°C"},
-    "cpu":      {"crit": 90, "warn": 75, "unit": "%"},
-    "ram":      {"crit": 90, "warn": 75, "unit": "%"},
-    "services": {"crit": 1,  "warn": 0,  "unit": "caídos"},
+    "temp":     {"crit": 70, "warn": 60,   "unit": "°C"},
+    "cpu":      {"crit": 90, "warn": 75,   "unit": "%"},
+    "ram":      {"crit": 90, "warn": 75,   "unit": "%"},
+    "services": {"crit": 1,  "warn": None, "unit": "caídos"},  # sin warn — solo 0 o caído
 }
 
 # ── Intervalos de repetición ──────────────────────────────────────────────────
-WARN_REPEAT_S = 45   # warn.wav cada 5 minutos mientras siga en aviso
-CRIT_REPEAT_S = 30       # crit.wav cada 30 segundos mientras siga crítico
+WARN_REPEAT_S = 45 # cada 45 segundos mientras siga en aviso
+CRIT_REPEAT_S = 30       # cada 30 segundos mientras siga crítico
 
 # ── Sonidos ───────────────────────────────────────────────────────────────────
 _SOUNDS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "sounds"
-_SOUND_WARN = str(_SOUNDS_DIR / "warn.wav")
-_SOUND_CRIT = str(_SOUNDS_DIR / "crit.wav")
-_SOUND_OK   = str(_SOUNDS_DIR / "ok.wav")
+
+def _sound(metric: str, level: str) -> str:
+    """Devuelve la ruta del audio para una métrica y nivel dados."""
+    return str(_SOUNDS_DIR / f"{metric}_{level}.wav")
 
 
 class _MetricState:
-    """Estado de una métrica: en qué zona está y cuándo sonó por última vez."""
     __slots__ = ("zone", "last_played")
 
     def __init__(self):
-        self.zone        = "ok"   # "ok" | "warn" | "crit"
+        self.zone        = "ok"
         self.last_played = 0.0
 
 
@@ -54,7 +56,7 @@ class AudioAlertService:
         self._stop      = threading.Event()
         self._thread    = None
         self._enabled   = True
-        self._play_lock = threading.Lock()   # un solo aplay a la vez
+        self._play_lock = threading.Lock()
 
         self._states: dict[str, _MetricState] = {
             key: _MetricState() for key in _THRESHOLDS
@@ -90,12 +92,14 @@ class AudioAlertService:
             return self._enabled
 
     def play_test(self):
-        threading.Thread(target=self._play, args=(_SOUND_CRIT,), daemon=True).start()
+        """Prueba: reproduce temp_crit.wav"""
+        threading.Thread(
+            target=self._play, args=(_sound("temp", "crit"),), daemon=True
+        ).start()
 
     # ── Bucle ─────────────────────────────────────────────────────────────────
 
     def _loop(self):
-        # Iterar más rápido que el intervalo más corto para no perder repeticiones
         loop_interval = min(CRIT_REPEAT_S, 10)
         while self._running:
             try:
@@ -141,53 +145,53 @@ class AudioAlertService:
             # Zona actual
             if val >= thresh["crit"]:
                 new_zone = "crit"
-            elif val >= thresh["warn"]:
+            elif thresh["warn"] is not None and val >= thresh["warn"]:
                 new_zone = "warn"
             else:
                 new_zone = "ok"
 
             state.zone = new_zone
 
-            # ── CRÍTICO: crit.wav cada CRIT_REPEAT_S mientras siga crítico ──
+            # ── CRÍTICO: {metric}_crit.wav cada CRIT_REPEAT_S ────────────────
             if new_zone == "crit":
                 if now - state.last_played >= CRIT_REPEAT_S:
                     logger.warning("[AudioAlertService] CRÍTICO %s=%.1f%s",
                                    key, val, thresh["unit"])
                     state.last_played = now
                     threading.Thread(
-                        target=self._play, args=(_SOUND_CRIT,), daemon=True
+                        target=self._play, args=(_sound(key, "crit"),), daemon=True
                     ).start()
 
-            # ── WARN: warn.wav cada WARN_REPEAT_S mientras siga en aviso ────
+            # ── WARN: {metric}_warn.wav cada WARN_REPEAT_S ───────────────────
             elif new_zone == "warn":
                 if now - state.last_played >= WARN_REPEAT_S:
                     logger.info("[AudioAlertService] AVISO %s=%.1f%s",
                                 key, val, thresh["unit"])
                     state.last_played = now
                     threading.Thread(
-                        target=self._play, args=(_SOUND_WARN,), daemon=True
+                        target=self._play, args=(_sound(key, "warn"),), daemon=True
                     ).start()
 
-            # ── OK: ok.wav una sola vez al recuperarse ───────────────────────
+            # ── OK: {metric}_ok.wav una vez al recuperarse ───────────────────
             elif new_zone == "ok" and prev_zone in ("warn", "crit"):
                 logger.info("[AudioAlertService] RECUPERADO %s=%.1f%s",
                             key, val, thresh["unit"])
                 state.last_played = now
                 threading.Thread(
-                    target=self._play, args=(_SOUND_OK,), daemon=True
+                    target=self._play, args=(_sound(key, "ok"),), daemon=True
                 ).start()
 
     # ── Reproducción ─────────────────────────────────────────────────────────
 
     def _play(self, sound_file: str):
-        """Un solo aplay activo a la vez gracias a _play_lock."""
+        """Un solo aplay activo a la vez."""
         with self._play_lock:
             if not os.path.exists(sound_file):
                 logger.warning("[AudioAlertService] Archivo no encontrado: %s", sound_file)
                 return
             for cmd in [["aplay", "-q", sound_file], ["paplay", sound_file]]:
                 try:
-                    r = subprocess.run(cmd, capture_output=True, timeout=10)
+                    r = subprocess.run(cmd, capture_output=True, timeout=15)
                     if r.returncode == 0:
                         return
                 except FileNotFoundError:
