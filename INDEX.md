@@ -68,18 +68,15 @@ Configurar `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID` en `.env`.
 ├── README.md                         ⭐ Principal v3.4
 ├── QUICKSTART.md                     ⚡ Inicio rápido
 ├── INDEX.md                          📑 Este archivo
+├── REQUIREMENTS.md                   📋 Requisitos
 ├── INSTALL_GUIDE.md                  🔧 Instalación
 ├── THEMES_GUIDE.md                   🎨 Temas
-├── PROCESS_MONITOR_GUIDE.md          ⚙️ Procesos
-├── SERVICE_MONITOR_GUIDE.md          🔧 Servicios
-├── HISTORICO_DATOS_GUIDE.md          📊 Histórico
 ├── INTEGRATION_GUIDE.md              🤝 Integración fase1
 ├── IDEAS_EXPANSION.md                💡 Roadmap v3.5+
 ├── COMPATIBILIDAD.md                 🌐 Compatibilidad
-├── REQUIREMENTS.md                   📋 Requisitos
-├── GUIA_DASHBOARD_RESUMEN.md         📊 Resumen Sistema (v3.3)
 ├── GUIA_BRILLO_DSI.md                💡 Brillo DSI (v3.3)
 ├── GUIA_GESTOR_VPN.md                🔒 Gestor VPN (v3.3)
+├── GUIA_DASHBOARD_RESUMEN.md         📊 Resumen Sistema (v3.3)
 ├── GUIA_V34_HARDWARE_FNK0100K.md     🔧 Hardware completo (v3.4)
 ├── FIX_LED_DESTELLOS.md              💡 Fix LEDs animados (v3.4)
 └── INTEGRACION_MONITOR_HARDWARE.md   🌡️ Monitor chasis (v3.4)
@@ -126,7 +123,7 @@ Configurar `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID` en `.env`.
 | SMART muestra N/D | Sudoers smartctl + `sudo smartctl -A /dev/nvme0` |
 | Homebridge no conecta | README.md Troubleshooting |
 | Alertas Telegram no llegan | README.md sección Telegram / `.env` |
-| Temperatura no se lee | INSTALL_GUIDE.md → sensors-detect |
+| Temperatura no se lee | README.md sección Instalación Manual |
 | Speedtest falla | README.md sección Instalación Manual |
 | Ver errores | `grep ERROR data/logs/dashboard.log` |
 
