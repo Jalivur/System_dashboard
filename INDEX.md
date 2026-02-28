@@ -10,38 +10,6 @@
 
 ---
 
-## 📖 Guías v3.4 (hardware FNK0100K)
-
-**[GUIA_V34_HARDWARE_FNK0100K.md](GUIA_V34_HARDWARE_FNK0100K.md)** ⭐ — Guía maestra v3.4.
-- Arquitectura completa (fase1.py ↔ JSONs ↔ dashboard)
-- fase1.py modificado completo
-- Todos los archivos nuevos con código
-
-**[FIX_LED_DESTELLOS.md](FIX_LED_DESTELLOS.md)**
-- Causa de los destellos en modos follow/breathing
-- `apply_led_state()` con lógica edge — solo escribe I2C cuando cambia algo
-
-**[INTEGRACION_MONITOR_HARDWARE.md](INTEGRACION_MONITOR_HARDWARE.md)**
-- `monitor.py` completo con tarjeta temperatura chasis + fan duty real
-- Patrón exacto que encaja con la estructura de `MonitorWindow`
-
----
-
-## 📖 Guías v3.3
-
-**[GUIA_DASHBOARD_RESUMEN.md](GUIA_DASHBOARD_RESUMEN.md)**
-- Layout (grid 6 tarjetas + fila Pi-hole con 4 columnas)
-- Fuentes de datos y umbrales de color
-
-**[GUIA_BRILLO_DSI.md](GUIA_BRILLO_DSI.md)**
-- Configuración real: `DSI_OUTPUT="DSI-2"`, backlight `11-0045`
-- Diagnóstico, wlr-randr, permisos udev
-
-**[GUIA_GESTOR_VPN.md](GUIA_GESTOR_VPN.md)**
-- Scripts requeridos, interfaz tun0/wg0, sudoers
-
----
-
 ## 📖 Guías por tema
 
 ### 🎨 Personalización
@@ -49,13 +17,6 @@
 
 ### 🔧 Instalación
 **[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — RPi OS, Kali, venv, script automático.
-
-### ⚙️ Características avanzadas
-**[PROCESS_MONITOR_GUIDE.md](PROCESS_MONITOR_GUIDE.md)** — Procesos, filtros, terminación.
-
-**[SERVICE_MONITOR_GUIDE.md](SERVICE_MONITOR_GUIDE.md)** — Servicios systemd, start/stop, logs.
-
-**[HISTORICO_DATOS_GUIDE.md](HISTORICO_DATOS_GUIDE.md)** — SQLite, matplotlib, exportación CSV.
 
 ### 🏠 Homebridge
 Configuración: ver sección en README.md.
@@ -139,17 +100,6 @@ Configurar `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID` en `.env`.
 3. Sección Pi-hole → `.env` + compatibilidad v6
 4. Sección Telegram → `.env` + `send_test()`
 5. GUIA_GESTOR_VPN.md → scripts + interfaz
-
-**Implementar v3.4 desde cero:**
-1. GUIA_V34_HARDWARE_FNK0100K.md → leer arquitectura completa
-2. Modificar fase1.py (Parte 1 de la guía)
-3. Implementar features en orden: HardwareMonitor → LEDs → Audio → Cámara → SMART
-
-**Fix destellos LEDs:**
-1. FIX_LED_DESTELLOS.md → reemplazar `apply_led_state()` y añadir `_last_led_applied`
-
-**Diagnóstico de brillo:**
-1. GUIA_BRILLO_DSI.md → Paso 0
 
 **Desarrollador / extender:**
 1. README.md sección Arquitectura
