@@ -24,8 +24,8 @@ matplotlib>=3.5.0
 
 # Variables de entorno desde .env (credenciales Homebridge, Telegram, Pi-hole)
 python-dotenv>=1.0.0
-
-
+# para Camara
+Pillow>=9.0.0
 # ============================================
 # NOTA: Dependencias del Sistema (NO Python)
 # ============================================
