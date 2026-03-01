@@ -16,10 +16,11 @@ logger = get_logger(__name__)
 
 class WindowManager:
     """
-    Gestiona la visibilidad de botones del menú según la configuración de UI.
+    Gestiona la visibilidad de botones del menú recolocándolos sin huecos.
 
     Mapeo: clave del JSON "ui" → texto exacto del botón en MainWindow.
-    Si una clave está en False, el botón correspondiente se oculta con grid_remove().
+    Cuando cambia la visibilidad de cualquier botón se rehace el grid completo
+    solo con los botones visibles, en orden, 2 columnas.
     """
 
     # Mapeo clave_json → texto exacto del botón (iconos incluidos tal cual)
@@ -27,9 +28,9 @@ class WindowManager:
         "fan_control":      "󰈐  Control Ventiladores",
         "led_window":       "󰟖  LEDs RGB",
         "monitor_window":   "󰚗  Monitor Placa",
-        "network_window":   "  Monitor Red",
+        "network_window":   "🌐 Monitor Red",
         "usb_window":       "󱇰 Monitor USB",
-        "disk_window":      "  Monitor Disco",
+        "disk_window":      " Monitor Disco",
         "launchers":        "󱓞  Lanzadores",
         "process_window":   "⚙️ Monitor Procesos",
         "service_window":   "⚙️ Monitor Servicios",
@@ -49,46 +50,56 @@ class WindowManager:
         # Reiniciar y Salir son siempre visibles — no están en el JSON
     }
 
+    # Botones siempre visibles, van siempre al final
+    _ALWAYS_VISIBLE = [
+        "🔧  Gestor de Botones",
+        "󰑓 Reiniciar",
+        "󰿅  Salir",
+    ]
+
     def __init__(self, registry, menu_btns: dict):
-        """
-        Args:
-            registry:   ServiceRegistry con la config de UI
-            menu_btns:  dict {texto_botón: CTkButton} de MainWindow
-        """
         self._registry  = registry
         self._menu_btns = menu_btns
+        self._columns   = 2
 
     def apply_config(self) -> None:
-        """Oculta los botones cuya clave esté en False en services.json ui."""
+        """Aplica la configuración inicial y rehace el grid."""
+        self._regrid()
+
+    def show(self, key: str) -> None:
+        """Hace visible un botón y rehace el grid."""
+        self._registry._config["ui"][key] = True
+        self._regrid()
+        logger.info("[WindowManager] Botón visible: %s", key)
+
+    def hide(self, key: str) -> None:
+        """Oculta un botón y rehace el grid."""
+        self._registry._config["ui"][key] = False
+        self._regrid()
+        logger.info("[WindowManager] Botón oculto: %s", key)
+
+    def _regrid(self) -> None:
+        """Saca todos del grid y recoloca solo los visibles, sin huecos."""
+        # 1. Sacar todos del grid
+        for btn in self._menu_btns.values():
+            btn.grid_remove()
+
+        # 2. Botones controlables visibles (en orden del _BTN_MAP)
+        visible = []
         for key, btn_text in self._BTN_MAP.items():
-            enabled = self._registry.ui_enabled(key)
             btn = self._menu_btns.get(btn_text)
             if btn is None:
                 continue
-            if enabled:
-                btn.grid()        # restaurar si estaba oculto
-            else:
-                btn.grid_remove() # ocultar sin destruir
-                logger.info("[WindowManager] Botón oculto: %s", key)
+            if self._registry.ui_enabled(key):
+                visible.append(btn)
 
-    def show(self, key: str) -> None:
-        """Muestra un botón por su clave de config y actualiza el JSON."""
-        self._set(key, True)
+        # 3. Botones siempre visibles al final
+        for btn_text in self._ALWAYS_VISIBLE:
+            btn = self._menu_btns.get(btn_text)
+            if btn is not None:
+                visible.append(btn)
 
-    def hide(self, key: str) -> None:
-        """Oculta un botón por su clave de config y actualiza el JSON."""
-        self._set(key, False)
-
-    def _set(self, key: str, visible: bool) -> None:
-        btn_text = self._BTN_MAP.get(key)
-        if btn_text is None:
-            return
-        btn = self._menu_btns.get(btn_text)
-        if btn is None:
-            return
-        if visible:
-            btn.grid()
-        else:
-            btn.grid_remove()
-        # Actualizar config en memoria (se persistirá con save_config())
-        self._registry._config["ui"][key] = visible
+        # 4. Recolocar en grid 2 columnas
+        for i, btn in enumerate(visible):
+            btn.grid(row=i // self._columns, column=i % self._columns,
+                     padx=10, pady=10, sticky="nsew")

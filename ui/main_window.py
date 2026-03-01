@@ -8,8 +8,7 @@ from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow,
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow,
                         NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow,
-                        LedWindow, CameraWindow, ServicesManagerWindow)
-from ui.windows.log_viewer import LogViewerWindow
+                        LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow)
 from ui.widgets import confirm_dialog, terminal_dialog
 from ui.window_manager import WindowManager
 from utils.system_utils import SystemUtils
@@ -80,6 +79,7 @@ class MainWindow:
         self.led_window              = None
         self.camera_window           = None
         self.services_manager_window = None
+        self.button_manager_window   = None
 
         self._uptime_tick = 0
 
@@ -178,7 +178,8 @@ class MainWindow:
             ("󱓞  Lanzadores",           self.open_launchers,         []),
             ("⚙️ Monitor Procesos",      self.open_process_window,    []),
             ("⚙️ Monitor Servicios",     self.open_service_window,    ["services"]),
-            ("⚙️  Servicios Dashboard",  self.open_services_manager,  []),
+            ("⚙️  Servicios Dashboard",  self.open_services_manager,   []),
+            ("🔧  Gestor de Botones",     self.open_button_manager,      []),
             ("󱘿  Histórico Datos",      self.open_history_window,    []),
             ("󰆧  Actualizaciones",      self.open_update_window,     ["updates"]),
             ("󰟐  Homebridge",           self.open_homebridge,        ["hb_offline", "hb_on", "hb_fault"]),
@@ -393,6 +394,18 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("⚙️  Servicios Dashboard"))
         else:
             self.services_manager_window.lift()
+
+    def open_button_manager(self):
+        """Abre la ventana de gestión de visibilidad de botones."""
+        if self.button_manager_window is None or not self.button_manager_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Gestor de Botones")
+            self._btn_active("🔧  Gestor de Botones")
+            self.button_manager_window = ButtonManagerWindow(
+                self.root, registry=self.registry, window_manager=self._wm)
+            self.button_manager_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("🔧  Gestor de Botones"))
+        else:
+            self.button_manager_window.lift()
 
     def open_history_window(self):
         """Abre la ventana de histórico"""
@@ -708,3 +721,4 @@ class MainWindow:
             pass
 
         self.root.after(self.update_interval, self._update)
+

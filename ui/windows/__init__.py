@@ -22,6 +22,8 @@ from .overview import OverviewWindow
 from .led_window import LedWindow
 from .camera_window import CameraWindow
 from .services_manager_window import ServicesManagerWindow
+from .button_manager_window import ButtonManagerWindow
+from .log_viewer import LogViewerWindow
 
 __all__ = [
     'FanControlWindow',
@@ -45,5 +47,6 @@ __all__ = [
     'LedWindow',
     'CameraWindow',
     'ServicesManagerWindow',
-    
+    'ButtonManagerWindow',
+    'LogViewerWindow',
 ]
