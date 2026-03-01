@@ -6,7 +6,6 @@ from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
                              DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, NET_INTERFACE)
 from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import GraphWidget
-from core.network_monitor import NetworkMonitor
 from utils.system_utils import SystemUtils
 
 _COL_W   = (DSI_WIDTH - 70) // 2
@@ -16,7 +15,7 @@ _GRAPH_H = 110
 class NetworkWindow(ctk.CTkToplevel):
     """Ventana de monitoreo de red"""
 
-    def __init__(self, parent, network_monitor: NetworkMonitor):
+    def __init__(self, parent, network_monitor):
         super().__init__(parent)
         self.network_monitor = network_monitor
         self.widgets = {}
