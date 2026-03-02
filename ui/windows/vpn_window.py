@@ -56,9 +56,28 @@ class VpnWindow(ctk.CTkToplevel):
         main.pack(fill="both", expand=True, padx=5, pady=5)
 
         make_window_header(main, title="GESTOR VPN", on_close=self.destroy)
-        
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS["bg_medium"])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        canvas = ctk.CTkCanvas(
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        self.inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window(
+            (0, 0), window=self.inner,
+            anchor="nw", width=DSI_WIDTH - 50)
+        self.inner.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         # ── Tarjeta de estado ──
-        status_card = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'], corner_radius=8)
+        status_card = ctk.CTkFrame(self.inner, fg_color=COLORS['bg_dark'], corner_radius=8)
         status_card.pack(fill="x", padx=10, pady=(8, 4))
         self._content_frame = status_card
         ctk.CTkLabel(
@@ -103,7 +122,7 @@ class VpnWindow(ctk.CTkToplevel):
         self._widgets['status_detail'].pack(fill="x")
 
         # ── Botones de acción ──
-        action_card = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'], corner_radius=8)
+        action_card = ctk.CTkFrame(self.inner, fg_color=COLORS['bg_dark'], corner_radius=8)
         action_card.pack(fill="x", padx=10, pady=4)
 
         ctk.CTkLabel(
@@ -132,7 +151,7 @@ class VpnWindow(ctk.CTkToplevel):
         ).pack(side="left", padx=12)
 
         # ── Info de interfaz ──
-        info_card = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'], corner_radius=8)
+        info_card = ctk.CTkFrame(self.inner, fg_color=COLORS['bg_dark'], corner_radius=8)
         info_card.pack(fill="x", padx=10, pady=4)
 
         info_inner = ctk.CTkFrame(info_card, fg_color="transparent")
@@ -159,7 +178,7 @@ class VpnWindow(ctk.CTkToplevel):
             self._widgets[key] = lbl
 
         # ── Nota sobre scripts ──
-        note_frame = ctk.CTkFrame(main, fg_color="transparent")
+        note_frame = ctk.CTkFrame(self.inner, fg_color="transparent")
         note_frame.pack(fill="x", padx=14, pady=(4, 0))
 
         ctk.CTkLabel(

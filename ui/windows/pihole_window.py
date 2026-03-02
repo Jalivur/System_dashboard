@@ -43,15 +43,34 @@ class PiholeWindow(ctk.CTkToplevel):
         
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
-
+        
         self._header = make_window_header(
             main, title="PI-HOLE",
             on_close=self._on_close,
             status_text="Cargando...",
         )
-        
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS["bg_medium"])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        canvas = ctk.CTkCanvas(
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        self.inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window(
+            (0, 0), window=self.inner,
+            anchor="nw", width=DSI_WIDTH - 50)
+        self.inner.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         # Grid 2×2 de tarjetas métricas
-        grid = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
+        grid = ctk.CTkFrame(self.inner, fg_color=COLORS['bg_medium'])
         grid.pack(fill="both", expand=True, padx=5, pady=5)
         grid.grid_columnconfigure(0, weight=1, uniform="col")
         grid.grid_columnconfigure(1, weight=1, uniform="col")
@@ -91,7 +110,7 @@ class PiholeWindow(ctk.CTkToplevel):
             self._value_labels[key] = (val_lbl, unit, color)
 
         # Botón forzar refresco
-        bottom = ctk.CTkFrame(main, fg_color="transparent")
+        bottom = ctk.CTkFrame(self.inner, fg_color="transparent")
         bottom.pack(fill="x", pady=6, padx=10)
         make_futuristic_button(
             bottom, text="⟳  Actualizar",

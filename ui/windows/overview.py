@@ -8,7 +8,7 @@ from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
 )
-from ui.styles import make_window_header, make_futuristic_button
+from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -55,9 +55,28 @@ class OverviewWindow(ctk.CTkToplevel):
         main.pack(fill="both", expand=True, padx=5, pady=5)
 
         make_window_header(main, title="RESUMEN DEL SISTEMA", on_close=self.destroy)
+        scroll_container = ctk.CTkFrame(main, fg_color=COLORS["bg_medium"])
+        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+        canvas = ctk.CTkCanvas(
+            scroll_container, bg=COLORS['bg_medium'], highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
 
+        scrollbar = ctk.CTkScrollbar(
+            scroll_container, orientation="vertical",
+            command=canvas.yview, width=30)
+        scrollbar.pack(side="right", fill="y")
+        StyleManager.style_scrollbar_ctk(scrollbar)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        self.inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
+        canvas.create_window(
+            (0, 0), window=self.inner,
+            anchor="nw", width=DSI_WIDTH - 50)
+        self.inner.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         # Grid 2x3 de tarjetas
-        grid = ctk.CTkFrame(main, fg_color="transparent")
+        grid = ctk.CTkFrame(self.inner, fg_color="transparent")
         grid.pack(fill="both", expand=True, padx=5, pady=5)
         grid.columnconfigure(0, weight=1)
         grid.columnconfigure(1, weight=1)
