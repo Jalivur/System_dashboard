@@ -110,3 +110,8 @@ FONT_SIZES = {
     "xlarge": 24,
     "xxlarge": 30
 }
+# Override local por máquina (no se sube a git — ver .gitignore)
+try:
+    from config.local_settings import *
+except ImportError:
+    pass
