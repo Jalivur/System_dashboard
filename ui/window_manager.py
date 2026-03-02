@@ -30,7 +30,7 @@ class WindowManager:
         "monitor_window":   "󰚗  Monitor Placa",
         "network_window":   "🌐 Monitor Red",
         "usb_window":       "󱇰 Monitor USB",
-        "disk_window":      " Monitor Disco",
+        "disk_window":      "  Monitor Disco",
         "launchers":        "󱓞  Lanzadores",
         "process_window":   "⚙️ Monitor Procesos",
         "service_window":   "⚙️ Monitor Servicios",

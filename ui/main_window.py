@@ -174,7 +174,7 @@ class MainWindow:
             ("󰚗  Monitor Placa",        self.open_monitor_window,    ["temp_monitor", "cpu", "ram"]),
             ("🌐 Monitor Red",            self.open_network_window,    []),
             ("󱇰 Monitor USB",           self.open_usb_window,        []),
-            (" Monitor Disco",          self.open_disk_window,       ["disk"]),
+            ("  Monitor Disco",          self.open_disk_window,       ["disk"]),
             ("󱓞  Lanzadores",           self.open_launchers,         []),
             ("⚙️ Monitor Procesos",      self.open_process_window,    []),
             ("⚙️ Monitor Servicios",     self.open_service_window,    ["services"]),
