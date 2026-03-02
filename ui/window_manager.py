@@ -35,6 +35,7 @@ class WindowManager:
         "process_window":   "⚙️ Monitor Procesos",
         "service_window":   "⚙️ Monitor Servicios",
         "services_manager": "⚙️  Servicios Dashboard",
+        "crontab_window":   "🕐  Gestor Crontab",
         "history_window":   "󱘿  Histórico Datos",
         "update_window":    "󰆧  Actualizaciones",
         "homebridge":       "󰟐  Homebridge",

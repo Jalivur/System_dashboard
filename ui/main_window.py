@@ -8,7 +8,7 @@ from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow,
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow,
                         NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow,
-                        LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow)
+                        LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow, CrontabWindow)
 from ui.widgets import confirm_dialog, terminal_dialog
 from ui.window_manager import WindowManager
 from utils.system_utils import SystemUtils
@@ -65,6 +65,7 @@ class MainWindow:
         self.disk_window             = None
         self.process_window          = None
         self.service_window          = None
+        self.crontab_window          = None
         self.history_window          = None
         self.update_window           = None
         self.theme_window            = None
@@ -179,6 +180,7 @@ class MainWindow:
             ("⚙️ Monitor Procesos",      self.open_process_window,    []),
             ("⚙️ Monitor Servicios",     self.open_service_window,    ["services"]),
             ("⚙️  Servicios Dashboard",  self.open_services_manager,   []),
+            ("🕐  Gestor Crontab",      self.open_crontab_window,      []),
             ("🔧  Gestor de Botones",     self.open_button_manager,      []),
             ("󱘿  Histórico Datos",      self.open_history_window,    []),
             ("󰆧  Actualizaciones",      self.open_update_window,     ["updates"]),
@@ -394,6 +396,18 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("⚙️  Servicios Dashboard"))
         else:
             self.services_manager_window.lift()
+    def open_crontab_window(self):
+        if self.crontab_window is None or not self.crontab_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Gestor Crontab")
+            self._btn_active("🕐  Gestor Crontab")
+            self.crontab_window = CrontabWindow(
+                self.root 
+            )
+            self.crontab_window.bind(
+                "<Destroy>", lambda e: self._btn_idle("🕐  Gestor Crontab")
+            )
+        else:
+            self.crontab_window.lift()
 
     def open_button_manager(self):
         """Abre la ventana de gestión de visibilidad de botones."""
@@ -589,6 +603,7 @@ class MainWindow:
 
         def on_confirm():
             selected = selection_var.get()
+            selection_window.grab_release()
             selection_window.destroy()
             if selected == "exit":
                 def do_exit():
@@ -610,6 +625,7 @@ class MainWindow:
 
         def on_cancel():
             logger.debug("[MainWindow] Diálogo de salida cancelado")
+            selection_window.grab_release()
             selection_window.destroy()
 
         make_futuristic_button(buttons_frame, text="Cancelar", command=on_cancel,
@@ -721,4 +737,3 @@ class MainWindow:
             pass
 
         self.root.after(self.update_interval, self._update)
-
