@@ -42,7 +42,7 @@ class WindowManager:
         "network_local":    "🖧  Red Local",
         "pihole":           "🕳  Pi-hole",
         "vpn_window":       "🔒  Gestor VPN",
-        "alert_history":    "  Historial Alertas",
+        "alert_history":    "  Historial Alertas",
         "display_window":   "󰃟  Brillo Pantalla",
         "overview":         "📊  Resumen Sistema",
         "camera_window":    "📷  Cámara",
