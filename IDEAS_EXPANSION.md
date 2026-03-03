@@ -150,5 +150,7 @@ v4.0  💭 API REST + Backup + Multi-pantalla?
 | Fan duty real | ✅ Completa | Via fase1.py + hardware_state.json |
 | Cámara OV5647 | ✅ Completa | rpicam-still + OCR Tesseract |
 | Multi-Pi / local_settings | ✅ Completa | Pi 5 Wayland + Pi 3 Xvfb |
-| Docker | ❌ Pendiente | v3.8 |
-| MQTT / HA | ❌ Pendiente | v3.8 |
+| Info Hardware | ❌ Pendiente | v3.8 
+| Monitor SSH | ❌ Pendiente | v3.8 |
+| Monitor WiFi | ❌ Pendiente | v3.8 |
+| Editor Configuración | ❌ Pendiente | v3.8 |
