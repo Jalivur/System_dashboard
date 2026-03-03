@@ -348,9 +348,9 @@ class MainWindow:
         """Abre la ventana de monitor de disco"""
         if self.disk_window is None or not self.disk_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Disco")
-            self._btn_active(" Monitor Disco")
+            self._btn_active("  Monitor Disco")
             self.disk_window = DiskWindow(self.root, self.disk_monitor)
-            self.disk_window.bind("<Destroy>", lambda e: self._btn_idle(" Monitor Disco"))
+            self.disk_window.bind("<Destroy>", lambda e: self._btn_idle("  Monitor Disco"))
         else:
             self.disk_window.lift()
 
