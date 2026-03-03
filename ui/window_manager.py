@@ -25,12 +25,13 @@ class WindowManager:
 
     # Mapeo clave_json → texto exacto del botón (iconos incluidos tal cual)
     _BTN_MAP = {
+        "hardware_info":    "🖥️  Info Hardware",
         "fan_control":      "󰈐  Control Ventiladores",
         "led_window":       "󰟖  LEDs RGB",
         "monitor_window":   "󰚗  Monitor Placa",
         "network_window":   "🌐 Monitor Red",
         "usb_window":       "󱇰 Monitor USB",
-        "disk_window":      "  Monitor Disco",
+        "disk_window":      "  Monitor Disco",
         "launchers":        "󱓞  Lanzadores",
         "process_window":   "⚙️ Monitor Procesos",
         "service_window":   "⚙️ Monitor Servicios",
@@ -43,12 +44,11 @@ class WindowManager:
         "network_local":    "🖧  Red Local",
         "pihole":           "🕳  Pi-hole",
         "vpn_window":       "🔒  Gestor VPN",
-        "alert_history":    "  Historial Alertas",
+        "alert_history":    "  Historial Alertas",
         "display_window":   "󰃟  Brillo Pantalla",
         "overview":         "📊  Resumen Sistema",
         "camera_window":    "📷  Cámara",
         "theme_selector":   "󰔎  Cambiar Tema",
-        # Reiniciar y Salir son siempre visibles — no están en el JSON
     }
 
     # Botones siempre visibles, van siempre al final

@@ -8,7 +8,8 @@ from ui.styles import StyleManager, make_futuristic_button
 from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindow, ProcessWindow, ServiceWindow,
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow,
                         NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow,
-                        LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow, CrontabWindow)
+                        LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow, CrontabWindow,
+                        HardwareInfoWindow)
 from ui.widgets import confirm_dialog, terminal_dialog
 from ui.window_manager import WindowManager
 from utils.system_utils import SystemUtils
@@ -56,6 +57,7 @@ class MainWindow:
         self._menu_btns = {}
 
         # Referencias a ventanas secundarias
+        self.hardware_info_window    = None
         self.fan_window              = None
         self.monitor_window          = None
         self.network_window          = None
@@ -169,32 +171,33 @@ class MainWindow:
     def _create_menu_buttons(self):
         """Crea los botones del menú principal"""
         buttons_config = [
-            ("󰈐  Control Ventiladores", self.open_fan_control,      ["temp_fan"]),
-            ("󰟖  LEDs RGB",             self.open_led_window,        []),
-            ("󰚗  Monitor Placa",        self.open_monitor_window,    ["temp_monitor", "cpu", "ram"]),
+            ("🖥️  Info Hardware",        self.open_hardware_info,     []),
+            ("󰈐  Control Ventiladores",  self.open_fan_control,       ["temp_fan"]),
+            ("󰟖  LEDs RGB",              self.open_led_window,        []),
+            ("󰚗  Monitor Placa",         self.open_monitor_window,    ["temp_monitor", "cpu", "ram"]),
             ("🌐 Monitor Red",            self.open_network_window,    []),
-            ("󱇰 Monitor USB",           self.open_usb_window,        []),
-            ("  Monitor Disco",          self.open_disk_window,       ["disk"]),
-            ("󱓞  Lanzadores",           self.open_launchers,         []),
-            ("⚙️ Monitor Procesos",      self.open_process_window,    []),
-            ("⚙️ Monitor Servicios",     self.open_service_window,    ["services"]),
-            ("⚙️  Servicios Dashboard",  self.open_services_manager,   []),
-            ("🕐  Gestor Crontab",      self.open_crontab_window,      []),
-            ("🔧  Gestor de Botones",     self.open_button_manager,      []),
-            ("󱘿  Histórico Datos",      self.open_history_window,    []),
-            ("󰆧  Actualizaciones",      self.open_update_window,     ["updates"]),
-            ("󰟐  Homebridge",           self.open_homebridge,        ["hb_offline", "hb_on", "hb_fault"]),
-            ("󰷐  Visor de Logs",        self.open_log_viewer,        []),
-            ("🖧  Red Local",            self.open_network_local,     []),
-            ("🕳  Pi-hole",             self.open_pihole,            ["pihole_offline"]),
-            ("🔒  Gestor VPN",           self.open_vpn_window,        ["vpn_offline"]),
-            ("  Historial Alertas",      self.open_alert_history,     []),
-            ("󰃟  Brillo Pantalla",      self.open_display_window,    []),
-            ("📊  Resumen Sistema",      self.open_overview,          []),
-            ("📷  Cámara",              self.open_camera_window,     []),
-            ("󰔎  Cambiar Tema",         self.open_theme_selector,    []),
+            ("󱇰 Monitor USB",            self.open_usb_window,        []),
+            ("  Monitor Disco",           self.open_disk_window,       ["disk"]),
+            ("󱓞  Lanzadores",            self.open_launchers,         []),
+            ("⚙️ Monitor Procesos",       self.open_process_window,    []),
+            ("⚙️ Monitor Servicios",      self.open_service_window,    ["services"]),
+            ("⚙️  Servicios Dashboard",   self.open_services_manager,  []),
+            ("🕐  Gestor Crontab",        self.open_crontab_window,    []),
+            ("🔧  Gestor de Botones",     self.open_button_manager,    []),
+            ("󱘿  Histórico Datos",       self.open_history_window,    []),
+            ("󰆧  Actualizaciones",       self.open_update_window,     ["updates"]),
+            ("󰟐  Homebridge",            self.open_homebridge,        ["hb_offline", "hb_on", "hb_fault"]),
+            ("󰷐  Visor de Logs",         self.open_log_viewer,        []),
+            ("🖧  Red Local",             self.open_network_local,     []),
+            ("🕳  Pi-hole",              self.open_pihole,            ["pihole_offline"]),
+            ("🔒  Gestor VPN",            self.open_vpn_window,        ["vpn_offline"]),
+            ("  Historial Alertas",       self.open_alert_history,     []),
+            ("󰃟  Brillo Pantalla",       self.open_display_window,    []),
+            ("📊  Resumen Sistema",       self.open_overview,          []),
+            ("📷  Cámara",               self.open_camera_window,     []),
+            ("󰔎  Cambiar Tema",          self.open_theme_selector,    []),
             ("󰑓 Reiniciar",              self.restart_application,    []),
-            ("󰿅  Salir",               self.exit_application,       []),
+            ("󰿅  Salir",                self.exit_application,       []),
         ]
 
         columns = 2
@@ -295,6 +298,15 @@ class MainWindow:
 
     # ── Apertura de ventanas ──────────────────────────────────────────────────
 
+    def open_hardware_info(self):
+        """Abre la ventana de información del hardware"""
+        if self.hardware_info_window is None or not self.hardware_info_window.winfo_exists():
+            self._btn_active("🖥️  Info Hardware")
+            self.hardware_info_window = HardwareInfoWindow(self.root, self.system_monitor)
+            self.hardware_info_window.bind("<Destroy>", lambda e: self._btn_idle("🖥️  Info Hardware"))
+        else:
+            self.hardware_info_window.lift()
+
     def open_fan_control(self):
         """Abre la ventana de control de ventiladores"""
         if self.fan_window is None or not self.fan_window.winfo_exists():
@@ -348,9 +360,9 @@ class MainWindow:
         """Abre la ventana de monitor de disco"""
         if self.disk_window is None or not self.disk_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Monitor Disco")
-            self._btn_active("  Monitor Disco")
+            self._btn_active("  Monitor Disco")
             self.disk_window = DiskWindow(self.root, self.disk_monitor)
-            self.disk_window.bind("<Destroy>", lambda e: self._btn_idle("  Monitor Disco"))
+            self.disk_window.bind("<Destroy>", lambda e: self._btn_idle("  Monitor Disco"))
         else:
             self.disk_window.lift()
 
@@ -395,16 +407,14 @@ class MainWindow:
                 "<Destroy>", lambda e: self._btn_idle("⚙️  Servicios Dashboard"))
         else:
             self.services_manager_window.lift()
+
     def open_crontab_window(self):
         if self.crontab_window is None or not self.crontab_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Gestor Crontab")
             self._btn_active("🕐  Gestor Crontab")
-            self.crontab_window = CrontabWindow(
-                self.root 
-            )
+            self.crontab_window = CrontabWindow(self.root)
             self.crontab_window.bind(
-                "<Destroy>", lambda e: self._btn_idle("🕐  Gestor Crontab")
-            )
+                "<Destroy>", lambda e: self._btn_idle("🕐  Gestor Crontab"))
         else:
             self.crontab_window.lift()
 
@@ -496,10 +506,10 @@ class MainWindow:
         """Abre el historial de alertas."""
         if self.alert_history_window is None or not self.alert_history_window.winfo_exists():
             logger.debug("[MainWindow] Abriendo: Historial Alertas")
-            self._btn_active("  Historial Alertas")
+            self._btn_active("  Historial Alertas")
             self.alert_history_window = AlertHistoryWindow(self.root, self.alert_service)
             self.alert_history_window.bind(
-                "<Destroy>", lambda e: self._btn_idle("  Historial Alertas"))
+                "<Destroy>", lambda e: self._btn_idle("  Historial Alertas"))
         else:
             self.alert_history_window.lift()
 

@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 
 # Etiquetas legibles para cada clave del JSON "ui"
 _BTN_LABELS = {
+    "hardware_info":    "Info Hardware",
     "fan_control":      "󰈐  Control Ventiladores",
     "led_window":       "󰟖  LEDs RGB",
     "monitor_window":   "󰚗  Monitor Placa",

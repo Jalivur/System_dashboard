@@ -45,6 +45,7 @@ _DEFAULT_CONFIG = {
         "display_service":     True,
     },
     "ui": {
+        "hardware_info":    True,
         "fan_control":      True,
         "led_window":       True,
         "monitor_window":   True,
