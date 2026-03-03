@@ -72,15 +72,25 @@
 
 ## 🔄 Ideas en evaluación para v3.8+
 
-### 🐳 Monitor Docker
-- Listar contenedores activos/detenidos
-- Start/Stop/Restart desde la UI
-- `docker ps --format json` — sin dependencias nuevas
-- Badge con nº de contenedores caídos
+### 🖥️ Información del Hardware
+- Modelo de Pi, revisión, memoria total, versión del SO, kernel
+- Ventana estática tipo "Acerca de este equipo"
+- Sin dependencias nuevas — `vcgencmd`, `/proc/cpuinfo`, `uname`
 
-### 📡 Monitor MQTT / Home Assistant
-- Suscribirse a topics MQTT y mostrar valores en tiempo real
-- Alternativa ligera si no se usa Homebridge
+### 🔒 Monitor SSH
+- Leer `/var/log/auth.log` y mostrar intentos fallidos de acceso
+- Badge con contador de intentos en las últimas 24h
+- Lista con IP origen, usuario y timestamp de cada intento
+
+### 📡 Monitor WiFi
+- Intensidad de señal en dBm, calidad, SSID conectado, canal
+- Gráfica histórica de señal
+- Badge si la señal baja de umbral configurable
+
+### 📝 Editor de Configuración
+- Editar `config/settings.py`, `config/local_settings.py` y `.env` desde la UI
+- Sin necesidad de SSH para cambios rápidos de configuración
+- Solo las secciones relevantes para el usuario (posición pantalla, launchers, credenciales)
 
 ---
 
@@ -110,7 +120,7 @@ v3.5  ✅ ServiceRegistry
 v3.6  ✅ ServicesManagerWindow
 v3.6.5 ✅ ButtonManagerWindow
 v3.7  ✅ CrontabWindow + Fixes VNC/Wayland + Multi-Pi  ← ACTUAL
-v3.8  🔄 Docker? MQTT?
+v3.8  🔄 Info Hardware + Monitor SSH + Monitor WiFi + Editor Config
 v4.0  💭 API REST + Backup + Multi-pantalla?
 ```
 
