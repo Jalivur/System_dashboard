@@ -4,6 +4,7 @@ Muestra sesiones activas (who) e historial de conexiones (last).
 Se refresca automáticamente cada 30 segundos via SSHMonitor.
 Los widgets se crean una sola vez — solo se actualizan los valores.
 """
+import re
 import customtkinter as ctk
 from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
@@ -13,6 +14,98 @@ logger = get_logger(__name__)
 
 _REFRESH_MS = 30_000
 
+
+# ── Helpers de formato ────────────────────────────────────────────────────────
+
+def _fmt_tty(raw: str) -> str:
+    """pts/0 → Sesión 1 · tty1 → Consola local"""
+    if not raw:
+        return ""
+    if raw.startswith("pts/"):
+        try:
+            n = int(raw.split("/")[1]) + 1
+            return f"Sesión {n}"
+        except (IndexError, ValueError):
+            return raw
+    if raw.startswith("tty"):
+        return "Consola local"
+    return raw
+
+
+def _fmt_ip(raw: str) -> str:
+    """192.168.x.x → 192.168.x.x (local) · vacío → Consola local"""
+    if not raw:
+        return "Consola local"
+    if raw.startswith("192.168.") or raw.startswith("10.") or raw.startswith("172."):
+        return f"{raw}  (red local)"
+    return raw
+
+
+def _fmt_time_active(date: str, time: str) -> str:
+    """2026-03-04 10:22 → Conectado desde las 10:22"""
+    if not time:
+        return ""
+    if date:
+        return f"Conectado desde las {time}  ({date})"
+    return f"Conectado desde las {time}"
+
+
+def _fmt_time_history(raw: str) -> str:
+    """
+    Transforma la cadena de time_info del historial en algo legible.
+    Ejemplos de entrada:
+        'Tue Mar  4 10:22   still logged in'
+        'Mon Mar  3 21:10 - 21:45  (00:35)'
+        'Mon Mar  3 09:00 - crash'
+        'Mon Mar  3 09:00 - down'
+    """
+    if not raw:
+        return ""
+
+    raw = raw.strip()
+
+    # Detectar sesión activa
+    if "still logged in" in raw:
+        # Extraer hora de inicio
+        m = re.search(r'(\d{2}:\d{2})', raw)
+        hora = m.group(1) if m else ""
+        return f"Activa desde las {hora}" if hora else "Activa"
+
+    # Detectar cierre por crash o apagado
+    if "crash" in raw:
+        m = re.search(r'(\d{2}:\d{2})', raw)
+        hora = m.group(1) if m else ""
+        return f"Cortada por crash  ({hora})" if hora else "Cortada por crash"
+    if "down" in raw:
+        m = re.search(r'(\d{2}:\d{2})', raw)
+        hora = m.group(1) if m else ""
+        return f"Cortada por apagado  ({hora})" if hora else "Cortada por apagado"
+
+    # Formato normal: hora_inicio - hora_fin  (duración)
+    # Extraer duración entre paréntesis
+    m_dur = re.search(r'\((\d{2}:\d{2})\)', raw)
+    dur = m_dur.group(1) if m_dur else None
+
+    # Extraer horas de inicio y fin
+    horas = re.findall(r'(\d{2}:\d{2})', raw)
+
+    if len(horas) >= 2:
+        inicio, fin = horas[0], horas[1]
+        if dur:
+            h, m2 = dur.split(":")
+            if h == "00":
+                dur_str = f"{int(m2)} min"
+            else:
+                dur_str = f"{int(h)}h {int(m2)}min"
+            return f"{inicio} → {fin}  ({dur_str})"
+        return f"{inicio} → {fin}"
+    elif len(horas) == 1:
+        return f"Desde las {horas[0]}"
+
+    return raw
+
+
+# ── Ventana ───────────────────────────────────────────────────────────────────
 
 class SSHWindow(ctk.CTkToplevel):
     """Ventana de monitor de sesiones SSH."""
@@ -112,7 +205,7 @@ class SSHWindow(ctk.CTkToplevel):
         ).pack(side="left")
 
         self._session_badge = ctk.CTkLabel(
-            hdr, text="0",
+            hdr, text="Ninguna",
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
             text_color=COLORS['text_dim'],
             anchor="e")
@@ -124,7 +217,7 @@ class SSHWindow(ctk.CTkToplevel):
 
         self._session_empty = ctk.CTkLabel(
             card,
-            text="No hay sesiones SSH activas",
+            text="No hay sesiones SSH abiertas",
             font=(FONT_FAMILY, FONT_SIZES['medium']),
             text_color=COLORS['text_dim'])
         self._session_empty.pack(pady=(4, 10))
@@ -154,7 +247,7 @@ class SSHWindow(ctk.CTkToplevel):
             lbl_ip = ctk.CTkLabel(
                 right, text="",
                 font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-                text_color=COLORS['secondary'], anchor="e")
+                text_color=COLORS['primary'], anchor="e")
             lbl_ip.pack(anchor="e")
 
             lbl_time = ctk.CTkLabel(
@@ -213,13 +306,13 @@ class SSHWindow(ctk.CTkToplevel):
             lbl_tty = ctk.CTkLabel(
                 left, text="",
                 font=(FONT_FAMILY, FONT_SIZES['small']),
-                text_color=COLORS['text_dim'], anchor="w", width=70)
+                text_color=COLORS['text_dim'], anchor="w", width=90)
             lbl_tty.pack(side="left", padx=(8, 0))
 
             lbl_ip = ctk.CTkLabel(
                 left, text="",
                 font=(FONT_FAMILY, FONT_SIZES['small']),
-                text_color=COLORS['secondary'], anchor="w", width=120)
+                text_color=COLORS['primary'], anchor="w", width=160)
             lbl_ip.pack(side="left", padx=(8, 0))
 
             lbl_time = ctk.CTkLabel(
@@ -259,23 +352,25 @@ class SSHWindow(ctk.CTkToplevel):
 
     def _refresh_sessions(self, sessions: list):
         n = len(sessions)
-        self._session_badge.configure(
-            text=str(n),
-            text_color=COLORS['danger'] if n > 0 else COLORS['text_dim'])
 
         if n == 0:
+            self._session_badge.configure(
+                text="Ninguna", text_color=COLORS['text_dim'])
             self._session_empty.pack(pady=(4, 10))
         else:
+            self._session_badge.configure(
+                text=f"{n} activa{'s' if n != 1 else ''}",
+                text_color=COLORS['danger'])
             self._session_empty.pack_forget()
 
         for i, widgets in enumerate(self._session_rows):
             if i < n:
                 s = sessions[i]
                 widgets["user"].configure(text=s["user"])
-                widgets["tty"].configure(text=s["tty"])
-                widgets["ip"].configure(text=s.get("ip", ""))
+                widgets["tty"].configure(text=_fmt_tty(s["tty"]))
+                widgets["ip"].configure(text=_fmt_ip(s.get("ip", "")))
                 widgets["time"].configure(
-                    text=f"{s.get('date','')} {s.get('time','')}".strip())
+                    text=_fmt_time_active(s.get("date", ""), s.get("time", "")))
                 widgets["row"].pack(fill="x", padx=10, pady=3)
             else:
                 widgets["row"].pack_forget()
@@ -291,9 +386,9 @@ class SSHWindow(ctk.CTkToplevel):
             if i < n:
                 e = history[i]
                 widgets["user"].configure(text=e["user"])
-                widgets["tty"].configure(text=e["tty"])
-                widgets["ip"].configure(text=e.get("ip", ""))
-                widgets["time"].configure(text=e.get("time_info", ""))
+                widgets["tty"].configure(text=_fmt_tty(e["tty"]))
+                widgets["ip"].configure(text=_fmt_ip(e.get("ip", "")))
+                widgets["time"].configure(text=_fmt_time_history(e.get("time_info", "")))
                 widgets["row"].pack(fill="x", padx=10, pady=1)
             else:
                 widgets["row"].pack_forget()

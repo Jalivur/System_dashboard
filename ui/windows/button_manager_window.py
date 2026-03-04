@@ -33,6 +33,8 @@ _BTN_LABELS = {
     "network_local":    BL.RED_LOCAL,
     "pihole":           BL.PIHOLE,
     "vpn_window":       BL.VPN,
+    "ssh_window":       BL.SSH,
+    "wifi_window":      BL.WIFI,
     "alert_history":    BL.HISTORIAL_ALERTAS,
     "display_window":   BL.BRILLO,
     "overview":         BL.RESUMEN,

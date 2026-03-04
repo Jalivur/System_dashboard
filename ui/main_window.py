@@ -10,8 +10,7 @@ from ui.windows import (FanControlWindow, MonitorWindow, NetworkWindow, USBWindo
                         HistoryWindow, LaunchersWindow, ThemeSelector, DiskWindow, UpdatesWindow, HomebridgeWindow,
                         NetworkLocalWindow, PiholeWindow, AlertHistoryWindow, DisplayWindow, VpnWindow, OverviewWindow,
                         LedWindow, CameraWindow, ServicesManagerWindow, LogViewerWindow, ButtonManagerWindow, CrontabWindow,
-                        HardwareInfoWindow)
-from ui.windows.ssh_window import SSHWindow
+                        HardwareInfoWindow, SSHWindow, WiFiWindow)
 from ui.widgets import confirm_dialog, terminal_dialog
 from ui.window_manager import WindowManager
 from utils.system_utils import SystemUtils
@@ -52,6 +51,7 @@ class MainWindow:
         self.hardware_monitor    = registry.get("hardware_monitor")
         self.audio_alert_service = registry.get("audio_alert_service")
         self.ssh_monitor         = registry.get("ssh_monitor")
+        self.wifi_monitor        = registry.get("wifi_monitor")
 
         self._badges    = {}
         self._menu_btns = {}
@@ -82,6 +82,7 @@ class MainWindow:
         self.services_manager_window = None
         self.button_manager_window   = None
         self.ssh_window              = None
+        self.wifi_window              = None
 
         self._uptime_tick = 0
 
@@ -192,6 +193,7 @@ class MainWindow:
             (BL.CAMARA,            self.open_camera_window,    []),
             (BL.TEMA,              self.open_theme_selector,   []),
             (BL.SSH,               self.open_ssh_window,       []),
+            (BL.WIFI,              self.open_wifi_window,      []),
             (BL.REINICIAR,         self.restart_application,   []),
             (BL.SALIR,             self.exit_application,      []),
         ]
@@ -498,6 +500,7 @@ class MainWindow:
 
     def open_camera_window(self):
         if self.camera_window is None or not self.camera_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Camara y OCR")
             self._btn_active(BL.CAMARA)
             self.camera_window = CameraWindow(self.root)
             self.camera_window.bind("<Destroy>", lambda e: self._btn_idle(BL.CAMARA))
@@ -521,6 +524,15 @@ class MainWindow:
             self.ssh_window.bind("<Destroy>", lambda e: self._btn_idle(BL.SSH))
         else:
             self.ssh_window.lift()
+            
+    def open_wifi_window(self):
+        if self.wifi_window is None or not self.wifi_window.winfo_exists():
+            logger.debug("[MainWindow] Abriendo: Monitor WiFi")
+            self._btn_active(BL.WIFI)
+            self.wifi_window = WiFiWindow(self.root, self.wifi_monitor)
+            self.wifi_window.bind("<Destroy>", lambda e: self._btn_idle(BL.WIFI))
+        else:
+            self.wifi_window.lift()
 
     # ── Salir / Reiniciar ─────────────────────────────────────────────────────
 

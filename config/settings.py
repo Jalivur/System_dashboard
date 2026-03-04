@@ -118,8 +118,10 @@ class Icons:
 
     # Misc
     DEGREE              = "\u00b0"             # °
+    TRASH               = "\uea81"
     
     SSH                 = "\U000F08C0"         # 
+    WIFI                = "\U000F05A9"         #
     # Lanzadores
     NAS                 = "\U000F08F3"         # 󰣳
     MONTAR              = "\U000F0318"         # 󰌘
