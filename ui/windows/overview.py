@@ -6,15 +6,12 @@ Pensada para usarse como pantalla de reposo en la DSI.
 import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
-    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
-)
-from ui.styles import StyleManager, make_window_header
-from utils.logger import get_logger
-from config.settings import (
+    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y,
     CPU_WARN,  CPU_CRIT,
     RAM_WARN,  RAM_CRIT,
-    TEMP_WARN, TEMP_CRIT,
-)
+    TEMP_WARN, TEMP_CRIT, Icons)
+from ui.styles import StyleManager, make_window_header
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -88,12 +85,12 @@ class OverviewWindow(ctk.CTkToplevel):
         grid.columnconfigure(1, weight=1)
 
         cards = [
-            ("cpu",      "🔥 CPU"),
-            ("ram",      "💾 RAM"),
-            ("temp",     "🌡️ Temperatura"),
-            ("disk",     "💿 Disco"),
-            ("net",      "🌐 Red"),
-            ("services", "⚙️ Servicios"),
+            ("cpu",      "" + Icons.FIRE + " CPU"),
+            ("ram",      f"{Icons.RAM} RAM"),
+            ("temp",     "" + Icons.THERMOMETER + "️ Temperatura"),
+            ("disk",     "" + Icons.MONITOR_DISCO + " Disco"),
+            ("net",      "" + Icons.TAB_RED + " Red"),
+            ("services", "" + Icons.TAB_SERVICIOS + "️ Servicios"),
         ]
 
         for idx, (key, title) in enumerate(cards):
@@ -124,7 +121,7 @@ class OverviewWindow(ctk.CTkToplevel):
         grid.rowconfigure(3, weight=1)
 
         ctk.CTkLabel(
-            pihole_card, text="🕳️ Pi-hole",
+            pihole_card, text="" + Icons.PIHOLE + "️ Pi-hole",
             font=(FONT_FAMILY, FONT_SIZES['small']),
             text_color=COLORS['text_dim'],
             anchor="w",

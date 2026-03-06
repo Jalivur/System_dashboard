@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR, UPDATE_MS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR, UPDATE_MS, Icons
 from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets.dialogs import terminal_dialog
 from utils import SystemUtils
@@ -15,7 +15,7 @@ class UpdatesWindow(ctk.CTkToplevel):
         self._polling = False
         self._banner_shown = False
 
-        self.title("Actualizaciones del Sistema")
+        self.title(f"{Icons.ACTUALIZACIONES} Actualizaciones del Sistema")
         self.configure(fg_color=COLORS['bg_medium'])
         self.overrideredirect(True)
         self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
@@ -27,7 +27,7 @@ class UpdatesWindow(ctk.CTkToplevel):
         main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
         main.pack(fill="both", expand=True, padx=5, pady=5)
 
-        make_window_header(main, title="ACTUALIZACIONES DEL SISTEMA", on_close=self.destroy)
+        make_window_header(main, title=f"{Icons.ACTUALIZACIONES} ACTUALIZACIONES DEL SISTEMA", on_close=self.destroy)
 
         # Frame de contenido que se puede limpiar para el banner
         self._content = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
@@ -38,7 +38,7 @@ class UpdatesWindow(ctk.CTkToplevel):
     def _build_content(self, parent):
         """Construye el contenido normal de la ventana."""
         # Icono
-        self.status_icon = ctk.CTkLabel(parent, text="󰚰", font=(FONT_FAMILY, 60))
+        self.status_icon = ctk.CTkLabel(parent, text=Icons.UPDATE_SCRIPT, font=(FONT_FAMILY, 60))
         self.status_icon.pack(pady=(10, 5))
 
         # Labels
@@ -59,20 +59,20 @@ class UpdatesWindow(ctk.CTkToplevel):
         btn_frame.pack(side="bottom", fill="x", pady=(10, 20))
 
         self.search_btn = make_futuristic_button(
-            btn_frame, text="🔍 Buscar",
+            btn_frame, text=f"{Icons.SEARCH} Buscar",
             command=lambda: self._refresh_status(force=True), width=12
         )
         self.search_btn.pack(side="left", padx=5, expand=True)
 
         self.update_btn = make_futuristic_button(
-            btn_frame, text="󰚰 Instalar",
+            btn_frame, text=f"{Icons.UPDATE_SCRIPT}  Instalar",
             command=self._execute_update_script, width=12
         )
         self.update_btn.pack(side="left", padx=5, expand=True)
         self.update_btn.configure(state="disabled")
 
         close_btn = make_futuristic_button(
-            btn_frame, text="Cerrar",
+            btn_frame, text=f"{Icons.CROSS} Cerrar",
             command=self.destroy, width=12
         )
         close_btn.pack(side="left", padx=5, expand=True)
@@ -108,7 +108,7 @@ class UpdatesWindow(ctk.CTkToplevel):
             return
         if force:
             self._polling = False
-            self.status_label.configure(text="Buscando...", text_color=COLORS['warning'])
+            self.status_label.configure(text=f"{Icons.SEARCH} Buscando...", text_color=COLORS['warning'])
             self.update_idletasks()
 
         res = self.monitor.check_updates(force=force)
@@ -155,6 +155,6 @@ class UpdatesWindow(ctk.CTkToplevel):
         terminal_dialog(
             self,
             script_path,
-            "CONSOLA DE ACTUALIZACIÓN",
+            f"{Icons.ACTUALIZACIONES} CONSOLA DE ACTUALIZACIÓN",
             on_close=al_terminar_actualizacion
         )

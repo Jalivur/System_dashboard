@@ -3,7 +3,7 @@ Ventana de control de LEDs RGB del GPIO Board.
 Hardware: Freenove FNK0100K — 4 LEDs RGB (I2C 0x21, gestionados por fase1.py).
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from core.led_service import LED_MODES, LED_MODE_LABELS
 from utils.logger import get_logger
@@ -141,7 +141,7 @@ class LedWindow(ctk.CTkToplevel):
         self._preview_rect = self._preview_canvas.create_rectangle(0, 0, 60, 30, fill="#00ff00")
 
         make_futuristic_button(
-            preview_row, text="✓ Aplicar color",
+            preview_row, text="" + Icons.CHECK_MARK + " Aplicar color",
             command=self._apply_color,
             width=16, height=8, font_size=14
         ).pack(side="left", padx=10)
@@ -155,12 +155,12 @@ class LedWindow(ctk.CTkToplevel):
                      text_color=COLORS['text_dim']).pack(anchor="w", padx=14, pady=(10, 6))
 
         presets = [
-            ("🔴 Rojo",     255, 0,   0),
-            ("🟢 Verde",    0,   255, 0),
-            ("🔵 Azul",     0,   0,   255),
-            ("🟡 Amarillo", 255, 200, 0),
-            ("🟣 Violeta",  180, 0,   255),
-            ("⚪ Blanco",   255, 255, 255),
+            ("" + Icons.RED_CIRCLE + " Rojo",     255, 0,   0),
+            ("" + Icons.GREEN_CIRCLE + " Verde",    0,   255, 0),
+            ("" + Icons.BLUE_CIRCLE + " Azul",     0,   0,   255),
+            ("" + Icons.YELLOW_CIRCLE + " Amarillo", 255, 200, 0),
+            ("" + Icons.PURPLE_CIRCLE + " Violeta",  180, 0,   255),
+            ("" + Icons.WHITE_CIRCLE + " Blanco",   255, 255, 255),
         ]
         qrow = ctk.CTkFrame(quick_card, fg_color="transparent")
         qrow.pack(fill="x", padx=10, pady=(0, 10))

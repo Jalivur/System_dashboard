@@ -133,12 +133,59 @@ class Icons:
     WIFI                = "\U000F05A9"         #
     TAP                 = "\U000F0741"
     ETHERNET            = "\U000F0200"
+    CALENDAR_RANGE      = "\U000F0679"         # 󰙹  nf-md-calendar_range
     # Lanzadores
     NAS                 = "\U000F08F3"         # 󰣳
     MONTAR              = "\U000F0318"         # 󰌘
     DESMONTAR           = "\U000F0319"         # 󰌙
     UPDATE_SCRIPT       = "\U000F06B0"         # 󰚰
     SHUTDOWN            = "\U000F0159"         # 󰅙
+
+    # Estado y feedback
+    OK                  = "\u2705"              # ✅
+    ERROR               = "\u274c"              # ❌
+    NO_ENTRY            = "\u26d4"              # ⛔
+    CHECK_MARK          = "\u2713"              # ✓
+    CLOSE_X             = "\u2715"              # ✕
+    CROSS_MARK          = "\u2717"              # ✗
+    WAITING             = "\u23f3"              # ⏳
+    PAUSE               = "\u23f8"              # ⏸
+    STOP_MEDIA          = "\u23f9"              # ⏹
+    REFRESH             = "\U0001f504"          # 🔄
+    SEARCH              = "\U0001f50d"          # 🔍
+
+    # Hardware / sensores
+    RAM                 = "\U000f035b"          # 󰍛  nf-md-memory
+    THERMOMETER         = "\U0001f321"          # 🌡
+    FIRE                = "\U0001f525"          # 🔥
+
+    # Círculos de color (estado / LEDs)
+    RED_CIRCLE          = "\U0001f534"          # 🔴
+    GREEN_CIRCLE        = "\U0001f7e2"          # 🟢
+    BLUE_CIRCLE         = "\U0001f535"          # 🔵
+    YELLOW_CIRCLE       = "\U0001f7e1"          # 🟡
+    PURPLE_CIRCLE       = "\U0001f7e3"          # 🟣
+    WHITE_CIRCLE        = "\u26aa"              # ⚪
+
+    # Archivos y carpetas
+    FOLDER              = "\U0001f4c1"          # 📁
+    FOLDER_OPEN         = "\U0001f4c2"          # 📂
+    DOCUMENT            = "\U0001f4c4"          # 📄
+    CLIPBOARD           = "\U0001f4cb"          # 📋
+
+    # Misc UI
+    HOME                = "\U0001f3e0"          # 🏠
+    EYE                 = "\U0001f441"          # 👁
+    HAND                = "\U0001f590"          # 🖐
+    DROPLET             = "\U0001f4a7"          # 💧
+    UNLOCK              = "\U0001f513"          # 🔓
+    DELETE              = "\U0001f5d1"          # 🗑
+
+    # Brillo (fases de luna)
+    MOON_NEW            = "\U0001f311"          # 🌑
+    MOON_CRESCENT       = "\U0001f312"          # 🌒
+    MOON_HALF           = "\U0001f313"          # 🌓
+    MOON_FULL           = "\U0001f315"          # 🌕
 
     # Pestañas del menú principal
     TAB_SISTEMA         = "\U000f0697"          # 󰚗  (mismo que MONITOR_PLACA)

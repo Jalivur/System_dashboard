@@ -4,7 +4,7 @@ Ventana de control de ventiladores
 import tkinter as tk
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons)
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox
 from core.fan_controller import FanController
@@ -103,7 +103,7 @@ class FanControlWindow(ctk.CTkToplevel):
         # Aviso de servicio automático parado — se muestra/oculta dinámicamente
         self._service_warning = ctk.CTkLabel(
             inner,
-            text="⚠️  Servicio automático parado — modo Auto no actúa  |  Control manual disponible",
+            text="" + Icons.WARNING + "️  Servicio automático parado — modo Auto no actúa  |  Control manual disponible",
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
             text_color=COLORS.get('warning', '#ffaa00'),
             fg_color=COLORS['bg_dark'],
@@ -278,7 +278,7 @@ class FanControlWindow(ctk.CTkToplevel):
 
         make_futuristic_button(
             add_section,
-            text="✓ Añadir Punto a la Curva",
+            text="" + Icons.CHECK_MARK + " Añadir Punto a la Curva",
             command=self._add_curve_point_from_entries,
             width=25, height=6, font_size=16
         ).pack(pady=10)
@@ -325,7 +325,7 @@ class FanControlWindow(ctk.CTkToplevel):
         self._entry_temp.configure(text_color=COLORS['text_dim'])
         self._entry_pwm.configure(text_color=COLORS['text_dim'])
         self._refresh_curve_points()
-        custom_msgbox(self, f"✓ Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
+        custom_msgbox(self, f"{Icons.CHECK_MARK} Punto añadido:\n{temp}°C → PWM {pwm}", "Éxito")
 
     # ── Curva ─────────────────────────────────────────────────────────────────
 

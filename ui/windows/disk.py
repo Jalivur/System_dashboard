@@ -3,7 +3,7 @@ Ventana de monitoreo de disco
 """
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH,
-                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS)
+                             DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons)
 from ui.styles import StyleManager, make_window_header
 from ui.widgets import GraphWidget
 from core.disk_monitor import DiskMonitor
@@ -82,7 +82,7 @@ class DiskWindow(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             smart_card,
-            text="💾 NVMe SMART",
+            text=f"{Icons.MONITOR_DISCO} NVMe SMART",
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
             text_color=COLORS['primary'],
             anchor="w",

@@ -11,7 +11,7 @@ Requisitos:
 import threading
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES,
-                              DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y)
+                              DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons)
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from core import camera_service as cam
 from utils.logger import get_logger
@@ -57,14 +57,14 @@ class CameraWindow(ctk.CTkToplevel):
         tab_bar.pack(fill="x", padx=5, pady=(0, 4))
 
         self._tab_photo_btn = make_futuristic_button(
-            tab_bar, text="📷 Foto",
+            tab_bar, text="" + Icons.CAMARA + " Foto",
             command=lambda: self._switch_tab("photo"),
             width=14, height=7, font_size=14,
         )
         self._tab_photo_btn.pack(side="left", padx=8, pady=6)
 
         self._tab_scan_btn = make_futuristic_button(
-            tab_bar, text="🔍 Escáner OCR",
+            tab_bar, text="" + Icons.SEARCH + " Escáner OCR",
             command=lambda: self._switch_tab("scan"),
             width=18, height=7, font_size=14,
         )
@@ -140,7 +140,7 @@ class CameraWindow(ctk.CTkToplevel):
         row.pack(pady=10)
 
         self._photo_btn = make_futuristic_button(
-            row, text="📷 Capturar",
+            row, text="" + Icons.CAMARA + " Capturar",
             command=self._capture_photo,
             width=16, height=9, font_size=16,
         )
@@ -176,7 +176,7 @@ class CameraWindow(ctk.CTkToplevel):
                      text_color=COLORS['text_dim']).pack(side="left")
 
         make_futuristic_button(
-            list_hdr, text="🗑 Borrar todas",
+            list_hdr, text="" + Icons.TRASH + " Borrar todas",
             command=self._delete_all_photos,
             width=12, height=6, font_size=11,
         ).pack(side="right")
@@ -193,7 +193,7 @@ class CameraWindow(ctk.CTkToplevel):
         row.pack(pady=8)
 
         self._scan_btn = make_futuristic_button(
-            row, text="🔍 Escanear documento",
+            row, text="" + Icons.SEARCH + " Escanear documento",
             command=self._scan_document,
             width=22, height=9, font_size=16,
         )
@@ -228,7 +228,7 @@ class CameraWindow(ctk.CTkToplevel):
                      text_color=COLORS['text_dim']).pack(side="left")
 
         self._copy_btn = make_futuristic_button(
-            txt_hdr, text="📋 Copiar",
+            txt_hdr, text="" + Icons.CLIPBOARD + " Copiar",
             command=self._copy_text,
             width=10, height=5, font_size=11,
         )
@@ -253,7 +253,7 @@ class CameraWindow(ctk.CTkToplevel):
                      text_color=COLORS['text_dim']).pack(side="left")
 
         make_futuristic_button(
-            scan_hdr, text="🗑 Borrar todos",
+            scan_hdr, text="" + Icons.TRASH + " Borrar todos",
             command=self._delete_all_scans,
             width=12, height=6, font_size=11,
         ).pack(side="right")
@@ -291,7 +291,7 @@ class CameraWindow(ctk.CTkToplevel):
             return
         self._busy = True
         self._photo_btn.configure(state="disabled")
-        self._photo_status.configure(text="⏳ Capturando...", text_color=COLORS['text'])
+        self._photo_status.configure(text="" + Icons.WAITING + " Capturando...", text_color=COLORS['text'])
         w, h = self._res_var.get().split("x")
         threading.Thread(
             target=lambda: self.after(0, self._capture_done, *cam.capture(w, h)),
@@ -312,7 +312,7 @@ class CameraWindow(ctk.CTkToplevel):
             return
         self._busy = True
         self._scan_btn.configure(state="disabled")
-        self._scan_status.configure(text="⏳ Procesando...", text_color=COLORS['text'])
+        self._scan_status.configure(text="" + Icons.WAITING + " Procesando...", text_color=COLORS['text'])
         self._clear_textbox()
         lang = self._lang_var.get()
         threading.Thread(
@@ -351,8 +351,8 @@ class CameraWindow(ctk.CTkToplevel):
         if text:
             self.clipboard_clear()
             self.clipboard_append(text)
-            self._copy_btn.configure(text="✅ Copiado")
-            self.after(2000, lambda: self._copy_btn.configure(text="📋 Copiar"))
+            self._copy_btn.configure(text="" + Icons.OK + " Copiado")
+            self.after(2000, lambda: self._copy_btn.configure(text="" + Icons.CLIPBOARD + " Copiar"))
 
     # ── Listas ────────────────────────────────────────────────────────────────
 
@@ -367,7 +367,7 @@ class CameraWindow(ctk.CTkToplevel):
         for p in photos:
             self._list_row(
                 self._photo_list_frame,
-                f"📷 {p.name}", p.stat().st_size // 1024,
+                f"{Icons.CAMARA} {p.name}", p.stat().st_size // 1024,
                 on_delete=lambda ph=p: self._delete_one_photo(ph),
             )
 
@@ -390,7 +390,7 @@ class CameraWindow(ctk.CTkToplevel):
                      text_color=COLORS['text'], anchor="w",
                      ).pack(side="left", padx=10, pady=6, expand=True, fill="x")
         make_futuristic_button(
-            row, text="🗑", command=on_delete,
+            row, text="" + Icons.TRASH + "", command=on_delete,
             width=4, height=5, font_size=13,
         ).pack(side="right", padx=6, pady=4)
 
@@ -399,17 +399,17 @@ class CameraWindow(ctk.CTkToplevel):
         row = ctk.CTkFrame(parent, fg_color=COLORS['bg_dark'], corner_radius=6)
         row.pack(fill="x", pady=2, padx=4)
         size_kb = txt.stat().st_size // 1024
-        ctk.CTkLabel(row, text=f"📄 {txt.stem}  ({size_kb} KB)  [.txt + .md]",
+        ctk.CTkLabel(row, text=f"{Icons.DOCUMENT} {txt.stem}  ({size_kb} KB)  [.txt + .md]",
                      font=(FONT_FAMILY, FONT_SIZES['small']),
                      text_color=COLORS['text'], anchor="w",
                      ).pack(side="left", padx=10, pady=6, expand=True, fill="x")
         make_futuristic_button(
-            row, text="🗑",
+            row, text="" + Icons.TRASH + "",
             command=lambda t=txt, m=md: self._delete_one_scan(t, m),
             width=4, height=5, font_size=13,
         ).pack(side="right", padx=2, pady=4)
         make_futuristic_button(
-            row, text="📂",
+            row, text="" + Icons.FOLDER_OPEN + "",
             command=lambda t=txt: self._load_scan(t),
             width=4, height=5, font_size=13,
         ).pack(side="right", padx=2, pady=4)

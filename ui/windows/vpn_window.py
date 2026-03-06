@@ -7,7 +7,7 @@ import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
-)
+, Icons)
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets.dialogs import terminal_dialog
 from utils.logger import get_logger
@@ -138,14 +138,14 @@ class VpnWindow(ctk.CTkToplevel):
 
         make_futuristic_button(
             btn_row,
-            text="🔒 Conectar VPN",
+            text="" + Icons.VPN + " Conectar VPN",
             command=self._connect,
             width=18, height=10, font_size=18,
         ).pack(side="left", padx=12)
 
         make_futuristic_button(
             btn_row,
-            text="🔓 Desconectar",
+            text="" + Icons.UNLOCK + " Desconectar",
             command=self._disconnect,
             width=18, height=10, font_size=18,
         ).pack(side="left", padx=12)
@@ -247,7 +247,7 @@ class VpnWindow(ctk.CTkToplevel):
         terminal_dialog(
             parent=self,
             script_path=_SCRIPT_CONNECT,
-            title="🔒 CONECTANDO VPN...",
+            title="" + Icons.VPN + " CONECTANDO VPN...",
             on_close=self._on_action_done,
         )
 
@@ -268,7 +268,7 @@ class VpnWindow(ctk.CTkToplevel):
         terminal_dialog(
             parent=self,
             script_path=_SCRIPT_DISCONNECT,
-            title="🔓 DESCONECTANDO VPN...",
+            title="" + Icons.UNLOCK + " DESCONECTANDO VPN...",
             on_close=self._on_action_done,
         )
 

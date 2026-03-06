@@ -232,7 +232,7 @@ class ServicesManagerWindow(ctk.CTkToplevel):
             text="ACTIVO" if running else "PARADO", text_color=color)
         row["btn"].configure(
             state="normal",
-            text="⏹ Parar"  if running else "▶ Iniciar",
+            text=f"{Icons.STOP_MEDIA} Parar"  if running else f"{Icons.PLAY} Iniciar",
             fg_color=COLORS['danger'] if running else COLORS['primary'])
 
     def _refresh_loop(self):
@@ -251,7 +251,7 @@ class ServicesManagerWindow(ctk.CTkToplevel):
         action  = "parar" if running else "arrancar"
         msg     = f"¿Seguro que quieres {action} «{key}»?"
         if running and warn:
-            msg += f"\n\n⚠️  {warn}"
+            msg += f"\n\n{Icons.WARNING}️  {warn}"
         confirm_dialog(parent=self, text=msg,
                        on_confirm=lambda: self._execute(key, stop=running))
 
@@ -286,7 +286,7 @@ class ServicesManagerWindow(ctk.CTkToplevel):
         names = "\n".join(f"  • {k}" for k in keys)
         confirm_dialog(
             parent=self,
-            text=f"⚠️  Esto parará {len(keys)} servicios:\n\n{names}\n\n¿Continuar?",
+            text=f"{Icons.WARNING}️  Esto parará {len(keys)} servicios:\n\n{names}\n\n¿Continuar?",
             on_confirm=lambda: [self._execute(k, stop=True) for k in keys])
 
     def _start_all(self):
@@ -302,6 +302,6 @@ class ServicesManagerWindow(ctk.CTkToplevel):
         """Persiste el estado actual al services.json como configuración de arranque."""
         confirm_dialog(
             parent=self,
-            text="💾 ¿Guardar el estado actual como configuración de arranque?\n\n"
+            text=f"{Icons.SAVE} ¿Guardar el estado actual como configuración de arranque?\n\n"
                  "Los servicios PARADOS no arrancarán en el próximo inicio.",
             on_confirm=self._registry.save_config)

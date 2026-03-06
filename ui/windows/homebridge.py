@@ -4,7 +4,7 @@ Muestra enchufes e interruptores y permite encenderlos / apagarlos
 """
 import threading
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons
 from ui.styles import StyleManager, make_futuristic_button, make_window_header, make_homebridge_switch
 from ui.widgets import custom_msgbox
 from core.homebridge_monitor import HomebridgeMonitor
@@ -144,7 +144,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
                 f"encontrado{'s' if total != 1 else ''}"
             )
         else:
-            header_status = "⚠ Sin conexión"
+            header_status = "" + Icons.WARNING + " Sin conexión"
             self._set_status("No se pudo conectar con Homebridge — verifica host y credenciales")
 
         try:
@@ -191,7 +191,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
 
         if disabled:
             ctk.CTkLabel(
-                card, text="⚠  FALLO",
+                card, text="" + Icons.WARNING + "  FALLO",
                 text_color=COLORS.get('danger', '#ff4444'),
                 font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
             ).pack(pady=(10, 0))
@@ -299,7 +299,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         if acc.get("temp") is not None:
             ctk.CTkLabel(
                 card,
-                text=f"🌡  {acc['temp']:.1f}°C",
+                text=f"{Icons.THERMOMETER}  {acc['temp']:.1f}°C",
                 text_color=COLORS.get('primary', '#00ffff'),
                 font=(FONT_FAMILY, FONT_SIZES['xlarge'], "bold"),
             ).pack(pady=4)
@@ -307,7 +307,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         if acc.get("humidity") is not None:
             ctk.CTkLabel(
                 card,
-                text=f"💧  {acc['humidity']:.0f}%",
+                text=f"{Icons.DROPLET}  {acc['humidity']:.0f}%",
                 text_color=COLORS.get('secondary', '#aaaaff'),
                 font=(FONT_FAMILY, FONT_SIZES['large']),
             ).pack(pady=(0, 12))

@@ -14,8 +14,7 @@ import psutil
 import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
-    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y,
-)
+    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons)
 from ui.styles import StyleManager, make_window_header
 from utils.logger import get_logger
 
@@ -143,7 +142,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
 
         # ── Tarjeta: Placa / Sistema ──────────────────────────────────────────
         if info["pi_model"]:
-            self._section(inner, "🖥️  Placa", [
+            self._section(inner, "" + Icons.TAB_HARDWARE + "️  Placa", [
                 ("Modelo",       info["pi_model"]),
                 ("Hostname",     info["hostname"]),
                 ("SO",           info["os"]),
@@ -151,7 +150,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
                 ("Kernel",       info["kernel"]),
             ])
         else:
-            self._section(inner, "🖥️  Sistema", [
+            self._section(inner, "" + Icons.TAB_HARDWARE + "️  Sistema", [
                 ("Hostname",     info["hostname"]),
                 ("SO",           info["os"]),
                 ("Arquitectura", info["arch"]),
@@ -159,7 +158,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
             ])
 
         # ── Tarjeta: Procesador ───────────────────────────────────────────────
-        self._section(inner, "🔥  Procesador", [
+        self._section(inner, "" + Icons.FIRE + "  Procesador", [
             ("Modelo",           info["cpu_model"]),
             ("Núcleos físicos",  str(info["cpu_cores"])),
             ("Hilos (lógicos)",  str(info["cpu_threads"])),
@@ -167,7 +166,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
         ])
 
         # ── Tarjeta: Memoria ──────────────────────────────────────────────────
-        self._section(inner, "💾  Memoria RAM", [
+        self._section(inner, f"{Icons.RAM}  Memoria RAM", [
             ("Total instalada", info["ram_total"]),
         ])
 
@@ -177,7 +176,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             uptime_card,
-            text="⏱️  Uptime",
+            text="" + Icons.UPTIME + "️  Uptime",
             font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
             text_color=COLORS['primary'],
             anchor="w",
@@ -246,7 +245,7 @@ class HardwareInfoWindow(ctk.CTkToplevel):
             try:
                 uptime_str = self.system_monitor.get_current_stats().get(
                     "uptime_str", "--")
-                uptime_str = uptime_str.lstrip("⏱ ").strip()
+                uptime_str = uptime_str.lstrip("" + Icons.UPTIME + " ").strip()
                 if self._uptime_label:
                     self._uptime_label.configure(text=uptime_str)
             except Exception:
