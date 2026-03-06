@@ -3,7 +3,7 @@ Ventana de histórico de datos
 """
 import customtkinter as ctk
 from datetime import datetime, timedelta
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR, EXPORTS_CSV_DIR, EXPORTS_SCR_DIR
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, DATA_DIR, EXPORTS_CSV_DIR, EXPORTS_SCR_DIR, Icons
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox , confirm_dialog
 from core.data_analyzer import DataAnalyzer
@@ -134,7 +134,7 @@ class HistoryWindow(ctk.CTkToplevel):
         # Botón toggle del panel de rango
         self._toggle_btn = make_futuristic_button(
             self._controls_frame,
-            text="󰙹 Rango",
+            text=f"{Icons.CALENDAR_RANGE}  Rango",
             command=self._toggle_range_panel,
             height=6,
             width=13
@@ -189,7 +189,7 @@ class HistoryWindow(ctk.CTkToplevel):
         # ── BOTÓN APLICAR ─────────────────────────────────────────
         self._apply_btn = make_futuristic_button(
             self._controls_frame,
-            text="✓Aplicar",
+            text="" + Icons.CHECK_MARK + "Aplicar",
             command=self._apply_custom_range,
             height=6,
             width=12,
@@ -217,10 +217,10 @@ class HistoryWindow(ctk.CTkToplevel):
         _btn_row.pack(expand=True)
 
         for text, cmd, w in [
-            ("🏠 Inicio",  self.toolbar.home,          12),
-            ("🔍 Zoom",    self.toolbar.zoom,           12),
-            ("🖐️ Mover",  self.toolbar.pan,            12),
-            (" Guardar",  self._export_figure_image,   12),
+            ("" + Icons.HOME + " Inicio",  self.toolbar.home,          12),
+            ("" + Icons.SEARCH + " Zoom",    self.toolbar.zoom,           12),
+            ("" + Icons.HAND + "️ Mover",  self.toolbar.pan,            12),
+            ("" + Icons.SAVE + " Guardar",  self._export_figure_image,   12),
         ]:
             make_futuristic_button(
                 _btn_row, text=text, command=cmd, height=6, width=w
@@ -271,7 +271,7 @@ class HistoryWindow(ctk.CTkToplevel):
         """Muestra u oculta la fila de OptionMenus de rango personalizado."""
         if self._range_panel.winfo_ismapped():
             self._range_panel.pack_forget()
-            self._toggle_btn.configure(text="󰙹 Rango")
+            self._toggle_btn.configure(text=f"{Icons.CALENDAR_RANGE}  Rango")
             self._apply_btn.configure(state="disabled")
         else:
             # Insertar después del frame de controles de periodo
@@ -279,7 +279,7 @@ class HistoryWindow(ctk.CTkToplevel):
                 fill="x", padx=10, pady=(10, 5),
                 after=self._controls_frame
             )
-            self._toggle_btn.configure(text="✕ Cerrar")
+            self._toggle_btn.configure(text="" + Icons.CLOSE_X + " Cerrar")
             self._apply_btn.configure(state="normal")
 
 
@@ -316,21 +316,21 @@ class HistoryWindow(ctk.CTkToplevel):
         try:
             start_dt = datetime.strptime(start_dt_text, _DATE_FMT)
         except ValueError as e:
-            custom_msgbox(self, f"Fecha de inicio inválida:\n{e}", "❌ Error")
+            custom_msgbox(self, f"Fecha de inicio inválida:\n{e}\n{Icons.ERROR} Error")
             return
 
         try:
             end_dt = datetime.strptime(end_dt_text, _DATE_FMT)
         except ValueError as e:
-            custom_msgbox(self, f"Fecha de fin inválida:\n{e}", "❌ Error")
+            custom_msgbox(self, f"Fecha de fin inválida:\n{e}\n{Icons.ERROR} Error")
             return
 
         if end_dt <= start_dt:
-            custom_msgbox(self, "La fecha de fin debe ser\nposterior a la de inicio.", "⚠️ Rango inválido")
+            custom_msgbox(self, "La fecha de fin debe ser\nposterior a la de inicio.", "" + Icons.WARNING + "️ Rango inválido")
             return
 
         if (end_dt - start_dt).days > 90:
-            custom_msgbox(self, "El rango no puede superar 90 días.", "⚠️ Rango demasiado amplio")
+            custom_msgbox(self, "El rango no puede superar 90 días.", "" + Icons.WARNING + "️ Rango demasiado amplio")
             return
 
         self._using_custom_range = True
@@ -444,26 +444,26 @@ class HistoryWindow(ctk.CTkToplevel):
             path  = str(EXPORTS_CSV_DIR / f"history_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
             try:
                 self.analyzer.export_to_csv_between(path, start, end)
-                custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
+                custom_msgbox(self, f"Datos exportados a:\n{path}\n{Icons.OK} Exportado")
                 try:
                     CleanupService().clean_csv()
                 except Exception as ce:
                     logger.warning(f"[HistoryWindow] No se pudo limpiar CSV: {ce}")
             except Exception as e:
-                custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
+                custom_msgbox(self, f"Error al exportar:\n{e}\n{Icons.ERROR} Error")
         else:
             period = self.period_var.get()
             hours  = {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}[period]
             path   = str(EXPORTS_CSV_DIR / f"history_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
             try:
                 self.analyzer.export_to_csv(path, hours)
-                custom_msgbox(self, f"Datos exportados a:\n{path}", "✅ Exportado")
+                custom_msgbox(self, f"Datos exportados a:\n{path}\n{Icons.OK} Exportado")
                 try:
                     CleanupService().clean_csv()
                 except Exception as ce:
                     logger.warning(f"[HistoryWindow] No se pudo limpiar CSV: {ce}")
             except Exception as e:
-                custom_msgbox(self, f"Error al exportar:\n{e}", "❌ Error")
+                custom_msgbox(self, f"Error al exportar:\n{e}\n{Icons.ERROR} Error")
 
     def _clean_old_data(self):
         """Fuerza un ciclo de limpieza completo a través de CleanupService."""
@@ -478,12 +478,12 @@ class HistoryWindow(ctk.CTkToplevel):
                     f"• PNG eliminados: {result['deleted_png']}\n"
                     f"• BD limpiada: {'Sí' if result['db_ok'] else 'No'}"
                 )
-                custom_msgbox(self, msg, "✅ Limpiado")
+                custom_msgbox(self, msg, "" + Icons.OK + " Limpiado")
                 logger.info(f"[HistoryWindow] Limpieza manual completada: {result}")
                 self._update_data()
             except Exception as e:
                 logger.error(f"[HistoryWindow] Error en limpieza manual: {e}")
-                custom_msgbox(self, f"Error al limpiar:\n{e}", "❌ Error")
+                custom_msgbox(self, f"Error al limpiar:\n{e}\n{Icons.ERROR} Error")
 
         confirm_dialog(
             parent=self,
@@ -494,7 +494,7 @@ class HistoryWindow(ctk.CTkToplevel):
                 f"• BD: registros >'{status['db_days']}' días\n\n"
                 f"Esto liberará espacio en disco."
             ),
-            title="⚠️ Confirmar Limpieza",
+            title="" + Icons.WARNING + "️ Confirmar Limpieza",
             on_confirm=do_clean,
             on_cancel=None
         )
@@ -514,14 +514,14 @@ class HistoryWindow(ctk.CTkToplevel):
                 bbox_inches='tight'
             )
             logger.info(f"[HistoryWindow] Figura guardada: {filepath}")
-            custom_msgbox(self, f"Imagen guardada en:\n\n{filepath}", "✅ Captura Guardada")
+            custom_msgbox(self, f"Imagen guardada en:\n{filepath}\n{Icons.OK} Captura Guardada")
             try:
                 CleanupService().clean_png()
             except Exception as ce:
                 logger.warning(f"[HistoryWindow] No se pudo limpiar PNG: {ce}")
         except Exception as e:
             logger.error(f"[HistoryWindow] Error guardando imagen: {e}")
-            custom_msgbox(self, f"Error al guardar la imagen: {e}", "❌ Error")
+            custom_msgbox(self, f"Error al guardar la imagen: {e}\n{Icons.ERROR} Error")
 
     # ─────────────────────────────────────────────
     # Eventos matplotlib

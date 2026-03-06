@@ -6,7 +6,7 @@ import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
-)
+, Icons)
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from utils.logger import get_logger
 from core.display_service import BRIGHTNESS_MIN, BRIGHTNESS_MAX
@@ -14,10 +14,10 @@ from core.display_service import BRIGHTNESS_MIN, BRIGHTNESS_MAX
 logger = get_logger(__name__)
 
 QUICK_LEVELS = [
-    ("🌑 10%",   10),
-    ("🌒 30%",   30),
-    ("🌓 60%",   60),
-    ("🌕 100%", 100),
+    ("" + Icons.MOON_NEW + " 10%",   10),
+    ("" + Icons.MOON_CRESCENT + " 30%",   30),
+    ("" + Icons.MOON_HALF + " 60%",   60),
+    ("" + Icons.MOON_FULL + " 100%", 100),
 ]
 
 
@@ -91,7 +91,7 @@ class DisplayWindow(ctk.CTkToplevel):
             ctk.CTkLabel(
                 inner,
                 text=(
-                    "⚠️ Brillo no disponible\n\n"
+                    "" + Icons.WARNING + "️ Brillo no disponible\n\n"
                     "No se encontró /sys/class/backlight/ ni wlr-randr.\n\n"
                     "Consulta GUIA_BRILLO_DSI.md → Paso 0\n"
                     "para diagnosticar tu sistema."
@@ -168,13 +168,13 @@ class DisplayWindow(ctk.CTkToplevel):
         tog_row.pack(pady=10)
 
         make_futuristic_button(
-            tog_row, text="🌕 Encender",
+            tog_row, text="" + Icons.MOON_FULL + " Encender",
             command=self._screen_on,
             width=16, height=8, font_size=16,
         ).pack(side="left", padx=10)
 
         make_futuristic_button(
-            tog_row, text="🌑 Apagar",
+            tog_row, text="" + Icons.MOON_NEW + " Apagar",
             command=self._screen_off,
             width=16, height=8, font_size=16,
         ).pack(side="left", padx=10)

@@ -6,7 +6,7 @@ import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
-)
+, Icons)
 from ui.styles import make_window_header, make_futuristic_button, StyleManager
 from utils.logger import get_logger
 
@@ -140,7 +140,7 @@ class NetworkLocalWindow(ctk.CTkToplevel):
             error_msg = self._scanner.get_error()
             ctk.CTkLabel(
                 self._device_frame,
-                text=f"⚠ Error en el escaneo:\n{error_msg}",
+                text=f"{Icons.WARNING} Error en el escaneo:\n{error_msg}",
                 text_color=COLORS['danger'],
                 font=(FONT_FAMILY, FONT_SIZES['medium']),
                 wraplength=DSI_WIDTH - 80,

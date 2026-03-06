@@ -4,7 +4,7 @@ Lee data/alert_history.json y muestra las entradas con colores por nivel.
 """
 import customtkinter as ctk
 from datetime import datetime
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons
 from ui.styles import make_window_header, make_futuristic_button, StyleManager
 from ui.widgets import confirm_dialog
 from utils.logger import get_logger
@@ -19,15 +19,15 @@ LEVEL_COLORS = {
 
 # Etiqueta legible por clave
 KEY_LABELS = {
-    "temp_warn":      "🌡️ Temperatura — aviso",
-    "temp_crit":      "🌡️ Temperatura — crítico",
-    "cpu_warn":       "🔥 CPU — aviso",
-    "cpu_crit":       "🔥 CPU — crítico",
-    "ram_warn":       "💾 RAM — aviso",
-    "ram_crit":       "💾 RAM — crítico",
-    "disk_warn":      "💿 Disco — aviso",
-    "disk_crit":      "💿 Disco — crítico",
-    "services_failed": "⚠️ Servicios caídos",
+    "temp_warn":      f"{Icons.THERMOMETER} Temperatura — aviso",
+    "temp_crit":      f"{Icons.THERMOMETER} Temperatura — crítico",
+    "cpu_warn":       f"{Icons.FIRE} CPU — aviso",
+    "cpu_crit":       f"{Icons.FIRE} CPU — crítico",
+    "ram_warn":       f"{Icons.RAM} RAM — aviso",
+    "ram_crit":       f"{Icons.RAM} RAM — crítico",
+    "disk_warn":      f"{Icons.MONITOR_DISCO} Disco — aviso",
+    "disk_crit":      f"{Icons.MONITOR_DISCO} Disco — crítico",
+    "services_failed": f"{Icons.WARNING} Servicios caídos",
 }
 
 
@@ -91,12 +91,12 @@ class AlertHistoryWindow(ctk.CTkToplevel):
         self._count_label.pack(side="left", padx=8)
 
         make_futuristic_button(
-            bar, text="↺ Actualizar", command=self._load,
+            bar, text=f"{Icons.REFRESH} Actualizar", command=self._load,
             width=11, height=5, font_size=14
         ).pack(side="right", padx=4)
 
         make_futuristic_button(
-            bar, text="🗑 Borrar todo", command=self._confirm_clear,
+            bar, text="" + Icons.TRASH + " Borrar todo", command=self._confirm_clear,
             width=12, height=5, font_size=14
         ).pack(side="right", padx=4)
 
@@ -183,7 +183,7 @@ class AlertHistoryWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text="¿Borrar todo el historial de alertas?\n\nEsta acción no se puede deshacer.",
-            title="🗑 Borrar Historial",
+            title="" + Icons.TRASH + " Borrar Historial",
             on_confirm=self._clear,
         )
 

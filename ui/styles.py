@@ -3,7 +3,7 @@ Estilos y temas para la interfaz
 """
 import tkinter as tk
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, Icons
 
 
 class StyleManager:
@@ -90,7 +90,7 @@ class StyleManager:
             slider: Widget slider
             color: Color personalizado
         """
-        color = color or COLORS['primary']  # ✓ Usar tema
+        color = color or COLORS['primary']  # " + Icons.CHECK_MARK + " Usar tema
         slider.configure(
             fg_color=COLORS['bg_light'],
             progress_color=color,
@@ -126,7 +126,7 @@ class StyleManager:
             sb: Widget scrollbar
             color: Color personalizado
         """
-        color = color or COLORS['primary']  # ✓ Usar tema
+        color = color or COLORS['primary']  # " + Icons.CHECK_MARK + " Usar tema
         sb.configure(
             bg_color=COLORS['bg_medium'],
             button_color=color,
@@ -143,7 +143,7 @@ class StyleManager:
             scrollable_frame: Widget scrollable frame
             color: Color personalizado
         """
-        color = color or COLORS['primary']  # ✓ Usar tema
+        color = color or COLORS['primary']  # " + Icons.CHECK_MARK + " Usar tema
         scrollable_frame.configure(
             scrollbar_fg_color=COLORS['bg_medium'],
             scrollbar_button_color=color,
@@ -163,7 +163,7 @@ class StyleManager:
 
         ctk.CTkLabel(
             banner,
-            text="⛔",
+            text= Icons.NO_ENTRY,
             font=(FONT_FAMILY, 48),
             text_color=COLORS['danger'],
         ).pack(pady=(30, 8))
@@ -238,7 +238,7 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
 
     Layout (altura fija 48px):
     ┌─────────────────────────────────────────────────────────┐
-    │  ● TÍTULO DE VENTANA      status_text opcional   [✕]   │
+    │  ● TÍTULO DE VENTANA      status_text opcional   [" + Icons.CLOSE_X + "]   │
     └─────────────────────────────────────────────────────────┘
 
     El indicador ● usa COLORS['secondary'] para identificar
@@ -247,7 +247,7 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     Args:
         parent:      Widget padre (normalmente el frame main de la ventana).
         title:       Texto del título en mayúsculas (ej. "MONITOR DEL SISTEMA").
-        on_close:    Callable ejecutado al pulsar el botón ✕.
+        on_close:    Callable ejecutado al pulsar el botón " + Icons.CLOSE_X + ".
         status_text: Texto informativo opcional a la derecha del título
                      (ej. "CPU 12% · RAM 45% · 52°C"). Si es None no se muestra.
 
@@ -278,7 +278,7 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     # ── Indicador de color (pastilla izquierda) ───────────────────────────
     dot = ctk.CTkLabel(
         header,
-        text="●",
+        text=Icons.GREEN_CIRCLE,
         text_color=COLORS['secondary'],
         font=(FONT_FAMILY, FONT_SIZES['large'], "bold"),
         width=28,
@@ -298,7 +298,7 @@ def make_window_header(parent, title: str, on_close, status_text: str = None) ->
     # ── Botón cerrar (derecha) ────────────────────────────────────────────
     close_btn = ctk.CTkButton(
         header,
-        text="✕",
+        text= Icons.CLOSE_X,
         command=on_close,
         width=52,
         height=42,

@@ -2,7 +2,7 @@
 Ventana de monitor de procesos
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons
 from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import confirm_dialog, custom_msgbox
 from core.process_monitor import ProcessMonitor
@@ -370,7 +370,7 @@ class ProcessWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"¿Matar proceso '{proc['name']}'?\n\nPID: {proc['pid']}\nCPU: {proc['cpu']:.1f}%",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_kill,
             on_cancel=None
         )

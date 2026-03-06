@@ -2,7 +2,7 @@
 Ventana de monitoreo de dispositivos USB
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox
 from utils.system_utils import SystemUtils
@@ -145,7 +145,7 @@ class USBWindow(ctk.CTkToplevel):
         
         header = ctk.CTkLabel(
             device_frame,
-            text=f"💾 {name} ({dev_type}) - {size}",
+            text=f"{Icons.MONITOR_USB} {name} ({dev_type}) - {size}",
             text_color=COLORS['primary'],
             font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
         )
@@ -182,7 +182,7 @@ class USBWindow(ctk.CTkToplevel):
         
         part_text = f"  └─ Partición: {name} ({size})"
         if mount:
-            part_text += f" | 📁 Montado en: {mount}"
+            part_text += f" | {Icons.FOLDER} Montado en: {mount}"
         else:
             part_text += " | No montado"
         
@@ -289,7 +289,7 @@ class USBWindow(ctk.CTkToplevel):
             logger.info(f"[USBWindow] Expulsión exitosa: '{device_name}'")
             custom_msgbox(
                 self,
-                f"✅ {device_name}\n\n{message}\n\nAhora puedes desconectar el dispositivo de forma segura.",
+                f"{Icons.OK} {device_name}\n\n{message}\n\nAhora puedes desconectar el dispositivo de forma segura.",
                 "Expulsión Exitosa"
             )
             self._refresh_devices()
@@ -297,6 +297,6 @@ class USBWindow(ctk.CTkToplevel):
             logger.error(f"[USBWindow] Error expulsando '{device_name}': {message}")
             custom_msgbox(
                 self,
-                f"❌ Error al expulsar {device_name}:\n\n{message}",
+                f"{Icons.ERROR} Error al expulsar {device_name}:\n\n{message}",
                 "Error"
             )

@@ -17,7 +17,7 @@ import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons
-)
+, Icons)
 import config.settings as _settings
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets import confirm_dialog, custom_msgbox
@@ -518,7 +518,7 @@ class ConfigEditorWindow(ctk.CTkToplevel):
             cp, _ = _parse_codepoint(raw)
             preview.configure(text=chr(cp), text_color=COLORS['success'])
         except ValueError:
-            preview.configure(text="✗", text_color=COLORS['danger'])
+            preview.configure(text="" + Icons.CROSS_MARK + "", text_color=COLORS['danger'])
 
     # ── Recoger y validar ─────────────────────────────────────────────────────
 

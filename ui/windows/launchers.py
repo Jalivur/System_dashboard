@@ -2,7 +2,7 @@
 Ventana de lanzadores de scripts
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, LAUNCHERS, Icons
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import confirm_dialog, terminal_dialog
 from utils.system_utils import SystemUtils
@@ -129,6 +129,6 @@ class LaunchersWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"¿Deseas iniciar el proceso '{label}'?\n\nArchivo: {script_path}",
-            title="⚠️ Lanzador de Sistema",
+            title="" + Icons.WARNING + "️ Lanzador de Sistema",
             on_confirm=do_execute
         )

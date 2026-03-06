@@ -5,7 +5,7 @@ import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
     DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
-)
+, Icons)
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from core.pihole_monitor import PiholeMonitor
 from utils.logger import get_logger
@@ -148,9 +148,9 @@ class PiholeWindow(ctk.CTkToplevel):
         stats = self.pihole.get_stats()
 
         if not stats.get("reachable", False):
-            self._header.status_label.configure(text="⚠ Sin conexión")
+            self._header.status_label.configure(text="" + Icons.WARNING + " Sin conexión")
         else:
-            status_str = "✅ Activo" if stats.get("status") == "enabled" else "⏸ Pausado"
+            status_str = "" + Icons.OK + " Activo" if stats.get("status") == "enabled" else "" + Icons.PAUSE + " Pausado"
             pct = stats.get("percent_blocked", 0.0)
             self._header.status_label.configure(
                 text=f"{status_str}  ·  {pct:.1f}% bloqueado")
@@ -162,10 +162,10 @@ class PiholeWindow(ctk.CTkToplevel):
                     text       = "Sin conexión"
                     text_color = COLORS['danger']
                 elif value == "enabled":
-                    text       = "✅ Activo"
+                    text       = "" + Icons.OK + " Activo"
                     text_color = COLORS['success']
                 else:
-                    text       = "⏸ Pausado"
+                    text       = "" + Icons.PAUSE + " Pausado"
                     text_color = COLORS['warning']
                 lbl.configure(text=text, text_color=text_color)
             elif key == "percent_blocked":

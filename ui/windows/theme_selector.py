@@ -2,7 +2,7 @@
 Ventana de selección de temas
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons
 from config.themes import get_available_themes, get_theme, save_selected_theme, load_selected_theme
 from ui.styles import make_futuristic_button, StyleManager, make_window_header
 from ui.widgets import custom_msgbox, confirm_dialog
@@ -116,7 +116,7 @@ class ThemeSelector(ctk.CTkToplevel):
             if is_current:
                 current_label = ctk.CTkLabel(
                     card,
-                    text="✓ TEMA ACTUAL",
+                    text="" + Icons.CHECK_MARK + " TEMA ACTUAL",
                     text_color=COLORS['success'],
                     font=(FONT_FAMILY, 10, "bold")
                 )
@@ -227,7 +227,7 @@ class ThemeSelector(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"Tema '{theme_name}' guardado.\n\n¿Reiniciar ahora para aplicar los cambios?",
-            title="🔄 Aplicar Tema",
+            title= f"{Icons.REFRESH} Aplicar Tema",
             on_confirm=do_restart,
             on_cancel=self.destroy
         )

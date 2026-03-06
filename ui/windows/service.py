@@ -2,7 +2,7 @@
 Ventana de monitor de servicios systemd
 """
 import customtkinter as ctk
-from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS
+from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, UPDATE_MS, Icons
 from ui.styles import StyleManager, make_futuristic_button, make_window_header
 from ui.widgets import confirm_dialog, custom_msgbox
 from core.service_monitor import ServiceMonitor
@@ -283,7 +283,7 @@ class ServiceWindow(ctk.CTkToplevel):
         row_frame.grid_columnconfigure(2, weight=1, minsize=80)
         row_frame.grid_columnconfigure(3, weight=3, minsize=300)
 
-        state_icon  = "🟢" if service['active'] == 'active' else "🔴"
+        state_icon  = Icons.GREEN_CIRCLE if service['active'] == 'active' else Icons.RED_CIRCLE
         state_color = COLORS[self.service_monitor.get_state_color(service['active'])]
 
         ctk.CTkLabel(
@@ -303,7 +303,7 @@ class ServiceWindow(ctk.CTkToplevel):
         autostart_color = COLORS['success'] if service['enabled'] else COLORS['text_dim']
         ctk.CTkLabel(
             row_frame,
-            text="✓" if service['enabled'] else "✗",
+            text="" + Icons.CHECK_MARK + "" if service['enabled'] else "" + Icons.CROSS_MARK + "",
             text_color=autostart_color,
             font=(FONT_FAMILY, FONT_SIZES['medium'], "bold")
         ).grid(row=0, column=2, sticky="n", padx=5, pady=5)
@@ -313,28 +313,28 @@ class ServiceWindow(ctk.CTkToplevel):
 
         if service['active'] == 'active':
             ctk.CTkButton(
-                actions_frame, text="⏸",
+                actions_frame, text="" + Icons.PAUSE + "",
                 command=lambda s=service: self._stop_service(s),
                 fg_color=COLORS['warning'], hover_color=COLORS['danger'],
                 width=40, height=25, font=(FONT_FAMILY, 14)
             ).pack(side="left", padx=2)
         else:
             ctk.CTkButton(
-                actions_frame, text="▶",
+                actions_frame, text="" + Icons.PLAY + "" ,
                 command=lambda s=service: self._start_service(s),
                 fg_color=COLORS['success'], hover_color="#00aa00",
                 width=40, height=25, font=(FONT_FAMILY, 14)
             ).pack(side="left", padx=2)
 
         ctk.CTkButton(
-            actions_frame, text="🔄",
+            actions_frame, text="" + Icons.REFRESH + "",
             command=lambda s=service: self._restart_service(s),
             fg_color=COLORS['primary'], width=40, height=25,
             font=(FONT_FAMILY, 12)
         ).pack(side="left", padx=2)
 
         ctk.CTkButton(
-            actions_frame, text="👁",
+            actions_frame, text="" + Icons.EYE + "",
             command=lambda s=service: self._view_logs(s),
             fg_color=COLORS['bg_light'], width=40, height=25,
             font=(FONT_FAMILY, 12)
@@ -342,14 +342,14 @@ class ServiceWindow(ctk.CTkToplevel):
 
         if service['enabled']:
             ctk.CTkButton(
-                actions_frame, text="⚙",
+                actions_frame, text="" + Icons.TAB_SERVICIOS + "",
                 command=lambda s=service: self._disable_service(s),
                 fg_color=COLORS['text_dim'], width=40, height=25,
                 font=(FONT_FAMILY, 12)
             ).pack(side="left", padx=2)
         else:
             ctk.CTkButton(
-                actions_frame, text="⚙",
+                actions_frame, text="" + Icons.TAB_SERVICIOS + "",
                 command=lambda s=service: self._enable_service(s),
                 fg_color=COLORS['secondary'], width=40, height=25,
                 font=(FONT_FAMILY, 12)
@@ -367,7 +367,7 @@ class ServiceWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"¿Iniciar servicio '{service['name']}'?",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_start,
             on_cancel=None
         )
@@ -382,7 +382,7 @@ class ServiceWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"¿Detener servicio '{service['name']}'?\n\nEl servicio dejará de funcionar.",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_stop,
             on_cancel=None
         )
@@ -397,7 +397,7 @@ class ServiceWindow(ctk.CTkToplevel):
         confirm_dialog(
             parent=self,
             text=f"¿Reiniciar servicio '{service['name']}'?",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_restart,
             on_cancel=None
         )
@@ -435,7 +435,7 @@ class ServiceWindow(ctk.CTkToplevel):
             parent=self,
             text=f"¿Habilitar autostart para '{service['name']}'?\n\n"
                  f"El servicio se iniciará automáticamente al arrancar.",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_enable,
             on_cancel=None
         )
@@ -451,7 +451,7 @@ class ServiceWindow(ctk.CTkToplevel):
             parent=self,
             text=f"¿Deshabilitar autostart para '{service['name']}'?\n\n"
                  f"El servicio NO se iniciará automáticamente al arrancar.",
-            title="⚠️ Confirmar",
+            title="" + Icons.WARNING + "️ Confirmar",
             on_confirm=do_disable,
             on_cancel=None
         )
