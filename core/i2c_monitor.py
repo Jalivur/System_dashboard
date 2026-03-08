@@ -142,7 +142,7 @@ class I2CMonitor:
                 bus.close()
             except Exception as e:
                 #logger.debug("[I2CMonitor] Bus %d error: %s", bus_num, e)
-
+                pass
             result_buses.append({
                 "bus":     bus_num,
                 "label":   f"i2c-{bus_num}",
