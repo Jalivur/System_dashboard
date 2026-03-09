@@ -148,11 +148,12 @@ class GPIOWindow(ctk.CTkToplevel):
         )
         self._lbl_status.pack(side="left", padx=4)
 
-        make_futuristic_button(
+        self._pin_btn = make_futuristic_button(
             footer, text=f"{Icons.PROCESOS}  Configurar pines",
             command=self._open_config,
             width=22, height=7, font_size=14,
-        ).pack(side="right", padx=4)
+        )
+        self._pin_btn.pack(side="right", padx=4)
 
     # ── Toggle modo de operación ──────────────────────────────────────────────
 
@@ -340,6 +341,11 @@ class GPIOWindow(ctk.CTkToplevel):
 
     def _update(self):
         if not self.winfo_exists():
+            return
+        if not self._monitor._running:
+            StyleManager.show_service_stopped_banner(self._inner, "GPIO Monitor")
+            self._btn_op.configure(state = "disabled")
+            self._pin_btn.configure(state = "disabled")
             return
 
         state    = self._monitor.get_state()

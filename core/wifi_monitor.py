@@ -146,6 +146,10 @@ class WiFiMonitor:
     def stop(self):
         self._running = False
         self._stop_evt.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=6)
+        with self._lock:
+            self._info={}
         logger.info("[WiFiMonitor] Servicio detenido")
 
     # ── Loop interno ──────────────────────────────────────────────────────────

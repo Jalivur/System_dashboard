@@ -109,6 +109,8 @@ class WeatherService:
         self._stop_evt.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=3)
+        with self._lock:
+            self._stats       = {}
         logger.info("[WeatherService] Detenido")
 
     def is_running(self) -> bool:

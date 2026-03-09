@@ -1,1117 +1,1012 @@
 This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
 
-<file_summary>
-This section contains a summary of this file.
+# File Summary
 
-<purpose>
+## Purpose
 This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
-</purpose>
 
-<file_format>
+## File Format
 The content is organized as follows:
 1. This summary section
 2. Repository information
 3. Directory structure
 4. Repository files (if enabled)
 5. Multiple file entries, each consisting of:
-  - File path as an attribute
-  - Full contents of the file
-</file_format>
+  a. A header with the file path (## File: path/to/file)
+  b. The full contents of the file in a code block
 
-<usage_guidelines>
+## Usage Guidelines
 - This file should be treated as read-only. Any changes should be made to the
   original repository files, not this packed version.
 - When processing this file, use the file path to distinguish
   between different files in the repository.
 - Be aware that this file may contain sensitive information. Handle it with
   the same level of security as you would the original repository.
-</usage_guidelines>
 
-<notes>
+## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: core/gpio_monitor.py, ui/windows/gpio_window.py
+- Only files matching these patterns are included: README.md, IDEAS_EXPANSION.md, INDEX.md, QUICKSTART.md
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
-</notes>
-
-</file_summary>
-
-<directory_structure>
-core/
-  gpio_monitor.py
-ui/
-  windows/
-    gpio_window.py
-</directory_structure>
-
-<files>
-This section contains the contents of the repository's files.
-
-<file path="core/gpio_monitor.py">
-"""
-Controlador de pines GPIO via gpiozero.
-
-Soporta tres modos por pin:
-  INPUT  — lectura de estado (Button sin pull interno)
-  OUTPUT — escritura HIGH/LOW (LED de gpiozero)
-  PWM    — señal PWM con duty cycle 0.0–1.0 (PWMLED de gpiozero)
-
-Modos de operación globales:
-  CONTROLANDO — dashboard reclama los pines con gpiozero.
-                INPUT/OUTPUT/PWM operativos.
-  LIBRE       — dashboard libera todos los pines (gpiozero cerrado).
-                Los scripts externos pueden usar los pines sin conflictos.
-                No se lee ningún estado de hardware.
-
-Pines reservados por fase1.py — nunca tocar:
-  I²C : GPIO 2 (SDA), 3 (SCL)
-  PWM : GPIO 12, 13, 18, 19 (hardware PWM ventiladores)
-  UART: GPIO 14, 15
-"""
-import threading
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-# ── Modos de pin ──────────────────────────────────────────────────────────────
-MODE_INPUT  = "INPUT"
-MODE_OUTPUT = "OUTPUT"
-MODE_PWM    = "PWM"
-VALID_MODES = (MODE_INPUT, MODE_OUTPUT, MODE_PWM)
-
-# ── Modos de operación global ─────────────────────────────────────────────────
-OP_CONTROLANDO = "CONTROLANDO"
-OP_LIBRE       = "LIBRE"
-
-# ── Pines reservados ──────────────────────────────────────────────────────────
-_RESERVED_PINS = {2, 3, 12, 13, 14, 15, 18, 19}
-
-# ── Configuración por defecto ─────────────────────────────────────────────────
-_DEFAULT_CONFIG = {
-    4:  {"mode": MODE_INPUT,  "label": "GPIO 4"},
-    17: {"mode": MODE_INPUT,  "label": "GPIO 17"},
-    27: {"mode": MODE_INPUT,  "label": "GPIO 27"},
-    22: {"mode": MODE_INPUT,  "label": "GPIO 22"},
-    10: {"mode": MODE_INPUT,  "label": "GPIO 10 (MOSI)"},
-    9:  {"mode": MODE_INPUT,  "label": "GPIO 9  (MISO)"},
-    11: {"mode": MODE_INPUT,  "label": "GPIO 11 (SCLK)"},
-    5:  {"mode": MODE_OUTPUT, "label": "GPIO 5"},
-    6:  {"mode": MODE_OUTPUT, "label": "GPIO 6"},
-    16: {"mode": MODE_PWM,    "label": "GPIO 16"},
-    20: {"mode": MODE_INPUT,  "label": "GPIO 20"},
-    21: {"mode": MODE_INPUT,  "label": "GPIO 21"},
-}
-
-
-class GPIOMonitor:
-    """
-    Gestiona pines GPIO con soporte INPUT, OUTPUT y PWM.
-
-    Estado por pin:
-      {
-        "mode":  str        — INPUT | OUTPUT | PWM
-        "label": str        — etiqueta descriptiva
-        "value": bool|None  — estado leído/escrito; None si LIBRE
-        "duty":  float      — PWM duty cycle 0.0–1.0; 0.0 en otros modos
-        "error": str|None   — mensaje de error o None
-      }
-    """
-
-    POLL_INTERVAL = 1.0
-
-    def __init__(self, config: dict | None = None, op_mode: str = OP_LIBRE):
-        raw = config or _DEFAULT_CONFIG
-        self._pins_cfg: dict[int, dict] = {
-            pin: dict(cfg) for pin, cfg in raw.items()
-            if pin not in _RESERVED_PINS
-        }
-
-        self._lock     = threading.Lock()
-        self._stop_evt = threading.Event()
-        self._thread: threading.Thread | None = None
-        self._running  = False
-
-        self._op_mode        = op_mode
-        self._gpio_available = False
-        self._gz             = None
-        self._devices: dict[int, object] = {}
-
-        self._state: dict[int, dict] = {}
-        self._init_state()
-
-    # ── Estado inicial ────────────────────────────────────────────────────────
-
-    def _init_state(self):
-        with self._lock:
-            self._state = {
-                pin: {
-                    "mode":  cfg.get("mode", MODE_INPUT),
-                    "label": cfg.get("label", f"GPIO {pin}"),
-                    "value": None,
-                    "duty":  0.0,
-                    "error": None,
-                }
-                for pin, cfg in self._pins_cfg.items()
-            }
-
-    # ── Lifecycle ─────────────────────────────────────────────────────────────
-
-    def start(self):
-        if self._running:
-            return
-        self._stop_evt.clear()
-        self._thread = threading.Thread(
-            target=self._run, daemon=True, name="GPIOMonitor")
-        self._thread.start()
-        logger.info("[GPIOMonitor] Iniciado — op=%s pines=%s",
-                    self._op_mode, sorted(self._pins_cfg))
-
-    def stop(self):
-        if not self._running:
-            return
-        self._stop_evt.set()
-        if self._thread:
-            self._thread.join(timeout=5)
-        self._release_devices()
-        self._running = False
-        logger.info("[GPIOMonitor] Detenido")
-
-    def is_running(self) -> bool:
-        return self._running
-
-    # ── Thread ────────────────────────────────────────────────────────────────
-
-    def _run(self):
-        self._running = True
-        if self._op_mode == OP_CONTROLANDO:
-            self._setup_devices()
-        try:
-            while not self._stop_evt.is_set():
-                if self._op_mode == OP_CONTROLANDO:
-                    self._poll_inputs()
-                self._stop_evt.wait(self.POLL_INTERVAL)
-        finally:
-            self._running = False
-
-    # ── gpiozero ──────────────────────────────────────────────────────────────
-
-    def _import_gpiozero(self) -> bool:
-        try:
-            import gpiozero
-            self._gz = gpiozero
-            self._gpio_available = True
-            logger.info("[GPIOMonitor] gpiozero disponible")
-            return True
-        except ImportError:
-            self._gpio_available = False
-            logger.warning("[GPIOMonitor] gpiozero no disponible")
-            with self._lock:
-                for pin in self._state:
-                    self._state[pin]["error"] = "gpiozero no instalado"
-            return False
-
-    def _setup_devices(self):
-        if self._gz is None and not self._import_gpiozero():
-            return
-        # Recrear factory si fue cerrado en una liberación anterior
-        try:
-            from gpiozero import Device
-            from gpiozero.pins.lgpio import LGPIOFactory
-            if Device.pin_factory is None:
-                Device.pin_factory = LGPIOFactory()
-                logger.debug("[GPIOMonitor] LGPIOFactory recreado")
-        except Exception as exc:
-            logger.debug("[GPIOMonitor] factory reset: %s", exc)
-        with self._lock:
-            snapshot = {p: dict(d) for p, d in self._state.items()}
-        for pin, data in snapshot.items():
-            self._open_device(pin, data["mode"], data.get("duty", 0.0))
-
-    def _open_device(self, pin: int, mode: str, duty: float = 0.0):
-        self._close_device(pin)
-        if self._gz is None:
-            return
-        try:
-            if mode == MODE_INPUT:
-                dev = self._gz.Button(pin, pull_up=None, active_state=True)
-            elif mode == MODE_OUTPUT:
-                dev = self._gz.LED(pin)
-                dev.off()
-            elif mode == MODE_PWM:
-                dev = self._gz.PWMLED(pin)
-                dev.value = max(0.0, min(1.0, duty))
-            else:
-                return
-            self._devices[pin] = dev
-            with self._lock:
-                if pin in self._state:
-                    self._state[pin]["error"] = None
-        except Exception as exc:
-            logger.warning("[GPIOMonitor] Pin %d error al abrir (%s): %s", pin, mode, exc)
-            with self._lock:
-                if pin in self._state:
-                    self._state[pin]["error"] = str(exc)
-
-    def _close_device(self, pin: int):
-        dev = self._devices.pop(pin, None)
-        if dev is not None:
-            try:
-                dev.close()
-            except Exception:
-                pass
-
-    def _release_devices(self):
-        """Cierra todos los dispositivos gpiozero y el factory lgpio."""
-        for pin in list(self._devices):
-            self._close_device(pin)
-        # Cerrar el factory — en Pi 5 (lgpio) esto libera /dev/gpiochip0
-        try:
-            from gpiozero import Device
-            if Device.pin_factory is not None:
-                Device.pin_factory.close()
-                Device.pin_factory = None
-        except Exception as exc:
-            logger.debug("[GPIOMonitor] factory.close(): %s", exc)
-        self._gz             = None
-        self._gpio_available = False
-
-    # ── Poll inputs ───────────────────────────────────────────────────────────
-
-    def _poll_inputs(self):
-        if not self._gpio_available:
-            return
-        with self._lock:
-            snapshot = [(p, dict(d)) for p, d in self._state.items()]
-        for pin, data in snapshot:
-            if data["mode"] != MODE_INPUT:
-                continue
-            dev = self._devices.get(pin)
-            if dev is None:
-                continue
-            try:
-                value = dev.is_active
-                with self._lock:
-                    if pin in self._state:
-                        self._state[pin]["value"] = value
-                        self._state[pin]["error"] = None
-            except Exception as exc:
-                with self._lock:
-                    if pin in self._state:
-                        self._state[pin]["error"] = str(exc)
-
-    # ── API pública — modo de operación ──────────────────────────────────────
-
-    def get_op_mode(self) -> str:
-        return self._op_mode
-
-    def set_op_mode(self, mode: str) -> None:
-        """
-        CONTROLANDO → LIBRE  : cierra todos los dispositivos gpiozero.
-        LIBRE → CONTROLANDO  : reabre dispositivos según config de cada pin.
-        """
-        if mode not in (OP_CONTROLANDO, OP_LIBRE) or mode == self._op_mode:
-            return
-
-        if mode == OP_LIBRE:
-            self._release_devices()
-            with self._lock:
-                for data in self._state.values():
-                    data["value"] = None
-                    data["error"] = None
-            self._op_mode = mode
-            logger.info("[GPIOMonitor] GPIO liberado — pines disponibles para otros procesos")
-        else:
-            self._op_mode = mode
-            self._setup_devices()
-            logger.info("[GPIOMonitor] GPIO bajo control del dashboard")
-
-    # ── API pública — lectura ─────────────────────────────────────────────────
-
-    def get_state(self) -> dict[int, dict]:
-        with self._lock:
-            return {pin: dict(data) for pin, data in self._state.items()}
-
-    def is_gpio_available(self) -> bool:
-        return True   # gpiozero siempre disponible en Pi
-
-    def get_pins(self) -> list[int]:
-        return sorted(self._state.keys())
-
-    @staticmethod
-    def reserved_pins() -> set[int]:
-        return set(_RESERVED_PINS)
-
-    # ── API pública — OUTPUT ──────────────────────────────────────────────────
-
-    def set_output(self, pin: int, high: bool) -> bool:
-        if self._op_mode == OP_LIBRE:
-            return False
-        with self._lock:
-            data = self._state.get(pin)
-            if data is None or data["mode"] != MODE_OUTPUT:
-                return False
-        dev = self._devices.get(pin)
-        if dev is None:
-            return False
-        try:
-            dev.on() if high else dev.off()
-            with self._lock:
-                self._state[pin]["value"] = high
-                self._state[pin]["error"] = None
-            logger.debug("[GPIOMonitor] GPIO %d → %s", pin, "HIGH" if high else "LOW")
-            return True
-        except Exception as exc:
-            with self._lock:
-                self._state[pin]["error"] = str(exc)
-            return False
-
-    # ── API pública — PWM ─────────────────────────────────────────────────────
-
-    def set_pwm(self, pin: int, duty: float) -> bool:
-        if self._op_mode == OP_LIBRE:
-            return False
-        duty = max(0.0, min(1.0, duty))
-        with self._lock:
-            data = self._state.get(pin)
-            if data is None or data["mode"] != MODE_PWM:
-                return False
-        dev = self._devices.get(pin)
-        if dev is None:
-            return False
-        try:
-            dev.value = duty
-            with self._lock:
-                self._state[pin]["duty"]  = duty
-                self._state[pin]["error"] = None
-            logger.debug("[GPIOMonitor] GPIO %d PWM → %.1f%%", pin, duty * 100)
-            return True
-        except Exception as exc:
-            with self._lock:
-                self._state[pin]["error"] = str(exc)
-            return False
-
-    # ── API pública — configuración de pines ──────────────────────────────────
-
-    def set_label(self, pin: int, label: str) -> bool:
-        with self._lock:
-            if pin not in self._state:
-                return False
-            self._state[pin]["label"] = label
-        return True
-
-    def set_mode(self, pin: int, mode: str) -> bool:
-        if mode not in VALID_MODES or pin in _RESERVED_PINS:
-            return False
-        with self._lock:
-            if pin not in self._state:
-                return False
-            self._state[pin]["mode"]  = mode
-            self._state[pin]["value"] = None
-            self._state[pin]["duty"]  = 0.0
-            self._state[pin]["error"] = None
-        if self._op_mode == OP_CONTROLANDO and self._gpio_available:
-            self._open_device(pin, mode, 0.0)
-        logger.info("[GPIOMonitor] GPIO %d modo → %s", pin, mode)
-        return True
-
-    def add_pin(self, pin: int, mode: str = MODE_INPUT, label: str = "") -> bool:
-        if pin in _RESERVED_PINS:
-            logger.warning("[GPIOMonitor] Pin %d reservado — ignorado", pin)
-            return False
-        with self._lock:
-            if pin in self._state:
-                return False
-            lbl = label or f"GPIO {pin}"
-            self._state[pin] = {
-                "mode": mode, "label": lbl,
-                "value": None, "duty": 0.0, "error": None,
-            }
-            self._pins_cfg[pin] = {"mode": mode, "label": lbl}
-        if self._op_mode == OP_CONTROLANDO and self._gpio_available:
-            self._open_device(pin, mode, 0.0)
-        logger.info("[GPIOMonitor] Pin %d añadido (%s)", pin, mode)
-        return True
-
-    def remove_pin(self, pin: int) -> bool:
-        self._close_device(pin)
-        with self._lock:
-            removed = self._state.pop(pin, None)
-            self._pins_cfg.pop(pin, None)
-        if removed is not None:
-            logger.info("[GPIOMonitor] Pin %d eliminado", pin)
-        return removed is not None
-</file>
-
-<file path="ui/windows/gpio_window.py">
-"""
-Ventana de control y monitorización de pines GPIO.
-
-Modos de operación (toggle en barra superior):
-  LIBRE       — dashboard libera todos los pines. Los scripts externos
-                pueden usarlos sin conflictos. No se muestra estado de HW.
-  CONTROLANDO — dashboard reclama los pines con gpiozero.
-                INPUT: lectura en tiempo real.
-                OUTPUT: botón toggle HIGH/LOW.
-                PWM: slider 0–100% duty cycle.
-
-Panel de configuración:
-  - Añadir/eliminar pines
-  - Cambiar modo de pin en caliente
-  - Editar etiqueta descriptiva
-
-Arquitectura:
-  - Widgets creados una sola vez en _build_rows(); recreados solo si
-    cambia la lista de pines o el modo de operación.
-  - Actualizaciones de estado vía .configure() — nunca recrear en el loop.
-  - Comandos OUTPUT/PWM lanzados en threads para no bloquear la UI.
-  - Toda la lógica de hardware delegada a GPIOMonitor.
-"""
-import threading
-import tkinter as tk
-import customtkinter as ctk
-from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES,
-                              DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, Icons)
-from ui.styles import StyleManager, make_window_header, make_futuristic_button
-from utils.logger import get_logger
-from core.gpio_monitor import (MODE_INPUT, MODE_OUTPUT, MODE_PWM, VALID_MODES,
-                                OP_CONTROLANDO, OP_LIBRE)
-
-logger = get_logger(__name__)
-
-_REFRESH_MS = 800
-
-# Colores de estado
-_C_HIGH = "#39ff7a"
-_C_LOW  = "#4a5568"
-_C_ERR  = "#fc4f4f"
-_C_NONE = "#888888"
-_C_PWM  = "#63b3ed"
-
-# Colores de modo de operación
-_C_LIBRE       = "#f6ad55"   # naranja
-_C_CONTROLANDO = "#39ff7a"   # verde
-
-_MODE_LABEL = {MODE_INPUT: "INPUT", MODE_OUTPUT: "OUTPUT", MODE_PWM: "PWM"}
-_MODE_COLOR = {
-    MODE_INPUT:  COLORS.get('text_dim', '#888'),
-    MODE_OUTPUT: "#f6ad55",
-    MODE_PWM:    _C_PWM,
-}
-
-
-class GPIOWindow(ctk.CTkToplevel):
-    """Ventana de control y monitorización GPIO."""
-
-    def __init__(self, parent, gpio_monitor):
-        super().__init__(parent)
-        self._monitor = gpio_monitor
-
-        self.title("GPIO Monitor")
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        self.transient(parent)
-        self.after(150, self.focus_set)
-
-        self._rows: dict[int, dict]     = {}
-        self._inner: ctk.CTkFrame | None     = None
-        self._lbl_status: ctk.CTkLabel | None  = None
-        self._btn_op: ctk.CTkButton | None     = None
-        self._lbl_op: ctk.CTkLabel | None      = None
-        self._last_op_mode: str = self._monitor.get_op_mode()
-
-        self._create_ui()
-        self._update()
-        logger.info("[GPIOWindow] Ventana abierta")
-
-    # ── UI principal ──────────────────────────────────────────────────────────
-
-    def _create_ui(self):
-        self._main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        self._main.pack(fill="both", expand=True, padx=5, pady=5)
-
-        make_window_header(self._main, title="GPIO MONITOR / CONTROL",
-                           on_close=self.destroy)
-
-        # ── Barra de modo de operación ────────────────────────────────────────
-        op_bar = ctk.CTkFrame(self._main, fg_color=COLORS['bg_dark'],
-                              corner_radius=8)
-        op_bar.pack(fill="x", padx=8, pady=(4, 2))
-
-        self._lbl_op = ctk.CTkLabel(
-            op_bar,
-            text=self._op_text(),
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-            text_color=self._op_color(),
-            anchor="w",
-        )
-        self._lbl_op.pack(side="left", padx=12, pady=8)
-
-        self._btn_op = make_futuristic_button(
-            op_bar,
-            text=self._op_btn_text(),
-            command=self._toggle_op_mode,
-            width=24, height=6, font_size=13,
-        )
-        self._btn_op.pack(side="right", padx=10, pady=6)
-
-        # ── Área scrollable ───────────────────────────────────────────────────
-        sc = ctk.CTkFrame(self._main, fg_color=COLORS['bg_medium'])
-        sc.pack(fill="both", expand=True, padx=5, pady=4)
-
-        self._canvas = ctk.CTkCanvas(sc, bg=COLORS['bg_medium'],
-                                     highlightthickness=0)
-        self._canvas.pack(side="left", fill="both", expand=True)
-
-        sb = ctk.CTkScrollbar(sc, orientation="vertical",
-                              command=self._canvas.yview, width=30)
-        sb.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(sb)
-        self._canvas.configure(yscrollcommand=sb.set)
-
-        self._inner = ctk.CTkFrame(self._canvas, fg_color=COLORS['bg_medium'])
-        self._canvas.create_window(
-            (0, 0), window=self._inner, anchor="nw", width=DSI_WIDTH - 50)
-        self._inner.bind("<Configure>",
-                         lambda e: self._canvas.configure(
-                             scrollregion=self._canvas.bbox("all")))
-
-        self._build_rows()
-
-        # ── Footer ────────────────────────────────────────────────────────────
-        footer = ctk.CTkFrame(self._main, fg_color=COLORS['bg_medium'])
-        footer.pack(fill="x", padx=8, pady=(2, 6))
-
-        self._lbl_status = ctk.CTkLabel(
-            footer, text="",
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            text_color=COLORS['text_dim'], anchor="w",
-        )
-        self._lbl_status.pack(side="left", padx=4)
-
-        make_futuristic_button(
-            footer, text=f"{Icons.PROCESOS}  Configurar pines",
-            command=self._open_config,
-            width=22, height=7, font_size=14,
-        ).pack(side="right", padx=4)
-
-    # ── Toggle modo de operación ──────────────────────────────────────────────
-
-    def _toggle_op_mode(self):
-        current = self._monitor.get_op_mode()
-        new = OP_CONTROLANDO if current == OP_LIBRE else OP_LIBRE
-        threading.Thread(
-            target=self._monitor.set_op_mode,
-            args=(new,),
-            daemon=True, name="GPIO-opmode",
-        ).start()
-        # Actualizar UI tras dejar tiempo al thread para actuar
-        self.after(200, self._on_op_mode_changed)
-
-    def _on_op_mode_changed(self):
-        if not self.winfo_exists():
-            return
-        self._update_op_bar()
-        self._build_rows()
-
-    def _update_op_bar(self):
-        if self._lbl_op and self._lbl_op.winfo_exists():
-            self._lbl_op.configure(
-                text=self._op_text(),
-                text_color=self._op_color())
-        if self._btn_op and self._btn_op.winfo_exists():
-            self._btn_op.configure(text=self._op_btn_text())
-
-    def _op_text(self) -> str:
-        if self._monitor.get_op_mode() == OP_LIBRE:
-            return f"{Icons.WARNING}  GPIO LIBRE — pines disponibles para otros procesos"
-        return f"{Icons.TAP}  CONTROLANDO — dashboard tiene los pines"
-
-    def _op_color(self) -> str:
-        return (_C_LIBRE if self._monitor.get_op_mode() == OP_LIBRE
-                else _C_CONTROLANDO)
-
-    def _op_btn_text(self) -> str:
-        return (f"{Icons.TAP}  Tomar control"
-                if self._monitor.get_op_mode() == OP_LIBRE
-                else f"{Icons.WARNING}  Liberar GPIO")
-
-    # ── Construcción de filas ─────────────────────────────────────────────────
-
-    def _build_rows(self):
-        if not self.winfo_exists():
-            return
-        for w in self._inner.winfo_children():
-            w.destroy()
-        self._rows.clear()
-
-        state     = self._monitor.get_state()
-        is_libre  = self._monitor.get_op_mode() == OP_LIBRE
-
-        if not state:
-            ctk.CTkLabel(
-                self._inner,
-                text="No hay pines configurados.\nUsa 'Configurar pines' para añadir.",
-                font=(FONT_FAMILY, FONT_SIZES['small']),
-                text_color=COLORS['text_dim'],
-                justify="center",
-            ).pack(pady=30)
-            return
-
-        if is_libre:
-            ctk.CTkLabel(
-                self._inner,
-                text=f"{Icons.WARNING}  GPIO liberado.\nLos pines están disponibles para scripts externos.",
-                font=(FONT_FAMILY, FONT_SIZES['small']),
-                text_color=_C_LIBRE,
-                justify="center",
-            ).pack(pady=16)
-
-        for pin in sorted(state.keys()):
-            self._create_pin_row(pin, state[pin], is_libre)
-
-    def _create_pin_row(self, pin: int, data: dict, is_libre: bool):
-        mode = data["mode"]
-        row  = ctk.CTkFrame(self._inner, fg_color=COLORS['bg_dark'],
-                            corner_radius=8)
-        row.pack(fill="x", padx=10, pady=4)
-        row.grid_columnconfigure(3, weight=1)
-
-        # ── Indicador ─────────────────────────────────────────────────────────
-        DOT  = 14
-        dot_c = tk.Canvas(row, width=DOT, height=DOT,
-                          bg=COLORS['bg_dark'], highlightthickness=0, bd=0)
-        dot_c.grid(row=0, column=0, padx=(10, 6), pady=14)
-        oval = dot_c.create_oval(1, 1, DOT - 1, DOT - 1,
-                                 fill=_C_NONE, outline="")
-
-        # ── Nombre + etiqueta ─────────────────────────────────────────────────
-        info = ctk.CTkFrame(row, fg_color="transparent")
-        info.grid(row=0, column=1, padx=(0, 8), pady=8, sticky="w")
-
-        ctk.CTkLabel(
-            info, text=f"GPIO {pin:2d}",
-            font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-            text_color=COLORS['text'] if not is_libre else COLORS['text_dim'],
-            anchor="w",
-        ).pack(anchor="w")
-
-        lbl_label = ctk.CTkLabel(
-            info, text=data.get("label", f"GPIO {pin}"),
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            text_color=COLORS['text_dim'], anchor="w",
-        )
-        lbl_label.pack(anchor="w")
-
-        # ── Badge modo ────────────────────────────────────────────────────────
-        lbl_mode = ctk.CTkLabel(
-            row, text=_MODE_LABEL.get(mode, mode),
-            font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-            text_color=(_MODE_COLOR.get(mode, COLORS['text_dim'])
-                        if not is_libre else COLORS['text_dim']),
-            width=60, anchor="center",
-        )
-        lbl_mode.grid(row=0, column=2, padx=4, pady=8)
-
-        # ── Control contextual ────────────────────────────────────────────────
-        ctrl = ctk.CTkFrame(row, fg_color="transparent")
-        ctrl.grid(row=0, column=3, padx=(4, 10), pady=8, sticky="ew")
-
-        row_w = {
-            "dot": dot_c, "oval": oval,
-            "lbl_mode": lbl_mode, "lbl_label": lbl_label, "mode": mode,
-            "lbl_state": None, "btn_toggle": None,
-            "slider": None, "lbl_duty": None,
-        }
-
-        if is_libre:
-            # Solo mostrar etiqueta — sin controles activos
-            ctk.CTkLabel(
-                ctrl, text="—",
-                font=(FONT_FAMILY, FONT_SIZES['medium']),
-                text_color=COLORS['text_dim'], width=80, anchor="center",
-            ).pack(side="left", padx=4)
-
-        elif mode == MODE_INPUT:
-            lbl_state = ctk.CTkLabel(
-                ctrl, text="—",
-                font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-                text_color=_C_NONE, width=80, anchor="center",
-            )
-            lbl_state.pack(side="left", padx=4)
-            row_w["lbl_state"] = lbl_state
-
-        elif mode == MODE_OUTPUT:
-            lbl_state = ctk.CTkLabel(
-                ctrl, text="LOW",
-                font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-                text_color=_C_LOW, width=50, anchor="center",
-            )
-            lbl_state.pack(side="left", padx=(0, 6))
-            row_w["lbl_state"] = lbl_state
-
-            btn_toggle = make_futuristic_button(
-                ctrl, text="→ HIGH",
-                command=lambda p=pin: self._toggle_output(p),
-                width=12, height=6, font_size=13,
-            )
-            btn_toggle.pack(side="left")
-            row_w["btn_toggle"] = btn_toggle
-
-        elif mode == MODE_PWM:
-            lbl_duty = ctk.CTkLabel(
-                ctrl, text="0%",
-                font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-                text_color=_C_PWM, width=42, anchor="e",
-            )
-            lbl_duty.pack(side="left", padx=(0, 4))
-            row_w["lbl_duty"] = lbl_duty
-
-            slider = ctk.CTkSlider(
-                ctrl, from_=0, to=100, number_of_steps=100, width=200,
-                progress_color=_C_PWM, button_color=_C_PWM,
-                button_hover_color="#90cdf4",
-                command=lambda val, p=pin: self._on_pwm_slide(p, val),
-            )
-            slider.set(0)
-            slider.pack(side="left", padx=4)
-            row_w["slider"]   = slider
-
-        self._rows[pin] = row_w
-
-    # ── Loop de refresco ──────────────────────────────────────────────────────
-
-    def _update(self):
-        if not self.winfo_exists():
-            return
-
-        state    = self._monitor.get_state()
-        is_libre = self._monitor.get_op_mode() == OP_LIBRE
-
-        # Reconstruir si cambia lista de pines o modo de operación
-        current_op = self._monitor.get_op_mode()
-        if (set(state.keys()) != set(self._rows.keys())
-                or current_op != self._last_op_mode):
-            self._last_op_mode = current_op
-            self._update_op_bar()
-            self._build_rows()
-            if self._lbl_status and self._lbl_status.winfo_exists():
-                self._lbl_status.configure(text=self._status_text(state))
-            self.after(_REFRESH_MS, self._update)
-            return
-
-        if not is_libre:
-            for pin, data in state.items():
-                if pin not in self._rows:
-                    continue
-                rw    = self._rows[pin]
-                error = data.get("error")
-                mode  = data.get("mode", MODE_INPUT)
-                value = data.get("value")
-                duty  = data.get("duty", 0.0)
-
-                # Indicador
-                if error:
-                    dot_color = _C_ERR
-                elif mode == MODE_INPUT:
-                    if value is True:
-                        dot_color = _C_HIGH
-                    elif value is False:
-                        dot_color = _C_LOW
-                    else:
-                        dot_color = _C_NONE
-                elif mode == MODE_OUTPUT:
-                    dot_color = _C_HIGH if value else _C_LOW
-                elif mode == MODE_PWM:
-                    dot_color = _C_PWM if duty > 0 else _C_LOW
-                else:
-                    dot_color = _C_NONE
-                rw["dot"].itemconfigure(rw["oval"], fill=dot_color)
-
-                rw["lbl_label"].configure(text=data.get("label", f"GPIO {pin}"))
-
-                if mode == MODE_INPUT and rw["lbl_state"]:
-                    if error:
-                        rw["lbl_state"].configure(text="ERR", text_color=_C_ERR)
-                    elif value is None:
-                        rw["lbl_state"].configure(text="—", text_color=_C_NONE)
-                    elif value:
-                        rw["lbl_state"].configure(text="HIGH", text_color=_C_HIGH)
-                    else:
-                        rw["lbl_state"].configure(text="LOW", text_color=_C_LOW)
-
-                if mode == MODE_OUTPUT and rw["lbl_state"] and rw["btn_toggle"]:
-                    if error:
-                        rw["lbl_state"].configure(text="ERR", text_color=_C_ERR)
-                    else:
-                        is_high = bool(value)
-                        rw["lbl_state"].configure(
-                            text="HIGH" if is_high else "LOW",
-                            text_color=_C_HIGH if is_high else _C_LOW)
-                        rw["btn_toggle"].configure(
-                            text="→ LOW" if is_high else "→ HIGH")
-
-                if mode == MODE_PWM and rw["lbl_duty"]:
-                    if error:
-                        rw["lbl_duty"].configure(text="ERR", text_color=_C_ERR)
-                    else:
-                        rw["lbl_duty"].configure(
-                            text=f"{int(duty * 100)}%", text_color=_C_PWM)
-
-        if self._lbl_status and self._lbl_status.winfo_exists():
-            self._lbl_status.configure(text=self._status_text(state))
-
-        self.after(_REFRESH_MS, self._update)
-
-    # ── Acciones OUTPUT ───────────────────────────────────────────────────────
-
-    def _toggle_output(self, pin: int):
-        state   = self._monitor.get_state()
-        current = state.get(pin, {}).get("value", False)
-        threading.Thread(
-            target=self._monitor.set_output,
-            args=(pin, not current),
-            daemon=True, name=f"GPIO-out-{pin}",
-        ).start()
-
-    # ── Acciones PWM ──────────────────────────────────────────────────────────
-
-    def _on_pwm_slide(self, pin: int, val: float):
-        duty = val / 100.0
-        if pin in self._rows and self._rows[pin]["lbl_duty"]:
-            self._rows[pin]["lbl_duty"].configure(text=f"{int(val)}%")
-        threading.Thread(
-            target=self._monitor.set_pwm,
-            args=(pin, duty),
-            daemon=True, name=f"GPIO-pwm-{pin}",
-        ).start()
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
-
-    def _status_text(self, state: dict) -> str:
-        total   = len(state)
-        inputs  = sum(1 for d in state.values() if d["mode"] == MODE_INPUT)
-        outputs = sum(1 for d in state.values() if d["mode"] == MODE_OUTPUT)
-        pwms    = sum(1 for d in state.values() if d["mode"] == MODE_PWM)
-        errors  = sum(1 for d in state.values() if d.get("error"))
-        op      = "LIBRE" if self._monitor.get_op_mode() == OP_LIBRE else "CTRL"
-        parts   = [op, f"{total} pines", f"{inputs} IN",
-                   f"{outputs} OUT", f"{pwms} PWM"]
-        if errors:
-            parts.append(f"{errors} err")
-        return "  ·  ".join(parts)
-
-    # ── Config ────────────────────────────────────────────────────────────────
-
-    def _open_config(self):
-        cfg = _GPIOConfigDialog(self, self._monitor)
-        cfg.grab_set()
-
-    def destroy(self):
-        logger.info("[GPIOWindow] Ventana cerrada")
-        super().destroy()
-
-
-# ── Diálogo de configuración de pines ────────────────────────────────────────
-
-class _GPIOConfigDialog(ctk.CTkToplevel):
-    """Panel para añadir, eliminar y reconfigurar pines GPIO."""
-
-    _ALL_PINS = [p for p in range(1, 28)
-                 if p not in {2, 3, 12, 13, 14, 15, 18, 19}]
-
-    def __init__(self, parent, gpio_monitor):
-        super().__init__(parent)
-        self._monitor = gpio_monitor
-
-        self.configure(fg_color=COLORS['bg_medium'])
-        self.overrideredirect(True)
-        self.geometry(f"{DSI_WIDTH}x{DSI_HEIGHT}+{DSI_X}+{DSI_Y}")
-        self.resizable(False, False)
-        self.transient(parent)
-        self.after(100, self.focus_set)
-
-        self._row_widgets: dict[int, dict] = {}
-        self._create_ui()
-
-    def _create_ui(self):
-        main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        main.pack(fill="both", expand=True, padx=5, pady=5)
-
-        make_window_header(main, title="CONFIGURAR PINES GPIO",
-                           on_close=self.destroy)
-
-        # ── Añadir pin ────────────────────────────────────────────────────────
-        add_bar = ctk.CTkFrame(main, fg_color=COLORS['bg_dark'], corner_radius=8)
-        add_bar.pack(fill="x", padx=8, pady=(4, 2))
-
-        ctk.CTkLabel(add_bar, text="Añadir pin:",
-                     font=(FONT_FAMILY, FONT_SIZES['small'], "bold"),
-                     text_color=COLORS['text'],
-                     ).pack(side="left", padx=10, pady=8)
-
-        self._new_pin_var = ctk.StringVar(master=self, value="4")
-        ctk.CTkOptionMenu(
-            add_bar,
-            values=[str(p) for p in self._ALL_PINS],
-            variable=self._new_pin_var,
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            fg_color=COLORS['bg_medium'], width=80,
-        ).pack(side="left", padx=6, pady=8)
-
-        self._new_mode_var = ctk.StringVar(master=self, value=MODE_INPUT)
-        ctk.CTkOptionMenu(
-            add_bar,
-            values=list(VALID_MODES),
-            variable=self._new_mode_var,
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            fg_color=COLORS['bg_medium'], width=100,
-        ).pack(side="left", padx=6, pady=8)
-
-        self._new_label_entry = ctk.CTkEntry(
-            add_bar,
-            placeholder_text="Etiqueta (opcional)",
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            fg_color=COLORS['bg_medium'],
-            text_color=COLORS['text'], width=180,
-        )
-        self._new_label_entry.pack(side="left", padx=6, pady=8)
-
-        make_futuristic_button(
-            add_bar, text=f"{Icons.PLUS}  Añadir",
-            command=self._add_pin,
-            width=10, height=6, font_size=13,
-        ).pack(side="left", padx=6, pady=8)
-
-        # ── Lista de pines ────────────────────────────────────────────────────
-        sc = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        sc.pack(fill="both", expand=True, padx=5, pady=4)
-
-        canvas = ctk.CTkCanvas(sc, bg=COLORS['bg_medium'], highlightthickness=0)
-        canvas.pack(side="left", fill="both", expand=True)
-
-        sb = ctk.CTkScrollbar(sc, orientation="vertical",
-                              command=canvas.yview, width=30)
-        sb.pack(side="right", fill="y")
-        StyleManager.style_scrollbar_ctk(sb)
-        canvas.configure(yscrollcommand=sb.set)
-
-        self._list_inner = ctk.CTkFrame(canvas, fg_color=COLORS['bg_medium'])
-        canvas.create_window((0, 0), window=self._list_inner,
-                             anchor="nw", width=DSI_WIDTH - 50)
-        self._list_inner.bind("<Configure>",
-                              lambda e: canvas.configure(
-                                  scrollregion=canvas.bbox("all")))
-
-        self._build_list()
-
-        # ── Footer ────────────────────────────────────────────────────────────
-        footer = ctk.CTkFrame(main, fg_color=COLORS['bg_medium'])
-        footer.pack(fill="x", padx=8, pady=(2, 6))
-
-        ctk.CTkLabel(
-            footer,
-            text=f"{Icons.WARNING}  Pines reservados (2,3,12,13,14,15,18,19) no disponibles.",
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            text_color=COLORS['text_dim'],
-        ).pack(side="left", padx=4)
-
-        make_futuristic_button(
-            footer, text=f"{Icons.CHECK}  Cerrar",
-            command=self.destroy,
-            width=10, height=6, font_size=13,
-        ).pack(side="right", padx=4)
-
-    def _build_list(self):
-        for w in self._list_inner.winfo_children():
-            w.destroy()
-        self._row_widgets.clear()
-
-        state = self._monitor.get_state()
-        if not state:
-            ctk.CTkLabel(
-                self._list_inner,
-                text="Sin pines configurados.",
-                font=(FONT_FAMILY, FONT_SIZES['small']),
-                text_color=COLORS['text_dim'],
-            ).pack(pady=20)
-            return
-
-        for pin in sorted(state.keys()):
-            self._create_list_row(pin, state[pin])
-
-    def _create_list_row(self, pin: int, data: dict):
-        row = ctk.CTkFrame(self._list_inner, fg_color=COLORS['bg_dark'],
-                           corner_radius=8)
-        row.pack(fill="x", padx=8, pady=3)
-
-        ctk.CTkLabel(row, text=f"GPIO {pin:2d}",
-                     font=(FONT_FAMILY, FONT_SIZES['medium'], "bold"),
-                     text_color=COLORS['text'], width=80, anchor="w",
-                     ).pack(side="left", padx=10, pady=8)
-
-        mode_var = ctk.StringVar(master=self, value=data["mode"])
-        ctk.CTkOptionMenu(
-            row,
-            values=list(VALID_MODES),
-            variable=mode_var,
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            fg_color=COLORS['bg_medium'], width=100,
-            command=lambda m, p=pin: self._change_mode(p, m),
-        ).pack(side="left", padx=6, pady=8)
-
-        lbl_entry = ctk.CTkEntry(
-            row,
-            font=(FONT_FAMILY, FONT_SIZES['small']),
-            fg_color=COLORS['bg_medium'],
-            text_color=COLORS['text'], width=220,
-        )
-        lbl_entry.insert(0, data.get("label", f"GPIO {pin}"))
-        lbl_entry.pack(side="left", padx=6, pady=8)
-
-        make_futuristic_button(
-            row, text=f"{Icons.SAVE}",
-            command=lambda p=pin, e=lbl_entry: self._save_label(p, e),
-            width=6, height=6, font_size=13,
-        ).pack(side="left", padx=2, pady=8)
-
-        make_futuristic_button(
-            row, text=f"{Icons.TRASH}",
-            command=lambda p=pin: self._remove_pin(p),
-            width=6, height=6, font_size=13,
-        ).pack(side="right", padx=(2, 10), pady=8)
-
-        self._row_widgets[pin] = {"mode_var": mode_var, "lbl_entry": lbl_entry}
-
-    # ── Acciones ──────────────────────────────────────────────────────────────
-
-    def _add_pin(self):
-        try:
-            pin = int(self._new_pin_var.get())
-        except ValueError:
-            return
-        mode  = self._new_mode_var.get()
-        label = self._new_label_entry.get().strip()
-        if self._monitor.add_pin(pin, mode, label):
-            self._new_label_entry.delete(0, "end")
-            self._build_list()
-
-    def _remove_pin(self, pin: int):
-        self._monitor.remove_pin(pin)
-        self._build_list()
-
-    def _change_mode(self, pin: int, mode: str):
-        self._monitor.set_mode(pin, mode)
-
-    def _save_label(self, pin: int, entry: ctk.CTkEntry):
-        label = entry.get().strip()
-        if label:
-            self._monitor.set_label(pin, label)
-</file>
-
-</files>
+
+# Directory Structure
+```
+IDEAS_EXPANSION.md
+INDEX.md
+QUICKSTART.md
+README.md
+```
+
+# Files
+
+## File: QUICKSTART.md
+````markdown
+# 🚀 Inicio Rápido - Dashboard v4.0
+
+---
+
+## ⚡ Instalación (2 Comandos)
+
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
+
+El script instala automáticamente las dependencias del sistema y Python, la CLI oficial de Ookla para speedtest, y pregunta si quieres configurar sensores de temperatura.
+
+---
+
+## 🔁 Alternativa con Entorno Virtual
+
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+python3 main.py
+```
+
+> Recuerda activar el entorno (`source venv/bin/activate`) cada vez que quieras ejecutar.
+
+---
+
+## 📋 Requisitos Mínimos
+
+- ✅ Raspberry Pi 3/4/5
+- ✅ Raspberry Pi OS (cualquier versión)
+- ✅ Python 3.8+
+- ✅ Conexión a internet (para instalación)
+
+---
+
+## 🖥️ Config por máquina (multi-Pi)
+
+Si tienes varias Pi con configuraciones distintas, crea `config/local_settings.py` (en `.gitignore`, no se sube a git):
+
+```python
+# Ejemplo Pi 3B+ con Xvfb
+DSI_X = 0
+DSI_Y = 0
+DSI_WIDTH = 1024
+DSI_HEIGHT = 762
+```
+
+También puedes editarlo directamente desde la UI con el **Editor de Configuración**.
+
+---
+
+## 🗂️ Menú por Pestañas (v4.0)
+
+El menú está organizado en **6 pestañas con scroll horizontal táctil**. Cada pestaña agrupa los botones por categoría:
+
+| Pestaña | Botones |
+|---------|---------|
+| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores |
+| **Red** | Monitor Red, Red Local, Pi-hole, VPN, Homebridge, Monitor WiFi |
+| **Hardware** | Info Hardware, Monitor Disco, Monitor USB |
+| **Servicios** | Monitor Servicios, Servicios Dashboard, Monitor Procesos, Gestor Crontab, Actualizaciones |
+| **Registros** | Visor Logs, Histórico Datos, Historial Alertas, Monitor SSH |
+| **Config** | Editor Config, Cambiar Tema, Gestor Botones |
+
+El **footer** (Gestor Botones, Reiniciar, Salir) es siempre visible independientemente de la pestaña activa.
+
+> Puedes ocultar botones que no uses con el **Gestor de Botones**.
+
+---
+
+## 🖥️ Las 27 Ventanas
+
+**1. Info Hardware** — Modelo, revision, SoC, RAM, almacenamiento, uptime
+
+**2. Control Ventiladores** — Modo Auto/Manual/Silent/Normal/Performance, curvas PWM
+
+**3. LEDs RGB** — 6 modos (auto, apagado, color fijo, secuencial, respiración, arcoíris)
+
+**4. Monitor Placa** — CPU, RAM, temperatura, temperatura chasis, fan duty real
+
+**5. Monitor Red** — Download/Upload, speedtest Ookla, lista de IPs
+
+**6. Monitor USB** — Dispositivos conectados, expulsión segura
+
+**7. Monitor Disco** — Espacio, temperatura NVMe, velocidad I/O, SMART extendido
+
+**8. Lanzadores** — Scripts personalizados con terminal en vivo
+
+**9. Monitor Procesos** — Top 20 procesos, búsqueda, matar procesos
+
+**10. Monitor Servicios** — Start/Stop/Restart systemd, ver logs
+
+**11. Servicios Dashboard** — Activar/desactivar servicios background del dashboard
+
+**12. Gestor Crontab** — Ver/añadir/editar/eliminar entradas del crontab por usuario
+
+**13. Histórico Datos** — 8 gráficas CPU/RAM/Temp/Red/Disco/PWM en 24h, 7d, 30d
+
+**14. Actualizaciones** — Estado de paquetes, instalar con terminal integrada
+
+**15. Homebridge** — Control de 5 tipos de dispositivos HomeKit
+
+**16. Visor de Logs** — Filtros por nivel, módulo, texto e intervalo; exportación
+
+**17. Red Local** — Escáner arp-scan con IP, MAC y fabricante
+
+**18. Pi-hole** — Estadísticas de bloqueo DNS en tiempo real (solo v6)
+
+**19. Gestor VPN** — Estado, badge en menú, conectar/desconectar
+
+**20. Historial Alertas** — Registro persistente de alertas Telegram enviadas
+
+**21. Brillo Pantalla** — Control brillo DSI, modo ahorro, encendido/apagado
+
+**22. Resumen Sistema** — Vista unificada de todas las métricas (ideal como reposo)
+
+**23. Cámara / Escáner OCR** — Foto con OV5647 + OCR Tesseract local
+
+**24. Cambiar Tema** — 15 temas (Cyberpunk, Matrix, Dracula, Nord...)
+
+**25. Monitor SSH** — Sesiones activas e historial SSH con textos legibles
+
+**26. Monitor WiFi** — Señal dBm, calidad, SSID, bitrate, tráfico RX/TX
+
+**27. Editor Config** — Edita `local_settings.py` con preview de iconos en tiempo real
+
+---
+
+## 🔧 Configuración Básica
+
+### Ajustar posición en pantalla:
+Edita `config/settings.py` o usa el **Editor de Configuración** directamente desde la UI:
+```python
+DSI_X = 0
+DSI_Y = 0
+DSI_WIDTH = 800
+DSI_HEIGHT = 480
+```
+
+### Añadir scripts en Lanzadores:
+```python
+LAUNCHERS = [
+    {"label": "Mi Script", "script": str(SCRIPTS_DIR / "mi_script.sh")},
+]
+```
+
+---
+
+## 🏠 Configurar Homebridge
+
+```env
+HOMEBRIDGE_HOST=192.168.1.X
+HOMEBRIDGE_PORT=8581
+HOMEBRIDGE_USER=admin
+HOMEBRIDGE_PASS=tu_contraseña
+```
+
+> Activa el **Insecure Mode** en Homebridge.
+
+---
+
+## 📲 Configurar Alertas Telegram
+
+```env
+TELEGRAM_TOKEN=123456789:ABCdefGHI...
+TELEGRAM_CHAT_ID=987654321
+```
+
+---
+
+## 📋 Ver Logs del Sistema
+
+```bash
+tail -f data/logs/dashboard.log
+grep ERROR data/logs/dashboard.log
+```
+
+---
+
+## ❓ Problemas Comunes
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
+| USB no expulsa | `sudo apt install udisks2` |
+| Homebridge no conecta | Revisar `.env` y activar Insecure Mode |
+| WiFi no muestra datos | `sudo apt install wireless-tools` |
+| SSH monitor vacío | Verificar que `who` y `last` funcionan en el sistema |
+| No puedo escribir en entries (VNC) | Verificar que se usa `make_entry()` de `ui/styles.py` |
+| Foco perdido tras inactividad (Wayland) | `gsettings set org.gnome.desktop.session idle-delay 0` |
+| Dashboard no visible por VNC en Pi 5 | `wayvnc --output=DSI-2 0.0.0.0 5901` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 📚 Más Información
+
+**[README.md](README.md)** — Documentación completa
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada
+**[INDEX.md](INDEX.md)** — Índice de toda la documentación
+
+---
+
+**Dashboard v4.0** 🚀
+````
+
+## File: README.md
+````markdown
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v4.0
+
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, menú por pestañas con scroll táctil, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge, alertas externas por Telegram, escáner de red local, integración Pi-hole, gestor VPN, control de brillo, pantalla de resumen, LEDs RGB inteligentes, alertas de audio con voz TTS, cámara con OCR, SMART extendido de NVMe, monitor WiFi, monitor SSH y editor de configuración local.
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![Version](https://img.shields.io/badge/Version-4.0-orange.svg)]()
+
+---
+
+## ✨ Características Principales
+
+### 🗂️ **Menú por Pestañas con Scroll Táctil** *(v4.0)*
+- **6 pestañas categorizadas**: Sistema, Red, Hardware, Servicios, Registros, Config
+- **Scroll horizontal táctil** en la barra de pestañas — ancho fijo 130px por pestaña, escala a cualquier número sin encoger
+- **Footer siempre visible**: Gestor Botones, Reiniciar, Salir — accesibles desde cualquier pestaña
+- Pestañas definidas en `config/settings.py → class UI` — añadir una pestaña nueva es solo una línea de configuración
+
+### 🖥️ **Monitoreo Completo del Sistema**
+- **CPU**: Uso en tiempo real, frecuencia, gráficas históricas
+- **RAM**: Memoria usada/total, porcentaje, visualización dinámica
+- **Temperatura**: Monitoreo de CPU con alertas por color
+- **Disco**: Espacio usado/disponible, temperatura NVMe, I/O en tiempo real
+
+### 🪟 **UI Unificada con Header Táctil**
+- **Header en todas las ventanas**: título + status dinámico + botón ✕ (52×42px táctil)
+- **Status en tiempo real** en el header: CPU/RAM/Temp (Monitor Placa), Disco/NVMe (Monitor Disco), interfaz/velocidades (Monitor Red)
+- Función `make_window_header()` centralizada en `ui/styles.py`
+
+### 🌡️ **Control Inteligente de Ventiladores**
+- **5 Modos**: Auto (curva), Manual, Silent (30%), Normal (50%), Performance (100%)
+- **Curvas personalizables**: Define hasta 8 puntos temperatura-PWM
+- **Servicio background**: Funciona incluso con ventana cerrada
+
+### 🌐 **Monitor de Red Avanzado**
+- **Tráfico en tiempo real**: Download/Upload con gráficas
+- **Auto-detección**: Interfaz activa (eth0, wlan0, tun0)
+- **Speedtest integrado**: CLI oficial de Ookla
+
+### 󰖩 **Monitor WiFi** *(v3.8)*
+- Señal en tiempo real: dBm, calidad de enlace, SSID, bitrate
+- Barras visuales de señal (▂▄▆█) y gráfica histórica
+- Tráfico RX/TX con gráficas independientes
+
+### **Monitor SSH** *(v3.8)*
+- Sesiones activas en tiempo real con IP de origen y hora de conexión
+- Historial con duración formateada y detección de cortes
+- Textos legibles: `pts/0` → `Sesión 1`, IPs locales etiquetadas
+
+### 🔧 **Editor de Configuración** *(v3.8)*
+- Edita `config/local_settings.py` por máquina sin tocar `settings.py`
+- Parámetros editables: pantalla, tiempos, umbrales CPU/Temp/RAM/Red
+- Iconos editables con preview en tiempo real, merge inteligente
+
+### 🖧 **Escáner de Red Local**
+- Escaneo con arp-scan: IP, MAC y fabricante (OUI lookup)
+- Auto-refresco cada 60s en background
+
+### 🕳️ **Integración Pi-hole v6**
+- API v6 nativa, estadísticas en tiempo real
+- Badge en menú: 🔴 si Pi-hole está offline
+
+### 📲 **Alertas Externas por Telegram**
+- Sin dependencias nuevas: usa `urllib` de stdlib
+- Anti-spam: edge-trigger + sustain de 60s
+
+### 🏠 **Integración Homebridge Extendida**
+- 5 tipos de dispositivo: switch, luz, termostato, sensor, persiana
+- 3 badges en el menú: offline, encendidos, con fallo
+
+### ⚙️ **Monitor de Servicios systemd**
+- Gestión completa: Start/Stop/Restart, estado visual, logs en tiempo real
+
+### ⚙️ **Servicios Dashboard** *(v3.5/v3.6)*
+- ServiceRegistry: registro centralizado de todos los servicios
+- ServicesManagerWindow: activar/desactivar servicios desde la UI
+
+### 🔧 **Gestor de Botones del Menú** *(v3.6.5)*
+- Mostrar/ocultar botones del menú principal por máquina
+
+### 🕐 **Gestor de Crontab** *(v3.7)*
+- Ver, añadir, editar y eliminar entradas del crontab
+- Selector de usuario: usuario / root
+
+### 📊 **Histórico de Datos**
+- Recolección automática cada 5 minutos en background (SQLite)
+- 8 gráficas en 24h, 7d, 30d con exportación CSV
+
+### 🔒 **Gestor de Conexiones VPN**
+- Estado en tiempo real, badge en menú, conectar/desconectar
+- Compatible con WireGuard y OpenVPN
+
+### 💡 **Control LEDs RGB**
+- 6 modos: auto, apagado, color fijo, secuencial, respiración, arcoíris
+
+### 🔊 **Alertas de Audio**
+- Voz TTS en español con `espeak-ng` + tono sintético
+- 11 archivos .wav
+
+### 📷 **Cámara + Escáner OCR**
+- Cámara OV5647 via `rpicam-still`, OCR con Tesseract local
+
+### 󰔎 **15 Temas Personalizables**
+- Cambio con un clic, preview en vivo
+
+---
+
+## 🖥️ Soporte Multi-máquina
+
+`config/local_settings.py` (en `.gitignore`) permite configuración independiente por máquina sin tocar git. El **Editor de Configuración** genera y mantiene este fichero desde la propia UI.
+
+### Pi 5 (pantalla DSI física + Wayland)
+- Compositor: **labwc** sobre Wayland
+- Acceso remoto: `wayvnc --output=DSI-2 0.0.0.0 5901`
+- Resolución DSI: 800×480
+- Idle desactivado: `gsettings set org.gnome.desktop.session idle-delay 0`
+
+### Pi 3B+ (sin pantalla física + X11)
+- Display virtual `:1` con **Xvfb**
+- Acceso remoto: x11vnc en puerto `5901` sobre `:1`
+- `local_settings.py`: `DSI_X=0, DSI_Y=0, DSI_WIDTH=1024, DSI_HEIGHT=762`
+
+---
+
+## 📦 Instalación
+
+### ⚡ Instalación Recomendada
+
+```bash
+git clone https://github.com/tu-usuario/system-dashboard.git
+cd system-dashboard
+chmod +x install_system.sh
+sudo ./install_system.sh
+python3 main.py
+```
+
+### 🛠️ Instalación Manual
+
+```bash
+sudo apt-get update
+sudo apt-get install -y lm-sensors usbutils udisks2 smartmontools arp-scan wireless-tools
+
+# CLI oficial de Ookla (speedtest)
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest
+
+sudo sensors-detect --auto
+pip3 install --break-system-packages -r requirements.txt
+
+echo "$(whoami) ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan" | sudo tee /etc/sudoers.d/arp-scan
+echo "$(whoami) ALL=(ALL) NOPASSWD: /usr/bin/smartctl"  | sudo tee /etc/sudoers.d/smartctl
+
+# Hardware FNK0100K — cámara y OCR (opcional)
+sudo apt install rpicam-apps tesseract-ocr tesseract-ocr-spa espeak-ng
+pip install pytesseract --break-system-packages
+
+python3 main.py
+```
+
+---
+
+## 📊 Arquitectura del Proyecto (v4.0)
+
+```
+system_dashboard/
+├── config/
+│   ├── settings.py                 # Constantes globales + class Icons + class UI (pestañas)
+│   ├── button_labels.py            # Labels de botones (fuente única de verdad)
+│   ├── themes.py                   # 15 temas pre-configurados
+│   ├── services.json               # Config servicios y UI (auto-generado, en .gitignore)
+│   └── local_settings.py           # Overrides por máquina (en .gitignore)
+├── core/
+│   ├── service_registry.py
+│   ├── system_monitor.py
+│   ├── fan_controller.py, fan_auto_service.py
+│   ├── network_monitor.py, network_scanner.py
+│   ├── disk_monitor.py, process_monitor.py
+│   ├── service_monitor.py, update_monitor.py
+│   ├── homebridge_monitor.py, pihole_monitor.py
+│   ├── alert_service.py, led_service.py
+│   ├── hardware_monitor.py, audio_alert_service.py
+│   ├── display_service.py, vpn_monitor.py
+│   ├── crontab_service.py, camera_service.py
+│   ├── ssh_monitor.py, wifi_monitor.py
+│   ├── data_logger.py, data_analyzer.py
+│   ├── data_collection_service.py, cleanup_service.py
+│   └── hardware_info_monitor.py
+├── ui/
+│   ├── main_window.py              # Layout, pestañas, coordinación (~450 líneas)
+│   ├── main_badges.py              # BadgeManager — crear y actualizar badges *(v4.0)*
+│   ├── main_update_loop.py         # UpdateLoop — reloj, uptime, loop de badges *(v4.0)*
+│   ├── main_system_actions.py      # exit_application, restart_application *(v4.0)*
+│   ├── window_lifecycle.py         # WindowLifecycleManager *(v4.0)*
+│   ├── window_manager.py           # Visibilidad botones via JSON, patrón callback
+│   ├── styles.py
+│   ├── widgets/
+│   │   ├── graphs.py
+│   │   └── dialogs.py
+│   └── windows/
+│       └── (una ventana por fichero — 27 ventanas)
+├── utils/
+│   ├── file_manager.py, system_utils.py, logger.py
+├── data/                           # Auto-generado al ejecutar
+├── scripts/
+│   ├── sounds/
+│   └── generate_sounds.py
+├── .env, .env.example
+├── install_system.sh, install.sh
+├── main.py
+└── requirements.txt
+```
+
+### Módulos ui/ (v4.0)
+
+| Fichero | Responsabilidad |
+|---------|----------------|
+| `main_window.py` | Layout, pestañas, coordinación (~450 líneas) |
+| `main_badges.py` | `BadgeManager`: crear y actualizar badges de menú |
+| `main_update_loop.py` | `UpdateLoop`: reloj, uptime, loop de badges |
+| `main_system_actions.py` | `exit_application`, `restart_application` |
+| `window_lifecycle.py` | `WindowLifecycleManager`: ciclo de vida ventanas hijas |
+| `window_manager.py` | Visibilidad de botones via JSON, patrón callback |
+
+---
+
+## 🗂️ Menú por Pestañas (v4.0)
+
+El menú está organizado en 6 pestañas con scroll horizontal táctil. La configuración vive en `config/settings.py → class UI`:
+
+| Pestaña | Contenido |
+|---------|-----------|
+| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores |
+| **Red** | Monitor Red, Red Local, Pi-hole, VPN, Homebridge, Monitor WiFi |
+| **Hardware** | Info Hardware, Monitor Disco, Monitor USB |
+| **Servicios** | Monitor Servicios, Servicios Dashboard, Monitor Procesos, Gestor Crontab, Actualizaciones |
+| **Registros** | Visor Logs, Histórico Datos, Historial Alertas, Monitor SSH |
+| **Config** | Editor Config, Cambiar Tema, Gestor Botones |
+
+> El footer (Gestor Botones, Reiniciar, Salir) es fijo y visible desde cualquier pestaña.
+
+---
+
+## 🔗 Relación fase1.py ↔ Dashboard
+
+`fase1.py` es un proceso independiente que corre en paralelo. Comunicación exclusivamente via JSON:
+
+| Fichero | Quién escribe | Quién lee |
+|---------|--------------|-----------|
+| `data/fan_state.json` | Dashboard (`FanController`) | `fase1.py` |
+| `data/led_state.json` | Dashboard (`LedService`) | `fase1.py` |
+| `data/hardware_state.json` | `fase1.py` | Dashboard (`HardwareMonitor`) |
+
+El hardware I²C del módulo Expansion Freenove (ventiladores, LEDs, OLED) es **exclusivo de fase1.py** — nunca se accede desde el dashboard.
+
+---
+
+## 🏠 Configuración de Homebridge
+
+```env
+HOMEBRIDGE_HOST=192.168.1.X
+HOMEBRIDGE_PORT=8581
+HOMEBRIDGE_USER=admin
+HOMEBRIDGE_PASS=tu_contraseña
+```
+
+---
+
+## 🕳️ Configuración de Pi-hole
+
+```env
+PIHOLE_HOST=192.168.1.X
+PIHOLE_PORT=80
+PIHOLE_PASSWORD=tu_contraseña
+```
+
+> Compatible exclusivamente con **Pi-hole v6**.
+
+---
+
+## 📲 Configuración de Alertas Telegram
+
+```env
+TELEGRAM_TOKEN=123456789:ABCdefGHI...
+TELEGRAM_CHAT_ID=987654321
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| No arranca | `pip3 install --break-system-packages -r requirements.txt` |
+| Temperatura 0 | `sudo sensors-detect --auto && sudo systemctl restart lm-sensors` |
+| NVMe temp 0 | `sudo apt install smartmontools` |
+| Speedtest falla | Instalar CLI oficial Ookla |
+| USB no expulsa | `sudo apt install udisks2` |
+| Homebridge no conecta | Verificar `.env` y activar Insecure Mode |
+| Red Local no escanea | `sudo apt install arp-scan` y configurar sudoers |
+| Pi-hole no conecta | Verificar `.env`; solo compatible con v6 |
+| WiFi no muestra datos | `sudo apt install wireless-tools` |
+| SSH monitor vacío | Verificar que `who` y `last` funcionan en el sistema |
+| No puedo escribir en entries (VNC) | Verificar que se usa `make_entry()` de `ui/styles.py` |
+| Foco perdido tras inactividad (Wayland) | `gsettings set org.gnome.desktop.session idle-delay 0` |
+| Dashboard no visible por VNC en Pi 5 | `wayvnc --output=DSI-2 0.0.0.0 5901` |
+| Audio no suena | `aplay -l` → verificar dispositivo HDMI |
+| Cámara no encontrada | `sudo apt install rpicam-apps` |
+| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 📚 Documentación
+
+- [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
+- [INSTALL_GUIDE.md](INSTALL_GUIDE.md) — Instalación detallada
+- [THEMES_GUIDE.md](THEMES_GUIDE.md) — Guía de temas
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — Integración con fase1.py / OLED
+- [COMPATIBILIDAD.md](COMPATIBILIDAD.md) — Compatibilidad multiplataforma
+- [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) — Roadmap y backlog
+- [INDEX.md](INDEX.md) — Índice completo
+
+---
+
+## 📊 Estadísticas del Proyecto
+
+| Métrica | v3.8 | v4.0 |
+|---------|------|------|
+| Versión | 3.8 | **4.0** |
+| Archivos Python | 68 | **73** |
+| Ventanas | 27 | 27 |
+| Temas | 15 | 15 |
+| Badges en menú | 12 | 12 |
+| Servicios background | 16 | 16 |
+| Módulos ui/main_* | 1 | **5** |
+| Documentos | 9 | 9 |
+
+---
+
+## Changelog
+
+### **v4.0** - 2026-03-05 ⭐ ACTUAL — Refactorización Arquitectural
+
+- ✅ **NUEVO**: Menú por pestañas con scroll horizontal táctil — 6 pestañas (Sistema, Red, Hardware, Servicios, Registros, Config), ancho fijo 130px táctil, scroll automático al añadir más
+- ✅ **NUEVO**: `WindowLifecycleManager` (`ui/window_lifecycle.py`) — elimina 27 métodos `open_*` de `main_window.py`, unifica ciclo de vida de todas las ventanas hijas
+- ✅ **NUEVO**: `BadgeManager` (`ui/main_badges.py`) — gestión de badges extraída de `main_window.py`
+- ✅ **NUEVO**: `UpdateLoop` (`ui/main_update_loop.py`) — loops de reloj y badges extraídos
+- ✅ **NUEVO**: `main_system_actions.py` — `exit_application` y `restart_application` extraídos
+- ✅ **REFACTOR**: `main_window.py` 891 → 451 líneas (−49%), solo layout y coordinación
+- ✅ **REFACTOR**: `WindowManager` — patrón callback (`set_rerender_callback`) en lugar de reGrid directo
+- ✅ **REFACTOR**: `config/settings.py → class UI` — pestañas como configuración pura (`MENU_COLUMNS`, `MENU_TABS`)
+
+### **v3.8** - 2026-03-XX
+- ✅ Monitor WiFi (`WiFiMonitor` + `WiFiWindow`)
+- ✅ Monitor SSH (`SSHMonitor` + `SSHWindow`)
+- ✅ Editor de Configuración (`ConfigEditorWindow`)
+- ✅ Refactor arquitectónico: `crontab_service.py` y `camera_service.py` a `core/`
+- ✅ Fix `RuntimeError` al salir — `StringVar`/`IntVar` con `master=` explícito
+
+### **v3.7** - 2026-03-02
+- ✅ Gestor Crontab, fix grab modal, `make_entry()`, soporte dual-Pi
+
+### **v3.6.5** - 2026-02-XX
+- ✅ Gestor de Botones (`ButtonManagerWindow` + `WindowManager`)
+
+### **v3.6** - 2026-02-XX
+- ✅ Servicios Dashboard (`ServicesManagerWindow`)
+
+### **v3.5** - 2026-02-XX
+- ✅ `ServiceRegistry`
+
+### **v3.4** - 2026-02-27
+- ✅ LEDs RGB, temperatura chasis, alertas audio, cámara OCR, SMART NVMe extendido
+
+### **v3.3** - 2026-02-27
+- ✅ Resumen Sistema, control brillo DSI, gestor VPN
+
+### **v3.2** - 2026-02-27
+- ✅ Escáner red local, Pi-hole v6, historial alertas
+
+### **v3.1** - 2026-02-26
+- ✅ Alertas Telegram, Homebridge extendido (5 tipos)
+
+### **v3.0** - 2026-02-26
+- ✅ Visor de Logs
+
+### v2.x
+- Monitor completo, servicios systemd, histórico SQLite, 15 temas, badges
+
+### v1.0 - 2025-01
+- Release inicial
+
+---
+
+## Licencia
+
+MIT License
+
+---
+
+## Agradecimientos
+
+CustomTkinter · psutil · matplotlib · Ookla Speedtest CLI · Homebridge · Pi-hole · Raspberry Pi Foundation
+````
+
+## File: IDEAS_EXPANSION.md
+````markdown
+# 💡 IDEAS_EXPANSION.md
+## Expansión y Roadmap — Sistema de Monitoreo v4.0
+
+---
+
+## ✅ Implementado
+
+### v4.0 (actual) — Refactorización Arquitectural
+
+- **Menú por pestañas con scroll horizontal táctil**
+  - 6 pestañas categorizadas: Sistema, Red, Hardware, Servicios, Registros, Config
+  - Ancho fijo 130px por pestaña — táctil, escala sin límite
+  - Footer fijo (Gestor Botones, Reiniciar, Salir) visible desde cualquier pestaña
+  - Pestañas definidas en `config/settings.py → class UI` — configuración pura
+
+- **`WindowLifecycleManager`** (`ui/window_lifecycle.py`)
+  - Elimina 27 métodos `open_*` dispersos en `main_window.py`
+  - Ciclo de vida unificado: factory, lift, `_btn_active`/`_btn_idle`, bind `<Destroy>`
+  - Registro en una línea por ventana: `r("clave", BL.LABEL, lambda: Ventana(...))`
+
+- **Modularización de `main_window.py`** (891 → 451 líneas, −49%)
+  - `ui/main_badges.py` — `BadgeManager`: crear y actualizar badges
+  - `ui/main_update_loop.py` — `UpdateLoop`: reloj, uptime, loop de badges
+  - `ui/main_system_actions.py` — `exit_application`, `restart_application`
+
+- **`WindowManager` refactorizado** — patrón callback (`set_rerender_callback`) en lugar de reGrid directo
+
+### v3.8 — SSH + WiFi + Config Editor + Refactors
+
+- **Monitor SSH** (`SSHMonitor` + `SSHWindow`)
+  - Sesiones activas en tiempo real con IP de origen, usuario y hora de conexión
+  - Historial de sesiones con duración formateada (`1h 30min`, `15 min`)
+  - Textos humanizados: `pts/0` → `Sesión 1`, IPs locales etiquetadas como `(red local)`
+
+- **Monitor WiFi** (`WiFiMonitor` + `WiFiWindow`)
+  - Señal en tiempo real: SSID, dBm, calidad de enlace, bitrate
+  - Barras visuales de señal (▂▄▆█) y gráfica histórica
+  - Tráfico RX/TX con gráficas independientes
+
+- **Editor de Configuración** (`ConfigEditorWindow`)
+  - Edita `config/local_settings.py` por máquina sin tocar `settings.py`
+  - Iconos editables con preview en tiempo real, merge inteligente
+
+- **Refactor arquitectónico**
+  - `core/crontab_service.py` y `core/camera_service.py` extraídos de UI a `core/`
+  - Fix `StringVar`/`IntVar` con `master=` explícito — elimina `RuntimeError` al salir
+
+### v3.7 — Crontab + Fixes + Multi-Pi
+- **Gestor Crontab** — ver/añadir/editar/eliminar entradas crontab, selector usuario/root
+- **Fix grab modal** — `grab_release()` garantizado al cerrar diálogos
+- **`make_entry()`** — soluciona escritura en VNC con `overrideredirect(True)`
+- **Soporte dual-Pi** — `config/local_settings.py`, Pi 3B+ Xvfb + Pi 5 Wayland
+
+### v3.6.5
+- **Gestor de Botones** (`ButtonManagerWindow` + `WindowManager`) — persistencia en `services.json`
+
+### v3.6
+- **Servicios Dashboard** (`ServicesManagerWindow`) — persistencia en `services.json`
+
+### v3.5
+- **ServiceRegistry** — registro centralizado de todos los servicios del dashboard
+
+### v3.4 — Hardware FNK0100K
+- **LEDs RGB inteligentes** — 6 modos, sin destellos
+- **Temperatura chasis + Fan duty real** — via `hardware_state.json`
+- **Alertas de audio** — 11 .wav, TTS español, 4 métricas
+- **Cámara OV5647 + Escáner OCR** — Tesseract local
+- **NVMe SMART extendido** — TBW, horas, ciclos, % vida útil
+
+### v3.3
+- **Resumen del Sistema** (`OverviewWindow`)
+- **Control de Brillo DSI** (`DisplayService` + `DisplayWindow`)
+- **Gestor VPN** (`VpnMonitor` + `VpnWindow`)
+
+### v3.2
+- **Escáner Red Local** (`NetworkScanner`) — arp-scan
+- **Pi-hole v6** (`PiholeMonitor`) — API v6
+- **Historial de Alertas** (`AlertHistoryWindow`)
+
+### v3.1
+- **Alertas Telegram**, Homebridge extendido — 5 tipos de dispositivo
+
+### v3.0
+- Visor de Logs con filtros y exportación
+
+### v2.x
+- Control Ventiladores PWM, monitores completos, 15 temas, badges, logging, SQLite
+
+---
+
+## 🔄 Ideas en evaluación para v4.1
+
+### 🎵 Audio Monitor / Control
+- Control de volumen ALSA desde la UI (jack + óptico del kit Freenove)
+- Sin dependencias nuevas (`subprocess amixer/aplay`)
+- Más simple de implementar — recomendado como primera feature v4.1
+
+### 🌦️ Widget de Clima
+- Open-Meteo (sin clave API, gratuita)
+- Temperatura exterior + previsión 3 días
+- Independiente del resto del sistema
+
+### 🔌 I²C Scanner
+- `smbus2` en modo solo lectura
+- Detecta dispositivos conectados al bus I²C del Pi
+- Seguro — no interfiere con fase1.py
+
+### ⚡ GPIO Monitor / Control
+- `gpiozero` — requiere planificación previa de pines libres
+- Más complejo: inventariar pines ya usados por fase1.py antes de implementar
+
+### 🌐 API REST local
+- Endpoint `/status` en JSON — `http.server` de stdlib, sin deps nuevas
+- Permitiría integración con otros sistemas de la red
+
+### 💾 Backup automático de configuración
+- Copiar `data/` a NAS o USB al detectar dispositivo montado
+- Restauración desde la UI
+
+---
+
+## 💭 Ideas futuras (backlog)
+
+- **Notificaciones push locales** — avisos en pantalla sin Telegram
+- **Historial de comandos crontab** — log de ejecuciones con resultado
+- **Perfiles de configuración** — múltiples `local_settings.py` intercambiables
+- **Dashboard web espejo** — servir la UI como página HTML desde el propio Pi
+- **Multi-pantalla / modo kiosk** — detectar HDMI y extender la UI
+
+---
+
+## 🗺️ Roadmap
+
+```
+v2.x   ✅ Monitor completo, temas, SQLite, badges
+v3.0   ✅ Visor Logs
+v3.1   ✅ Telegram + Homebridge extendido
+v3.2   ✅ Red Local + Pi-hole v6 + Historial Alertas
+v3.3   ✅ Resumen Sistema + Brillo DSI + Gestor VPN
+v3.4   ✅ LEDs RGB + Temp Chasis + Audio + Cámara OCR + SMART
+v3.5   ✅ ServiceRegistry
+v3.6   ✅ ServicesManagerWindow
+v3.6.5 ✅ ButtonManagerWindow
+v3.7   ✅ CrontabWindow + Fixes VNC/Wayland + Multi-Pi
+v3.8   ✅ Monitor SSH + Monitor WiFi + Editor Config + Refactor core/
+v4.0   ✅ Pestañas táctiles + WindowLifecycleManager + Modularización main_*  ← ACTUAL
+v4.1   💭 Audio Control + Clima + I²C Scanner + GPIO?
+```
+
+---
+
+## 📊 Cobertura por módulo (v4.0)
+
+| Área | Cobertura | Notas |
+|------|-----------|-------|
+| Hardware CPU/RAM/Temp/Disco | ✅ Completa | SystemMonitor + DiskMonitor |
+| NVMe SMART | ✅ Completa | TBW, horas, vida útil, ciclos |
+| Red | ✅ Completa | NetworkMonitor + NetworkScanner |
+| WiFi | ✅ Completa | WiFiMonitor — señal, calidad, tráfico |
+| Procesos / Servicios systemd | ✅ Completa | ProcessMonitor + ServiceMonitor |
+| Servicios Dashboard | ✅ Completa | ServiceRegistry + ServicesManagerWindow |
+| Fans | ✅ Completa | FanController + FanAutoService |
+| Crontab | ✅ Completa | CrontabWindow, usuario/root |
+| Menú configurable | ✅ Completa | ButtonManagerWindow + WindowManager |
+| Pantalla | ✅ Completa | DisplayService (brillo DSI) |
+| VPN | ✅ Básica | VpnMonitor (estado + conectar/desconectar) |
+| Homebridge / HomeKit | ✅ Avanzada | 5 tipos de dispositivo |
+| Pi-hole | ✅ Completa | API v6, estadísticas, badge |
+| Alertas Telegram | ✅ Completa | edge-trigger + historial JSON |
+| Alertas Audio | ✅ Completa | 11 sonidos TTS español, 4 métricas |
+| Histórico / Análisis | ✅ Completa | SQLite + matplotlib |
+| LEDs RGB GPIO Board | ✅ Completa | 6 modos, sin destellos |
+| Temperatura chasis | ✅ Completa | Via fase1.py + hardware_state.json |
+| Fan duty real | ✅ Completa | Via fase1.py + hardware_state.json |
+| Cámara OV5647 | ✅ Completa | rpicam-still + OCR Tesseract |
+| Monitor SSH | ✅ Completa | Sesiones activas + historial humanizado |
+| Config por máquina | ✅ Completa | local_settings.py + Editor Config UI |
+| Multi-Pi / local_settings | ✅ Completa | Pi 5 Wayland + Pi 3 Xvfb |
+| Audio Control | ❌ Pendiente | v4.1 |
+| Widget Clima | ❌ Pendiente | v4.1 |
+| I²C Scanner | ❌ Pendiente | v4.1 |
+| GPIO Monitor | ❌ Pendiente | v4.1 |
+| API REST local | ❌ Pendiente | futuro |
+| Backup automático | ❌ Pendiente | futuro |
+````
+
+## File: INDEX.md
+````markdown
+# 📚 Índice de Documentación - System Dashboard v4.0
+
+---
+
+## 🚀 Documentos Esenciales
+
+**[README.md](README.md)** ⭐ — Documentación completa v4.0. **Empieza aquí.**
+
+**[QUICKSTART.md](QUICKSTART.md)** ⚡ — Instalación y ejecución en 5 minutos.
+
+---
+
+## 📖 Guías por tema
+
+### 🎨 Personalización
+**[THEMES_GUIDE.md](THEMES_GUIDE.md)** — 15 temas, crear personalizados.
+
+### 🔧 Instalación
+**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — RPi OS, Kali, venv, script automático.
+
+### 🏠 Homebridge
+Configuración: ver sección en README.md.
+5 tipos: `switch`, `light`, `thermostat`, `sensor`, `blind`.
+
+### 🕳️ Pi-hole (v3.2)
+Solo compatible con **Pi-hole v6**.
+Añadir `PIHOLE_HOST`, `PIHOLE_PORT`, `PIHOLE_PASSWORD` al `.env`.
+
+### 🖧 Red Local (v3.2)
+Instalar: `sudo apt install arp-scan`.
+Sudoers: `usuario ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan`.
+
+### 📲 Alertas Telegram
+Configurar `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID` en `.env`.
+
+### 🤝 Integración con fase1.py
+**[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** — Compartir estado fans/LEDs via JSON, OLED.
+
+### 💡 Ideas y Expansión
+**[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)** — Roadmap v4.1+, backlog, cobertura por módulo.
+
+### 🖥️ Multi-Pi (v3.7)
+Crear `config/local_settings.py` (en `.gitignore`) con los valores de `DSI_X/Y/WIDTH/HEIGHT` para cada máquina.
+El **Editor de Configuración** *(v3.8)* permite editar este fichero directamente desde la UI sin SSH.
+- **Pi 5 Wayland**: `wayvnc --output=DSI-2 0.0.0.0 5901` + `gsettings set org.gnome.desktop.session idle-delay 0`
+- **Pi 3B+ Xvfb**: display virtual `:1`, VNC puerto `5901`, resolución configurable
+
+### 🗂️ Menú por Pestañas (v4.0)
+Pestañas definidas en `config/settings.py → class UI`:
+- `MENU_COLUMNS` — número de columnas de botones
+- `MENU_TABS` — lista de `(clave, icono, label, [claves_BL])`
+Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
+
+---
+
+## 📋 Archivos de configuración
+
+| Archivo | En git | Gestiona |
+|---------|--------|---------|
+| `config/settings.py` | ✅ | Constantes globales, Icons, UI (pestañas), LAUNCHERS |
+| `config/button_labels.py` | ✅ | Labels de botones (fuente única de verdad) |
+| `config/themes.py` | ✅ | 15 temas |
+| `config/services.json` | ❌ | Estado servicios + visibilidad botones UI |
+| `config/local_settings.py` | ❌ | Overrides por máquina (editable via Config Editor) |
+| `.env` | ❌ | Credenciales (Homebridge, PiHole, Telegram, VPN) |
+
+---
+
+## 🗂️ Estructura de documentos v4.0
+
+```
+📚 Documentación/
+├── README.md                         ⭐ Principal v4.0
+├── QUICKSTART.md                     ⚡ Inicio rápido
+├── INDEX.md                          📑 Este archivo
+├── REQUIREMENTS.md                   📋 Requisitos
+├── INSTALL_GUIDE.md                  🔧 Instalación
+├── THEMES_GUIDE.md                   🎨 Temas
+├── INTEGRATION_GUIDE.md              🤝 Integración fase1
+├── IDEAS_EXPANSION.md                💡 Roadmap v4.1+
+└── COMPATIBILIDAD.md                 🌐 Compatibilidad
+```
+
+---
+
+## 🎯 Flujo de lectura recomendado
+
+**Usuario nuevo:**
+1. README.md → sección Características
+2. QUICKSTART.md → instalar y ejecutar
+3. Explorar las 27 ventanas 🎉
+
+**Usuario avanzado / configurar integraciones:**
+1. README.md completo
+2. Sección Homebridge → `.env` + Insecure Mode
+3. Sección Pi-hole → `.env` + compatibilidad v6
+4. Sección Telegram → `.env`
+5. Sección Multi-Pi → `local_settings.py` + wayvnc / Xvfb
+6. **Editor de Configuración** *(v3.8)* → ajustar umbrales e iconos desde la UI
+
+**Desarrollador / extender:**
+1. README.md sección Arquitectura
+2. `config/settings.py → class UI` → entender estructura de pestañas
+3. `ui/window_lifecycle.py` → patrón de registro de ventanas
+4. `ui/styles.py` → `make_window_header()` y `make_entry()` para nuevas ventanas
+5. `core/service_registry.py` → registrar nuevos servicios
+6. IDEAS_EXPANSION.md → ver qué se puede añadir en v4.1
+
+---
+
+## 🔍 Buscar por problema
+
+| Problema | Dónde mirar |
+|----------|-------------|
+| No arranca | QUICKSTART.md → Problemas Comunes |
+| VPN badge siempre rojo | README.md Troubleshooting (interfaz `tun0`/`wg0`) |
+| Pi-hole no conecta | README.md Troubleshooting (solo v6) |
+| Red Local no escanea | README.md Troubleshooting (arp-scan + sudoers) |
+| No puedo escribir en entries (VNC) | README.md → `make_entry()` en `ui/styles.py` |
+| Foco perdido tras inactividad (Pi 5) | `gsettings set org.gnome.desktop.session idle-delay 0` |
+| Dashboard no visible por VNC en Pi 5 | `wayvnc --output=DSI-2 0.0.0.0 5901` |
+| Configuración distinta por máquina | `config/local_settings.py` o Editor de Configuración |
+| Homebridge no conecta | README.md Troubleshooting |
+| Alertas Telegram no llegan | README.md sección Telegram / `.env` |
+| SMART muestra N/D | Sudoers smartctl + `sudo smartctl -A /dev/nvme0` |
+| Audio no suena | `aplay -l` → verificar dispositivo HDMI activo |
+| Cámara no encuentra rpicam-still | `sudo apt install rpicam-apps` |
+| WiFi no muestra datos | `sudo apt install wireless-tools` |
+| SSH monitor vacío | Verificar que `who` y `last` funcionan en el sistema |
+| Ver errores | `grep ERROR data/logs/dashboard.log` |
+
+---
+
+## 📊 Estadísticas del proyecto v4.0
+
+| Métrica | v3.8 | v4.0 |
+|---------|------|------|
+| Versión | 3.8 | **4.0** |
+| Archivos Python | 68 | **73** |
+| Ventanas | 27 | 27 |
+| Temas | 15 | 15 |
+| Badges en menú | 12 | 12 |
+| Servicios background | 16 | 16 |
+| Módulos ui/main_* | 1 | **5** |
+| Documentos | 9 | 9 |
+
+### Cambios arquitecturales en v4.0
+- `ui/main_badges.py` — `BadgeManager` (nuevo)
+- `ui/main_update_loop.py` — `UpdateLoop` (nuevo)
+- `ui/main_system_actions.py` — exit/restart (nuevo)
+- `ui/window_lifecycle.py` — `WindowLifecycleManager` (nuevo)
+- `ui/main_window.py` — 891 → 451 líneas (refactorizado)
+- `config/settings.py → class UI` — definición de pestañas (nuevo)
+````

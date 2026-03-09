@@ -70,6 +70,10 @@ class I2CMonitor:
 
     def stop(self) -> None:
         self._running = False
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=3)
+        with self._lock:
+            self._stats   = {}
         logger.info("[I2CMonitor] Detenido")
 
     # ── API pública ───────────────────────────────────────────────────────────
