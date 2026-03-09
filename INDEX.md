@@ -1,10 +1,10 @@
-# 📚 Índice de Documentación - System Dashboard v4.0
+# 📚 Índice de Documentación - System Dashboard v4.1
 
 ---
 
 ## 🚀 Documentos Esenciales
 
-**[README.md](README.md)** ⭐ — Documentación completa v4.0. **Empieza aquí.**
+**[README.md](README.md)** ⭐ — Documentación completa v4.1. **Empieza aquí.**
 
 **[QUICKSTART.md](QUICKSTART.md)** ⚡ — Instalación y ejecución en 5 minutos.
 
@@ -37,7 +37,7 @@ Configurar `TELEGRAM_TOKEN` + `TELEGRAM_CHAT_ID` en `.env`.
 **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** — Compartir estado fans/LEDs via JSON, OLED.
 
 ### 💡 Ideas y Expansión
-**[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)** — Roadmap v4.1+, backlog, cobertura por módulo.
+**[IDEAS_EXPANSION.md](IDEAS_EXPANSION.md)** — Roadmap v4.2+, backlog, cobertura por módulo.
 
 ### 🖥️ Multi-Pi (v3.7)
 Crear `config/local_settings.py` (en `.gitignore`) con los valores de `DSI_X/Y/WIDTH/HEIGHT` para cada máquina.
@@ -51,6 +51,13 @@ Pestañas definidas en `config/settings.py → class UI`:
 - `MENU_TABS` — lista de `(clave, icono, label, [claves_BL])`
 Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 
+### ⚡ GPIO Monitor/Control (v4.1)
+- Arranque por defecto en modo **LIBRE** — no reclama ningún pin.
+- Pulsar **"Tomar control"** para reclamar pines con gpiozero.
+- Pulsar **"Liberar GPIO"** antes de lanzar scripts externos que usen los mismos pines.
+- Pines reservados por fase1.py: {2, 3, 12, 13, 14, 15, 18, 19} — nunca disponibles.
+- Configuración de pines persistida automáticamente en `local_settings.py`.
+
 ---
 
 ## 📋 Archivos de configuración
@@ -60,24 +67,25 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 | `config/settings.py` | ✅ | Constantes globales, Icons, UI (pestañas), LAUNCHERS |
 | `config/button_labels.py` | ✅ | Labels de botones (fuente única de verdad) |
 | `config/themes.py` | ✅ | 15 temas |
+| `config/local_settings_io.py` | ✅ | Módulo compartido lectura/escritura local_settings.py |
 | `config/services.json` | ❌ | Estado servicios + visibilidad botones UI |
 | `config/local_settings.py` | ❌ | Overrides por máquina (editable via Config Editor) |
 | `.env` | ❌ | Credenciales (Homebridge, PiHole, Telegram, VPN) |
 
 ---
 
-## 🗂️ Estructura de documentos v4.0
+## 🗂️ Estructura de documentos v4.1
 
 ```
 📚 Documentación/
-├── README.md                         ⭐ Principal v4.0
+├── README.md                         ⭐ Principal v4.1
 ├── QUICKSTART.md                     ⚡ Inicio rápido
 ├── INDEX.md                          📑 Este archivo
 ├── REQUIREMENTS.md                   📋 Requisitos
 ├── INSTALL_GUIDE.md                  🔧 Instalación
 ├── THEMES_GUIDE.md                   🎨 Temas
 ├── INTEGRATION_GUIDE.md              🤝 Integración fase1
-├── IDEAS_EXPANSION.md                💡 Roadmap v4.1+
+├── IDEAS_EXPANSION.md                💡 Roadmap v4.2+
 └── COMPATIBILIDAD.md                 🌐 Compatibilidad
 ```
 
@@ -88,7 +96,7 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 **Usuario nuevo:**
 1. README.md → sección Características
 2. QUICKSTART.md → instalar y ejecutar
-3. Explorar las 27 ventanas 🎉
+3. Explorar las 31 ventanas 🎉
 
 **Usuario avanzado / configurar integraciones:**
 1. README.md completo
@@ -104,7 +112,8 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 3. `ui/window_lifecycle.py` → patrón de registro de ventanas
 4. `ui/styles.py` → `make_window_header()` y `make_entry()` para nuevas ventanas
 5. `core/service_registry.py` → registrar nuevos servicios
-6. IDEAS_EXPANSION.md → ver qué se puede añadir en v4.1
+6. `config/local_settings_io.py` → persistir config de nuevos módulos
+7. IDEAS_EXPANSION.md → ver qué se puede añadir en v4.2
 
 ---
 
@@ -127,27 +136,33 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 | Cámara no encuentra rpicam-still | `sudo apt install rpicam-apps` |
 | WiFi no muestra datos | `sudo apt install wireless-tools` |
 | SSH monitor vacío | Verificar que `who` y `last` funcionan en el sistema |
+| I²C buses vacíos | Habilitar I²C en `raspi-config` |
+| GPIO pin busy al arrancar | Pin ocupado por otro proceso — usar modo LIBRE |
+| GPIO no libera en Pi 5 | Usar botón "Liberar GPIO" desde la ventana GPIO |
 | Ver errores | `grep ERROR data/logs/dashboard.log` |
 
 ---
 
-## 📊 Estadísticas del proyecto v4.0
+## 📊 Estadísticas del proyecto v4.1
 
-| Métrica | v3.8 | v4.0 |
+| Métrica | v4.0 | v4.1 |
 |---------|------|------|
-| Versión | 3.8 | **4.0** |
-| Archivos Python | 68 | **73** |
-| Ventanas | 27 | 27 |
+| Versión | 4.0 | **4.1** |
+| Archivos Python | 73 | **79** |
+| Ventanas | 27 | **31** |
 | Temas | 15 | 15 |
-| Badges en menú | 12 | 12 |
-| Servicios background | 16 | 16 |
-| Módulos ui/main_* | 1 | **5** |
+| Badges en menú | 12 | **13** |
+| Servicios background | 16 | **20** |
+| Módulos ui/main_* | 5 | 5 |
 | Documentos | 9 | 9 |
 
-### Cambios arquitecturales en v4.0
-- `ui/main_badges.py` — `BadgeManager` (nuevo)
-- `ui/main_update_loop.py` — `UpdateLoop` (nuevo)
-- `ui/main_system_actions.py` — exit/restart (nuevo)
-- `ui/window_lifecycle.py` — `WindowLifecycleManager` (nuevo)
-- `ui/main_window.py` — 891 → 451 líneas (refactorizado)
-- `config/settings.py → class UI` — definición de pestañas (nuevo)
+### Nuevos módulos en v4.1
+- `core/audio_service.py` — `AudioService`: control ALSA sin thread
+- `core/weather_service.py` — `WeatherService`: Open-Meteo + AQI + favoritos
+- `core/i2c_monitor.py` — `I2CMonitor`: smbus2 solo lectura, daemon thread
+- `core/gpio_monitor.py` — `GPIOMonitor`: gpiozero INPUT/OUTPUT/PWM, LIBRE/CONTROLANDO
+- `config/local_settings_io.py` — módulo compartido persistencia `local_settings.py`
+- `ui/windows/audio_window.py` — `AudioWindow`
+- `ui/windows/weather_window.py` — `WeatherWindow`
+- `ui/windows/i2c_window.py` — `I2CWindow`
+- `ui/windows/gpio_window.py` — `GPIOWindow` + `_GPIOConfigDialog`

@@ -1,11 +1,11 @@
-# 🖥️ Sistema de Monitoreo y Control - Dashboard v4.0
+# 🖥️ Sistema de Monitoreo y Control - Dashboard v4.1
 
-Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, menú por pestañas con scroll táctil, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge, alertas externas por Telegram, escáner de red local, integración Pi-hole, gestor VPN, control de brillo, pantalla de resumen, LEDs RGB inteligentes, alertas de audio con voz TTS, cámara con OCR, SMART extendido de NVMe, monitor WiFi, monitor SSH y editor de configuración local.
+Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica DSI, menú por pestañas con scroll táctil, control de ventiladores PWM, temas personalizables, histórico de datos, gestión avanzada del sistema, integración con Homebridge, alertas externas por Telegram, escáner de red local, integración Pi-hole, gestor VPN, control de brillo, pantalla de resumen, LEDs RGB inteligentes, alertas de audio con voz TTS, cámara con OCR, SMART extendido de NVMe, monitor WiFi, monitor SSH, editor de configuración local, control de audio ALSA, widget de clima, escáner I²C y monitor/control GPIO.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-4.0-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-4.1-orange.svg)]()
 
 ---
 
@@ -104,6 +104,30 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 ### 󰔎 **15 Temas Personalizables**
 - Cambio con un clic, preview en vivo
 
+### 🔊 **Control de Audio ALSA** *(v4.1)*
+- Control de volumen y mute via `amixer` desde la UI
+- VU meter configurable, selector de control ALSA
+- Sin dependencias nuevas — solo `subprocess`
+
+### 🌦️ **Widget de Clima** *(v4.1)*
+- Open-Meteo sin clave API, temperatura exterior + previsión diaria
+- Color dinámico por temperatura, barra de progreso del día
+- Drill-down días → horas, AQI, fondo dinámico por código WMO
+- Badge de lluvia en el menú principal
+- Favoritos persistidos en `local_settings.py`
+
+### 🔌 **Escáner I²C** *(v4.1)*
+- `smbus2` solo lectura — detecta dispositivos en todos los buses disponibles
+- Cards por bus con badge hex por dispositivo, botón escaneo manual
+- Seguro — no interfiere con fase1.py
+
+### ⚡ **Monitor / Control GPIO** *(v4.1)*
+- Tres modos por pin: INPUT (lectura), OUTPUT (toggle HIGH/LOW), PWM (slider duty cycle)
+- Modo **LIBRE**: libera todos los pines (`/dev/gpiochip0`) para scripts externos
+- Modo **CONTROLANDO**: dashboard reclama los pines con gpiozero
+- Configuración de pines persistida en `local_settings.py`
+- Pines reservados por fase1.py protegidos automáticamente
+
 ---
 
 ## 🖥️ Soporte Multi-máquina
@@ -160,7 +184,7 @@ python3 main.py
 
 ---
 
-## 📊 Arquitectura del Proyecto (v4.0)
+## 📊 Arquitectura del Proyecto (v4.1)
 
 ```
 system_dashboard/
@@ -168,6 +192,7 @@ system_dashboard/
 │   ├── settings.py                 # Constantes globales + class Icons + class UI (pestañas)
 │   ├── button_labels.py            # Labels de botones (fuente única de verdad)
 │   ├── themes.py                   # 15 temas pre-configurados
+│   ├── local_settings_io.py        # Módulo compartido lectura/escritura local_settings.py
 │   ├── services.json               # Config servicios y UI (auto-generado, en .gitignore)
 │   └── local_settings.py           # Overrides por máquina (en .gitignore)
 ├── core/
@@ -183,22 +208,26 @@ system_dashboard/
 │   ├── display_service.py, vpn_monitor.py
 │   ├── crontab_service.py, camera_service.py
 │   ├── ssh_monitor.py, wifi_monitor.py
+│   ├── audio_service.py            # Control ALSA via amixer (v4.1)
+│   ├── weather_service.py          # Open-Meteo + AQI + favoritos (v4.1)
+│   ├── i2c_monitor.py              # smbus2 solo lectura (v4.1)
+│   ├── gpio_monitor.py             # gpiozero INPUT/OUTPUT/PWM + LIBRE/CONTROLANDO (v4.1)
 │   ├── data_logger.py, data_analyzer.py
 │   ├── data_collection_service.py, cleanup_service.py
 │   └── hardware_info_monitor.py
 ├── ui/
 │   ├── main_window.py              # Layout, pestañas, coordinación (~450 líneas)
-│   ├── main_badges.py              # BadgeManager — crear y actualizar badges *(v4.0)*
-│   ├── main_update_loop.py         # UpdateLoop — reloj, uptime, loop de badges *(v4.0)*
-│   ├── main_system_actions.py      # exit_application, restart_application *(v4.0)*
-│   ├── window_lifecycle.py         # WindowLifecycleManager *(v4.0)*
+│   ├── main_badges.py              # BadgeManager — crear y actualizar badges (v4.0)
+│   ├── main_update_loop.py         # UpdateLoop — reloj, uptime, loop de badges (v4.0)
+│   ├── main_system_actions.py      # exit_application, restart_application (v4.0)
+│   ├── window_lifecycle.py         # WindowLifecycleManager (v4.0)
 │   ├── window_manager.py           # Visibilidad botones via JSON, patrón callback
 │   ├── styles.py
 │   ├── widgets/
 │   │   ├── graphs.py
 │   │   └── dialogs.py
 │   └── windows/
-│       └── (una ventana por fichero — 27 ventanas)
+│       └── (una ventana por fichero — 31 ventanas)
 ├── utils/
 │   ├── file_manager.py, system_utils.py, logger.py
 ├── data/                           # Auto-generado al ejecutar
@@ -211,7 +240,7 @@ system_dashboard/
 └── requirements.txt
 ```
 
-### Módulos ui/ (v4.0)
+### Módulos ui/ (v4.0+)
 
 | Fichero | Responsabilidad |
 |---------|----------------|
@@ -230,9 +259,9 @@ El menú está organizado en 6 pestañas con scroll horizontal táctil. La confi
 
 | Pestaña | Contenido |
 |---------|-----------|
-| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores |
+| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores, Audio Control |
 | **Red** | Monitor Red, Red Local, Pi-hole, VPN, Homebridge, Monitor WiFi |
-| **Hardware** | Info Hardware, Monitor Disco, Monitor USB |
+| **Hardware** | Info Hardware, Monitor Disco, Monitor USB, I²C Scanner, GPIO Monitor, Widget Clima |
 | **Servicios** | Monitor Servicios, Servicios Dashboard, Monitor Procesos, Gestor Crontab, Actualizaciones |
 | **Registros** | Visor Logs, Histórico Datos, Historial Alertas, Monitor SSH |
 | **Config** | Editor Config, Cambiar Tema, Gestor Botones |
@@ -252,6 +281,8 @@ El menú está organizado en 6 pestañas con scroll horizontal táctil. La confi
 | `data/hardware_state.json` | `fase1.py` | Dashboard (`HardwareMonitor`) |
 
 El hardware I²C del módulo Expansion Freenove (ventiladores, LEDs, OLED) es **exclusivo de fase1.py** — nunca se accede desde el dashboard.
+
+> **GPIO**: los pines usados por fase1.py (GPIO 2, 3, 12, 13, 14, 15, 18, 19) están protegidos en `GPIOMonitor._RESERVED_PINS` y nunca se abren desde el dashboard.
 
 ---
 
@@ -306,6 +337,9 @@ TELEGRAM_CHAT_ID=987654321
 | Dashboard no visible por VNC en Pi 5 | `wayvnc --output=DSI-2 0.0.0.0 5901` |
 | Audio no suena | `aplay -l` → verificar dispositivo HDMI |
 | Cámara no encontrada | `sudo apt install rpicam-apps` |
+| I²C buses no aparecen | Verificar que I²C está habilitado en `raspi-config` |
+| GPIO pin busy al arrancar | Pin ocupado por otro proceso — usar modo LIBRE o revisar `_RESERVED_PINS` |
+| GPIO no libera en Pi 5 | lgpio mantiene `/dev/gpiochip0` — usar botón "Liberar GPIO" desde la ventana |
 | Ver qué falla | `grep ERROR data/logs/dashboard.log` |
 
 ---
@@ -324,37 +358,43 @@ TELEGRAM_CHAT_ID=987654321
 
 ## 📊 Estadísticas del Proyecto
 
-| Métrica | v3.8 | v4.0 |
+| Métrica | v4.0 | v4.1 |
 |---------|------|------|
-| Versión | 3.8 | **4.0** |
-| Archivos Python | 68 | **73** |
-| Ventanas | 27 | 27 |
+| Versión | 4.0 | **4.1** |
+| Archivos Python | 73 | **79** |
+| Ventanas | 27 | **31** |
 | Temas | 15 | 15 |
-| Badges en menú | 12 | 12 |
-| Servicios background | 16 | 16 |
-| Módulos ui/main_* | 1 | **5** |
+| Badges en menú | 12 | **13** |
+| Servicios background | 16 | **20** |
+| Módulos ui/main_* | 5 | 5 |
 | Documentos | 9 | 9 |
 
 ---
 
 ## Changelog
 
-### **v4.0** - 2026-03-05 ⭐ ACTUAL — Refactorización Arquitectural
+### **v4.1** - 2026-03-09 ⭐ ACTUAL
 
-- ✅ **NUEVO**: Menú por pestañas con scroll horizontal táctil — 6 pestañas (Sistema, Red, Hardware, Servicios, Registros, Config), ancho fijo 130px táctil, scroll automático al añadir más
-- ✅ **NUEVO**: `WindowLifecycleManager` (`ui/window_lifecycle.py`) — elimina 27 métodos `open_*` de `main_window.py`, unifica ciclo de vida de todas las ventanas hijas
-- ✅ **NUEVO**: `BadgeManager` (`ui/main_badges.py`) — gestión de badges extraída de `main_window.py`
-- ✅ **NUEVO**: `UpdateLoop` (`ui/main_update_loop.py`) — loops de reloj y badges extraídos
-- ✅ **NUEVO**: `main_system_actions.py` — `exit_application` y `restart_application` extraídos
-- ✅ **REFACTOR**: `main_window.py` 891 → 451 líneas (−49%), solo layout y coordinación
-- ✅ **REFACTOR**: `WindowManager` — patrón callback (`set_rerender_callback`) en lugar de reGrid directo
-- ✅ **REFACTOR**: `config/settings.py → class UI` — pestañas como configuración pura (`MENU_COLUMNS`, `MENU_TABS`)
+- ✅ **NUEVO**: Control de Audio ALSA (`AudioService` + `AudioWindow`) — volumen, mute, VU meter, selector control
+- ✅ **NUEVO**: Widget de Clima (`WeatherService` + `WeatherWindow`) — Open-Meteo, AQI, drill-down, badge lluvia, fondo dinámico WMO
+- ✅ **NUEVO**: Escáner I²C (`I2CMonitor` + `I2CWindow`) — smbus2 solo lectura, cards por bus, badge hex por dispositivo
+- ✅ **NUEVO**: Monitor/Control GPIO (`GPIOMonitor` + `GPIOWindow`) — INPUT/OUTPUT/PWM, toggle LIBRE/CONTROLANDO, persistencia config en `local_settings.py`
+- ✅ **NUEVO**: `config/local_settings_io.py` — módulo compartido lectura/escritura de `local_settings.py`, API `read()` / `write()` / `update_params()`
+
+### **v4.0** - 2026-03-05
+
+- ✅ **NUEVO**: Menú por pestañas con scroll horizontal táctil — 6 pestañas, ancho fijo 130px táctil
+- ✅ **NUEVO**: `WindowLifecycleManager` (`ui/window_lifecycle.py`) — elimina 27 métodos `open_*`
+- ✅ **NUEVO**: `BadgeManager` (`ui/main_badges.py`)
+- ✅ **NUEVO**: `UpdateLoop` (`ui/main_update_loop.py`)
+- ✅ **NUEVO**: `main_system_actions.py`
+- ✅ **REFACTOR**: `main_window.py` 891 → 451 líneas (−49%)
+- ✅ **REFACTOR**: `WindowManager` — patrón callback
+- ✅ **REFACTOR**: `config/settings.py → class UI` — pestañas como configuración pura
 
 ### **v3.8** - 2026-03-XX
-- ✅ Monitor WiFi (`WiFiMonitor` + `WiFiWindow`)
-- ✅ Monitor SSH (`SSHMonitor` + `SSHWindow`)
-- ✅ Editor de Configuración (`ConfigEditorWindow`)
-- ✅ Refactor arquitectónico: `crontab_service.py` y `camera_service.py` a `core/`
+- ✅ Monitor WiFi, Monitor SSH, Editor de Configuración
+- ✅ Refactor: `crontab_service.py` y `camera_service.py` a `core/`
 - ✅ Fix `RuntimeError` al salir — `StringVar`/`IntVar` con `master=` explícito
 
 ### **v3.7** - 2026-03-02

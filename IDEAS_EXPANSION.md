@@ -1,11 +1,44 @@
 # 💡 IDEAS_EXPANSION.md
-## Expansión y Roadmap — Sistema de Monitoreo v4.0
+## Expansión y Roadmap — Sistema de Monitoreo v4.1
 
 ---
 
 ## ✅ Implementado
 
-### v4.0 (actual) — Refactorización Arquitectural
+### v4.1 (actual) — Audio + Clima + I²C + GPIO
+
+- **Control de Audio ALSA** (`AudioService` + `AudioWindow`)
+  - Control de volumen y mute via `amixer` desde la UI
+  - VU meter configurable (40 segmentos verde→amarillo→rojo)
+  - Selector de control ALSA, sin dependencias nuevas
+
+- **Widget de Clima** (`WeatherService` + `WeatherWindow`)
+  - Open-Meteo sin clave API — temperatura exterior + previsión diaria
+  - Color dinámico por temperatura, barra de progreso del día
+  - Drill-down días → horas (24h por día), AQI desde Open-Meteo
+  - Fondo dinámico por código WMO, badge de lluvia en el menú principal
+  - Favoritos de ubicaciones persistidos en `local_settings.py`
+
+- **Escáner I²C** (`I2CMonitor` + `I2CWindow`)
+  - `smbus2` solo lectura — escanea todos los buses `/dev/i2c-*`
+  - Rango estándar 0x03–0x77, diccionario de dispositivos conocidos
+  - Cards por bus con badge hex por dispositivo, botón escaneo manual, refresco 30s
+  - Seguro — no interfiere con fase1.py (lectura especulativa)
+
+- **Monitor / Control GPIO** (`GPIOMonitor` + `GPIOWindow`)
+  - Tres modos por pin: INPUT (lectura), OUTPUT (toggle HIGH/LOW), PWM (slider duty cycle)
+  - Modo **LIBRE**: libera todos los pines (`/dev/gpiochip0` via `Device.pin_factory.close()`) para scripts externos sin conflictos
+  - Modo **CONTROLANDO**: dashboard reclama los pines con gpiozero
+  - Configuración de pines (modo + etiqueta) persistida en `local_settings.py` via `local_settings_io`
+  - Panel de configuración: añadir/eliminar pines, cambiar modo en caliente, feedback visual
+  - Pines reservados por fase1.py protegidos automáticamente: {2, 3, 12, 13, 14, 15, 18, 19}
+  - Arranque por defecto en modo LIBRE
+
+- **`config/local_settings_io.py`** — módulo compartido para lectura/escritura de `local_settings.py`
+  - API: `read() → (params, icons)`, `write(params, icons)`, `update_params(dict)` (merge seguro)
+  - Usado por: `WeatherService`, `ConfigEditorWindow`, `GPIOMonitor`
+
+### v4.0 — Refactorización Arquitectural
 
 - **Menú por pestañas con scroll horizontal táctil**
   - 6 pestañas categorizadas: Sistema, Red, Hardware, Servicios, Registros, Config
@@ -16,98 +49,55 @@
 - **`WindowLifecycleManager`** (`ui/window_lifecycle.py`)
   - Elimina 27 métodos `open_*` dispersos en `main_window.py`
   - Ciclo de vida unificado: factory, lift, `_btn_active`/`_btn_idle`, bind `<Destroy>`
-  - Registro en una línea por ventana: `r("clave", BL.LABEL, lambda: Ventana(...))`
 
 - **Modularización de `main_window.py`** (891 → 451 líneas, −49%)
-  - `ui/main_badges.py` — `BadgeManager`: crear y actualizar badges
-  - `ui/main_update_loop.py` — `UpdateLoop`: reloj, uptime, loop de badges
+  - `ui/main_badges.py` — `BadgeManager`
+  - `ui/main_update_loop.py` — `UpdateLoop`
   - `ui/main_system_actions.py` — `exit_application`, `restart_application`
 
-- **`WindowManager` refactorizado** — patrón callback (`set_rerender_callback`) en lugar de reGrid directo
+- **`WindowManager` refactorizado** — patrón callback (`set_rerender_callback`)
 
 ### v3.8 — SSH + WiFi + Config Editor + Refactors
 
-- **Monitor SSH** (`SSHMonitor` + `SSHWindow`)
-  - Sesiones activas en tiempo real con IP de origen, usuario y hora de conexión
-  - Historial de sesiones con duración formateada (`1h 30min`, `15 min`)
-  - Textos humanizados: `pts/0` → `Sesión 1`, IPs locales etiquetadas como `(red local)`
-
-- **Monitor WiFi** (`WiFiMonitor` + `WiFiWindow`)
-  - Señal en tiempo real: SSID, dBm, calidad de enlace, bitrate
-  - Barras visuales de señal (▂▄▆█) y gráfica histórica
-  - Tráfico RX/TX con gráficas independientes
-
-- **Editor de Configuración** (`ConfigEditorWindow`)
-  - Edita `config/local_settings.py` por máquina sin tocar `settings.py`
-  - Iconos editables con preview en tiempo real, merge inteligente
-
-- **Refactor arquitectónico**
-  - `core/crontab_service.py` y `core/camera_service.py` extraídos de UI a `core/`
-  - Fix `StringVar`/`IntVar` con `master=` explícito — elimina `RuntimeError` al salir
+- **Monitor SSH** — sesiones activas, historial humanizado
+- **Monitor WiFi** — dBm, calidad, SSID, bitrate, tráfico RX/TX
+- **Editor de Configuración** — edita `local_settings.py` desde la UI
+- **Refactor arquitectónico** — `crontab_service.py` y `camera_service.py` a `core/`
+- **Fix** `StringVar`/`IntVar` con `master=` explícito
 
 ### v3.7 — Crontab + Fixes + Multi-Pi
-- **Gestor Crontab** — ver/añadir/editar/eliminar entradas crontab, selector usuario/root
-- **Fix grab modal** — `grab_release()` garantizado al cerrar diálogos
-- **`make_entry()`** — soluciona escritura en VNC con `overrideredirect(True)`
-- **Soporte dual-Pi** — `config/local_settings.py`, Pi 3B+ Xvfb + Pi 5 Wayland
+- Gestor Crontab, fix grab modal, `make_entry()`, soporte dual-Pi
 
 ### v3.6.5
-- **Gestor de Botones** (`ButtonManagerWindow` + `WindowManager`) — persistencia en `services.json`
+- Gestor de Botones (`ButtonManagerWindow` + `WindowManager`)
 
 ### v3.6
-- **Servicios Dashboard** (`ServicesManagerWindow`) — persistencia en `services.json`
+- Servicios Dashboard (`ServicesManagerWindow`)
 
 ### v3.5
-- **ServiceRegistry** — registro centralizado de todos los servicios del dashboard
+- `ServiceRegistry`
 
 ### v3.4 — Hardware FNK0100K
-- **LEDs RGB inteligentes** — 6 modos, sin destellos
-- **Temperatura chasis + Fan duty real** — via `hardware_state.json`
-- **Alertas de audio** — 11 .wav, TTS español, 4 métricas
-- **Cámara OV5647 + Escáner OCR** — Tesseract local
-- **NVMe SMART extendido** — TBW, horas, ciclos, % vida útil
+- LEDs RGB, temperatura chasis, alertas audio, cámara OCR, SMART NVMe extendido
 
 ### v3.3
-- **Resumen del Sistema** (`OverviewWindow`)
-- **Control de Brillo DSI** (`DisplayService` + `DisplayWindow`)
-- **Gestor VPN** (`VpnMonitor` + `VpnWindow`)
+- Resumen Sistema, control brillo DSI, gestor VPN
 
 ### v3.2
-- **Escáner Red Local** (`NetworkScanner`) — arp-scan
-- **Pi-hole v6** (`PiholeMonitor`) — API v6
-- **Historial de Alertas** (`AlertHistoryWindow`)
+- Escáner Red Local, Pi-hole v6, historial alertas
 
 ### v3.1
-- **Alertas Telegram**, Homebridge extendido — 5 tipos de dispositivo
+- Alertas Telegram, Homebridge extendido (5 tipos)
 
 ### v3.0
-- Visor de Logs con filtros y exportación
+- Visor de Logs
 
 ### v2.x
 - Control Ventiladores PWM, monitores completos, 15 temas, badges, logging, SQLite
 
 ---
 
-## 🔄 Ideas en evaluación para v4.1
-
-### 🎵 Audio Monitor / Control
-- Control de volumen ALSA desde la UI (jack + óptico del kit Freenove)
-- Sin dependencias nuevas (`subprocess amixer/aplay`)
-- Más simple de implementar — recomendado como primera feature v4.1
-
-### 🌦️ Widget de Clima
-- Open-Meteo (sin clave API, gratuita)
-- Temperatura exterior + previsión 3 días
-- Independiente del resto del sistema
-
-### 🔌 I²C Scanner
-- `smbus2` en modo solo lectura
-- Detecta dispositivos conectados al bus I²C del Pi
-- Seguro — no interfiere con fase1.py
-
-### ⚡ GPIO Monitor / Control
-- `gpiozero` — requiere planificación previa de pines libres
-- Más complejo: inventariar pines ya usados por fase1.py antes de implementar
+## 🔄 Ideas en evaluación para v4.2
 
 ### 🌐 API REST local
 - Endpoint `/status` en JSON — `http.server` de stdlib, sin deps nuevas
@@ -143,13 +133,14 @@ v3.6   ✅ ServicesManagerWindow
 v3.6.5 ✅ ButtonManagerWindow
 v3.7   ✅ CrontabWindow + Fixes VNC/Wayland + Multi-Pi
 v3.8   ✅ Monitor SSH + Monitor WiFi + Editor Config + Refactor core/
-v4.0   ✅ Pestañas táctiles + WindowLifecycleManager + Modularización main_*  ← ACTUAL
-v4.1   💭 Audio Control + Clima + I²C Scanner + GPIO?
+v4.0   ✅ Pestañas táctiles + WindowLifecycleManager + Modularización main_*
+v4.1   ✅ Audio Control + Widget Clima + I²C Scanner + GPIO Monitor  ← ACTUAL
+v4.2   💭 API REST local + Backup automático
 ```
 
 ---
 
-## 📊 Cobertura por módulo (v4.0)
+## 📊 Cobertura por módulo (v4.1)
 
 | Área | Cobertura | Notas |
 |------|-----------|-------|
@@ -176,9 +167,9 @@ v4.1   💭 Audio Control + Clima + I²C Scanner + GPIO?
 | Monitor SSH | ✅ Completa | Sesiones activas + historial humanizado |
 | Config por máquina | ✅ Completa | local_settings.py + Editor Config UI |
 | Multi-Pi / local_settings | ✅ Completa | Pi 5 Wayland + Pi 3 Xvfb |
-| Audio Control | ❌ Pendiente | v4.1 |
-| Widget Clima | ❌ Pendiente | v4.1 |
-| I²C Scanner | ❌ Pendiente | v4.1 |
-| GPIO Monitor | ❌ Pendiente | v4.1 |
-| API REST local | ❌ Pendiente | futuro |
-| Backup automático | ❌ Pendiente | futuro |
+| Audio Control | ✅ Completa | amixer/aplay, VU meter, mute (v4.1) |
+| Widget Clima | ✅ Completa | Open-Meteo, AQI, drill-down, badge (v4.1) |
+| I²C Scanner | ✅ Completa | smbus2 solo lectura, cards por bus (v4.1) |
+| GPIO Monitor/Control | ✅ Completa | INPUT/OUTPUT/PWM, LIBRE/CONTROLANDO, persistencia (v4.1) |
+| API REST local | ❌ Pendiente | v4.2 |
+| Backup automático | ❌ Pendiente | v4.2 |
