@@ -1,4 +1,4 @@
-# 🚀 Inicio Rápido - Dashboard v4.0
+# 🚀 Inicio Rápido - Dashboard v4.1
 
 ---
 
@@ -60,9 +60,9 @@ El menú está organizado en **6 pestañas con scroll horizontal táctil**. Cada
 
 | Pestaña | Botones |
 |---------|---------|
-| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores |
+| **Sistema** | Resumen, Monitor Placa, Control Ventiladores, LEDs RGB, Brillo, Cámara, Lanzadores, Audio Control |
 | **Red** | Monitor Red, Red Local, Pi-hole, VPN, Homebridge, Monitor WiFi |
-| **Hardware** | Info Hardware, Monitor Disco, Monitor USB |
+| **Hardware** | Info Hardware, Monitor Disco, Monitor USB, I²C Scanner, GPIO Monitor, Widget Clima |
 | **Servicios** | Monitor Servicios, Servicios Dashboard, Monitor Procesos, Gestor Crontab, Actualizaciones |
 | **Registros** | Visor Logs, Histórico Datos, Historial Alertas, Monitor SSH |
 | **Config** | Editor Config, Cambiar Tema, Gestor Botones |
@@ -73,7 +73,7 @@ El **footer** (Gestor Botones, Reiniciar, Salir) es siempre visible independient
 
 ---
 
-## 🖥️ Las 27 Ventanas
+## 🖥️ Las 31 Ventanas
 
 **1. Info Hardware** — Modelo, revision, SoC, RAM, almacenamiento, uptime
 
@@ -128,6 +128,14 @@ El **footer** (Gestor Botones, Reiniciar, Salir) es siempre visible independient
 **26. Monitor WiFi** — Señal dBm, calidad, SSID, bitrate, tráfico RX/TX
 
 **27. Editor Config** — Edita `local_settings.py` con preview de iconos en tiempo real
+
+**28. Audio Control** *(v4.1)* — Volumen ALSA, mute, VU meter, selector de control
+
+**29. Widget Clima** *(v4.1)* — Temperatura exterior, previsión, AQI, drill-down horas, favoritos
+
+**30. I²C Scanner** *(v4.1)* — Dispositivos por bus, badge hex, escaneo manual
+
+**31. GPIO Monitor/Control** *(v4.1)* — INPUT/OUTPUT/PWM por pin, toggle LIBRE/CONTROLANDO
 
 ---
 
@@ -188,25 +196,9 @@ grep ERROR data/logs/dashboard.log
 |----------|----------|
 | No arranca | `pip3 install --break-system-packages -r requirements.txt` |
 | Temperatura 0 | `sudo sensors-detect --auto` |
-| NVMe temp 0 | `sudo apt install smartmontools` |
-| Speedtest falla | Instalar CLI Ookla: `sudo apt install speedtest` |
-| USB no expulsa | `sudo apt install udisks2` |
-| Homebridge no conecta | Revisar `.env` y activar Insecure Mode |
-| WiFi no muestra datos | `sudo apt install wireless-tools` |
-| SSH monitor vacío | Verificar que `who` y `last` funcionan en el sistema |
-| No puedo escribir en entries (VNC) | Verificar que se usa `make_entry()` de `ui/styles.py` |
-| Foco perdido tras inactividad (Wayland) | `gsettings set org.gnome.desktop.session idle-delay 0` |
-| Dashboard no visible por VNC en Pi 5 | `wayvnc --output=DSI-2 0.0.0.0 5901` |
-| Ver qué falla | `grep ERROR data/logs/dashboard.log` |
-
----
-
-## 📚 Más Información
-
-**[README.md](README.md)** — Documentación completa
-**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)** — Instalación detallada
-**[INDEX.md](INDEX.md)** — Índice de toda la documentación
-
----
-
-**Dashboard v4.0** 🚀
+| Speedtest falla | Instalar CLI oficial Ookla |
+| Pi-hole no conecta | Solo compatible con v6; verificar `.env` |
+| GPIO pin busy | Usar modo LIBRE desde la ventana GPIO |
+| I²C buses vacíos | Habilitar I²C en `raspi-config` |
+| Audio sin control | `aplay -l` → verificar dispositivo activo |
+| Ver errores | `grep ERROR data/logs/dashboard.log` |
