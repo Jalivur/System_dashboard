@@ -3,6 +3,7 @@ Monitor de actualizaciones del sistema
 """
 import subprocess
 import time
+import threading
 from typing import Dict
 from utils.logger import get_logger
 
@@ -14,6 +15,7 @@ class UpdateMonitor:
 
     def __init__(self):
         self._running = True
+        self._lock          = threading.Lock()
         # Inicializar con tiempo actual para que la caché sea válida desde el inicio
         # Solo ejecuta apt update real cuando: arranque (main.py) o usuario pulsa "Buscar"
         self.last_check_time = time.time()
@@ -28,7 +30,8 @@ class UpdateMonitor:
 
     def stop(self) -> None:
         self._running = False
-        self.cached_result = {"pending": 0, "status": "Unknown", "message": "Servicio parado"}
+        with self._lock:
+            self.cached_result = {"pending": 0, "status": "Unknown", "message": "Servicio parado"}
         logger.info("[UpdateMonitor] Detenido")
 
     # ── API pública ───────────────────────────────────────────────────────────
@@ -48,11 +51,14 @@ class UpdateMonitor:
             return {"pending": 0, "status": "Stopped", "message": "Servicio parado"}
 
         current_time = time.time()
+        with self._lock:
+            cached = dict(self.cached_result)
+            last   = self.last_check_time
 
         # Devolver caché si no ha pasado el intervalo y no se fuerza
-        if not force and (current_time - self.last_check_time) < self.check_interval:
+        if not force and (current_time - last) < self.check_interval:
             logger.debug("[UpdateMonitor] Devolviendo resultado en caché")
-            return self.cached_result
+            return cached
 
         try:
             logger.info("[UpdateMonitor] Ejecutando búsqueda real de actualizaciones (apt update)...")
@@ -74,13 +80,15 @@ class UpdateMonitor:
             else:
                 logger.debug("[UpdateMonitor] Sistema al día, sin actualizaciones pendientes")
 
-            self.cached_result = {
+            result= {
                 "pending": count,
                 "status": "Ready" if count > 0 else "Updated",
                 "message": f"{count} paquetes pendientes" if count > 0 else "Sistema al día"
             }
-            self.last_check_time = current_time
-            return self.cached_result
+            with self._lock:
+                self.cached_result = result
+                self.last_check_time  = current_time
+            return result
 
         except subprocess.TimeoutExpired:
             logger.error("[UpdateMonitor] check_updates: timeout ejecutando apt update (>60s)")

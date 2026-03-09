@@ -31,21 +31,19 @@ class DataAnalyzer:
     def get_data_range(self, hours: int = 24) -> List[Dict]:
         """Obtiene datos de las últimas X horas"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            cutoff = _fmt(datetime.now() - timedelta(hours=hours))
+                cutoff = _fmt(datetime.now() - timedelta(hours=hours))
 
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ?
-                ORDER BY timestamp ASC
-            ''', (cutoff,))
+                cursor.execute('''
+                    SELECT * FROM metrics
+                    WHERE timestamp >= ?
+                    ORDER BY timestamp ASC
+                ''', (cutoff,))
 
-            rows = cursor.fetchall()
-            conn.close()
-
+                rows = cursor.fetchall()
             logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros (últimas {hours}h)")
             return [dict(row) for row in rows]
 
@@ -83,19 +81,17 @@ class DataAnalyzer:
     def get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]:
         """Obtiene datos entre dos fechas exactas"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-                ORDER BY timestamp ASC
-            ''', (_fmt(start), _fmt(end)))
+                cursor.execute('''
+                    SELECT * FROM metrics
+                    WHERE timestamp >= ? AND timestamp <= ?
+                    ORDER BY timestamp ASC
+                ''', (_fmt(start), _fmt(end)))
 
-            rows = cursor.fetchall()
-            conn.close()
-
+                rows = cursor.fetchall()
             logger.debug(
                 f"[DataAnalyzer] get_data_range_between: {len(rows)} registros "
                 f"({_fmt(start)} → {_fmt(end)})"
@@ -163,28 +159,27 @@ class DataAnalyzer:
     def _get_stats_between(self, start: datetime, end: datetime) -> Dict:
         """Lógica común de estadísticas para cualquier rango start→end."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT
-                    AVG(cpu_percent), MAX(cpu_percent), MIN(cpu_percent),
-                    AVG(ram_percent), MAX(ram_percent), MIN(ram_percent),
-                    AVG(temperature), MAX(temperature), MIN(temperature),
-                    AVG(net_download_mb), MAX(net_download_mb), MIN(net_download_mb),
-                    AVG(net_upload_mb), MAX(net_upload_mb), MIN(net_upload_mb),
-                    AVG(disk_read_mb), MAX(disk_read_mb), MIN(disk_read_mb),
-                    AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
-                    AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
-                    MAX(updates_available), MIN(updates_available), AVG(updates_available),
-                    COUNT(*)
-                FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-            ''', (_fmt(start), _fmt(end)))
+                cursor.execute('''
+                    SELECT
+                        AVG(cpu_percent), MAX(cpu_percent), MIN(cpu_percent),
+                        AVG(ram_percent), MAX(ram_percent), MIN(ram_percent),
+                        AVG(temperature), MAX(temperature), MIN(temperature),
+                        AVG(net_download_mb), MAX(net_download_mb), MIN(net_download_mb),
+                        AVG(net_upload_mb), MAX(net_upload_mb), MIN(net_upload_mb),
+                        AVG(disk_read_mb), MAX(disk_read_mb), MIN(disk_read_mb),
+                        AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
+                        AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
+                        MAX(updates_available), MIN(updates_available), AVG(updates_available),
+                        COUNT(*)
+                    FROM metrics
+                    WHERE timestamp >= ? AND timestamp <= ?
+                ''', (_fmt(start), _fmt(end)))
 
-            row = cursor.fetchone()
-            conn.close()
-
+                row = cursor.fetchone()
+                
             if row and row[27]:
                 logger.debug(f"[DataAnalyzer] _get_stats_between: {row[27]} muestras")
                 return {
