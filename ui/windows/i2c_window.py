@@ -59,6 +59,8 @@ class I2CWindow(ctk.CTkToplevel):
             text=f"{Icons.REFRESH}  Escanear ahora",
             command=self._on_scan,
             width=18, height=7, font_size=FONT_SIZES['small'],
+            state="normal"
+            
         )
         self._scan_btn.pack(side="left", padx=4)
 
@@ -104,6 +106,10 @@ class I2CWindow(ctk.CTkToplevel):
 
     def _update(self) -> None:
         if not self.winfo_exists():
+            return
+        if not self._mon._running:
+            StyleManager.show_service_stopped_banner(self._inner, "I2C Monitor" )
+            self._scan_btn.configure(state="disabled")
             return
         self._render(self._mon.get_stats())
         self._after_id = self.after(self._REFRESH_MS, self._update)

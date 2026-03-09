@@ -117,6 +117,12 @@ class SSHMonitor:
     def stop(self):
         self._running = False
         self._stop_evt.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=6)
+        with self._lock:
+            self._sessions=[]
+            self._history=[]
+            self._last_update=""
         logger.info("[SSHMonitor] Servicio detenido")
 
     # ── Loop interno ──────────────────────────────────────────────────────────

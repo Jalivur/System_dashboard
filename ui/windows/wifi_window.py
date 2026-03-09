@@ -86,7 +86,6 @@ class WiFiWindow(ctk.CTkToplevel):
         self._inner.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
         self._build_connection_card()
         self._build_traffic_card()
 
@@ -306,7 +305,9 @@ class WiFiWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-
+        if not self.wifi_monitor._running:
+            StyleManager.show_service_stopped_banner(self._inner, "Wifi Monitor")
+            return
         stats = self.wifi_monitor.get_stats()
         info  = stats["info"]
 
