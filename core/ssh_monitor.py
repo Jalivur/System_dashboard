@@ -22,7 +22,7 @@ def _run(cmd: list) -> str:
         )
         return result.stdout.strip()
     except Exception as e:
-        logger.warning(f"[SSHMonitor] Error ejecutando {cmd}: {e}")
+        logger.warning("[SSHMonitor] Error ejecutando %s: %s", cmd, e)
         return ""
 
 
@@ -151,7 +151,7 @@ class SSHMonitor:
                 f"{len(history)} entradas historial"
             )"""
         except Exception as e:
-            logger.error(f"[SSHMonitor] Error en poll: {e}")
+            logger.error("[SSHMonitor] Error en poll: %s", e)
 
     # ── Acceso a datos ────────────────────────────────────────────────────────
 

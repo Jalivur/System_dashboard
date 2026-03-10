@@ -77,7 +77,7 @@ class FanController:
         elif mode == "performance":
             return 255
         else:
-            logger.warning(f"[FanController] Modo desconocido '{mode}', usando curva auto")
+            logger.warning("[FanController] Modo desconocido '%s', usando curva auto", mode)
             return self.compute_pwm_from_curve(temp)
     
     def update_fan_state(self, mode: str, temp: float, current_target: int = None,
@@ -100,7 +100,7 @@ class FanController:
         if desired != current_target:
             new_state = {"mode": mode, "target_pwm": desired}
             self.file_manager.write_state(new_state)
-            logger.debug(f"[FanController] PWM actualizado: {current_target} → {desired} (modo={mode}, temp={temp:.1f}°C)")
+            logger.debug("[FanController] PWM actualizado: %d → %d (modo=%s, temp=%.1f°C)", current_target, desired, mode, temp)
             return new_state
         
         return {"mode": mode, "target_pwm": current_target}
@@ -122,13 +122,13 @@ class FanController:
         found = False
         for point in curve:
             if point["temp"] == temp:
-                logger.debug(f"[FanController] Punto actualizado en curva: {temp}°C → PWM {point['pwm']} → {pwm}")
+                logger.debug("[FanController] Punto actualizado en curva: %d°C → PWM %d → %d", temp, point['pwm'], pwm)
                 point["pwm"] = pwm
                 found = True
                 break
         
         if not found:
-            logger.debug(f"[FanController] Nuevo punto añadido a curva: {temp}°C → PWM {pwm}")
+            logger.debug("[FanController] Nuevo punto añadido a curva: %d°C → PWM %d", temp, pwm)
             curve.append({"temp": temp, "pwm": pwm})
         
         curve = sorted(curve, key=lambda x: x["temp"])
@@ -151,9 +151,9 @@ class FanController:
         curve = [p for p in curve if p["temp"] != temp]
         
         if len(curve) < original_len:
-            logger.debug(f"[FanController] Punto eliminado de curva: {temp}°C")
+            logger.debug("[FanController] Punto eliminado de curva: %d°C", temp)
         else:
-            logger.warning(f"[FanController] remove_curve_point: no se encontró punto en {temp}°C")
+            logger.warning("[FanController] remove_curve_point: no se encontró punto en %d°C", temp)
         
         if not curve:
             curve = [{"temp": 40, "pwm": 100}]

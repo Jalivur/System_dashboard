@@ -11,6 +11,7 @@ Arquitectura:
   - smbus2 es opcional — si no está instalado devuelve error descriptivo
 """
 import threading
+import os
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -112,7 +113,7 @@ class I2CMonitor:
                 }
             return
 
-        import os
+        
         # Detectar buses disponibles
         buses = sorted([
             int(f[5:]) for f in os.listdir("/dev")

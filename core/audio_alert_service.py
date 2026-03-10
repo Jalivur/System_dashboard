@@ -53,7 +53,7 @@ class AudioAlertService:
 
         self._lock      = threading.Lock()
         self._running   = False
-        self._stop      = threading.Event()
+        self._stop_evt      = threading.Event()
         self._thread    = None
         self._enabled   = True
         self._play_lock = threading.Lock()
@@ -68,7 +68,7 @@ class AudioAlertService:
         if self._running:
             return
         self._running = True
-        self._stop.clear()
+        self._stop_evt.clear()
         self._thread = threading.Thread(
             target=self._loop, daemon=True, name="AudioAlertService"
         )
@@ -77,7 +77,7 @@ class AudioAlertService:
 
     def stop(self):
         self._running = False
-        self._stop.set()
+        self._stop_evt.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         logger.info("[AudioAlertService] Detenido")
@@ -106,8 +106,8 @@ class AudioAlertService:
                 self._check()
             except Exception as e:
                 logger.error("[AudioAlertService] Error: %s", e)
-            self._stop.wait(timeout=loop_interval)
-            if self._stop.is_set():
+            self._stop_evt.wait(timeout=loop_interval)
+            if self._stop_evt.is_set():
                 break
 
     # ── Lógica principal ──────────────────────────────────────────────────────

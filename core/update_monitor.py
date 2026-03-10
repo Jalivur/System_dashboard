@@ -69,14 +69,14 @@ class UpdateMonitor:
                 timeout=60
             )
             if result.returncode != 0:
-                logger.warning(f"[UpdateMonitor] apt update retornó código {result.returncode}")
+                logger.warning("[UpdateMonitor] apt update retornó código %d", result.returncode)
 
             cmd = "apt-get -s upgrade | grep '^Inst ' | wc -l"
             output = subprocess.check_output(cmd, shell=True).decode().strip()
             count = int(output) if output else 0
 
             if count > 0:
-                logger.info(f"[UpdateMonitor] {count} paquetes pendientes de actualización")
+                logger.info("[UpdateMonitor] %d paquetes pendientes de actualización", count)
             else:
                 logger.debug("[UpdateMonitor] Sistema al día, sin actualizaciones pendientes")
 
@@ -97,8 +97,8 @@ class UpdateMonitor:
             logger.error("[UpdateMonitor] check_updates: apt no encontrado en el sistema")
             return {"pending": 0, "status": "Error", "message": "apt no encontrado"}
         except ValueError as e:
-            logger.error(f"[UpdateMonitor] check_updates: error parseando resultado: {e}")
+            logger.error("[UpdateMonitor] check_updates: error parseando resultado: %s", e)
             return {"pending": 0, "status": "Error", "message": str(e)}
         except Exception as e:
-            logger.error(f"[UpdateMonitor] check_updates: error inesperado: {e}")
+            logger.error("[UpdateMonitor] check_updates: error inesperado: %s", e)
             return {"pending": 0, "status": "Error", "message": str(e)}

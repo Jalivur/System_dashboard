@@ -32,7 +32,7 @@ class AudioService:
                     end   = line.index("%")
                     return int(line[start:end])
         except Exception as e:
-            logger.warning(f"[AudioService] get_volume error: {e}")
+            logger.warning("[AudioService] get_volume error: %s", e)
         return -1
 
     def set_volume(self, value: int, control: str = DEFAULT_CONTROL) -> bool:
@@ -40,12 +40,12 @@ class AudioService:
         value = max(0, min(100, value))
         try:
             subprocess.run(
-                ["amixer", "sset", control, f"{value}%"],
+                ["amixer", "sset", control, "{value}%"],
                 check=True, capture_output=True,
             )
             return True
         except Exception as e:
-            logger.warning(f"[AudioService] set_volume error: {e}")
+            logger.warning("[AudioService] set_volume error: %s", e)
             return False
 
     def is_muted(self, control: str = DEFAULT_CONTROL) -> bool:
@@ -60,7 +60,7 @@ class AudioService:
                 if "[off]" in line:
                     return True
         except Exception as e:
-            logger.warning(f"[AudioService] is_muted error: {e}")
+            logger.warning("[AudioService] is_muted error: %s", e)
         return False
 
     def set_mute(self, muted: bool, control: str = DEFAULT_CONTROL) -> bool:
@@ -73,7 +73,7 @@ class AudioService:
             )
             return True
         except Exception as e:
-            logger.warning(f"[AudioService] set_mute error: {e}")
+            logger.warning("[AudioService] set_mute error: %s", e)
             return False
 
     def toggle_mute(self, control: str = DEFAULT_CONTROL) -> bool:
@@ -92,7 +92,7 @@ class AudioService:
                 stderr=subprocess.DEVNULL,
             )
         except Exception as e:
-            logger.warning(f"[AudioService] play_test error: {e}")
+            logger.warning("[AudioService] play_test error: %s", e)
 
     def get_controls(self) -> list[str]:
         """Devuelve lista de controles amixer disponibles."""
@@ -105,5 +105,5 @@ class AudioService:
             controls = [l.split("'")[1] for l in out.splitlines() if "'" in l]
             return controls if controls else [self.DEFAULT_CONTROL]
         except Exception as e:
-            logger.warning(f"[AudioService] get_controls error: {e}")
+            logger.warning("[AudioService] get_controls error: %s", e)
             return [self.DEFAULT_CONTROL]
