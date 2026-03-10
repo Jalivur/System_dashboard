@@ -149,22 +149,24 @@ class ServiceMonitor:
 
     def _fetch_enabled_batch(self, units: List[str]) -> set:
         """
-        Obtiene el estado enabled de todos los servicios en UNA sola
-        llamada a systemctl. Devuelve un set con los units habilitados.
+        Obtiene el estado enabled dividiendo en chunks para evitar
+        timeout en sistemas lentos (Pi 3B+) con muchos servicios.
         """
-        try:
-            result = subprocess.run(
-                ["systemctl", "is-enabled", "--"] + units,
-                capture_output=True, text=True, timeout=20,
-            )
-            enabled = set()
-            for unit, state in zip(units, result.stdout.strip().split('\n')):
-                if state.strip() == "enabled":
-                    enabled.add(unit)
-            return enabled
-        except Exception as e:
-            logger.warning("[ServiceMonitor] Error en is-enabled batch: %s", e)
-            return set()
+        _CHUNK = 30
+        enabled = set()
+        for i in range(0, len(units), _CHUNK):
+            chunk = units[i:i + _CHUNK]
+            try:
+                result = subprocess.run(
+                    ["systemctl", "is-enabled", "--"] + chunk,
+                    capture_output=True, text=True, timeout=20,
+                )
+                for unit, state in zip(chunk, result.stdout.strip().split('\n')):
+                    if state.strip() == "enabled":
+                        enabled.add(unit)
+            except Exception as e:
+                logger.warning("[ServiceMonitor] Error en is-enabled batch chunk %d: %s", i, e)
+        return enabled
 
     def _compute_stats(self, services: List[Dict]) -> Dict:
         return {
