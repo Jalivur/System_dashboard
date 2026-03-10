@@ -56,7 +56,9 @@ class VpnMonitor:
         self._stop_evt.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
-        self._status = {'connected': False, 'interface': '', 'ip': ''}
+        with self._lock:
+            self._connected = False
+            self._vpn_ip    = ""
         logger.info("[VpnMonitor] Servicio detenido")
 
     # ── Bucle de sondeo ───────────────────────────────────────────────────────

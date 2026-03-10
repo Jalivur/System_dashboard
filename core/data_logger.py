@@ -21,46 +21,45 @@ class DataLogger:
 
     def _init_database(self):
         """Inicializa la base de datos con las tablas necesarias"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS metrics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME,
-                cpu_percent REAL,
-                ram_percent REAL,
-                ram_used_gb REAL,
-                temperature REAL,
-                disk_used_percent REAL,
-                disk_read_mb REAL,
-                disk_write_mb REAL,
-                net_download_mb REAL,
-                net_upload_mb REAL,
-                fan_pwm INTEGER,
-                fan_mode TEXT,
-                updates_available INTEGER
-            )
-        ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS metrics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME,
+                    cpu_percent REAL,
+                    ram_percent REAL,
+                    ram_used_gb REAL,
+                    temperature REAL,
+                    disk_used_percent REAL,
+                    disk_read_mb REAL,
+                    disk_write_mb REAL,
+                    net_download_mb REAL,
+                    net_upload_mb REAL,
+                    fan_pwm INTEGER,
+                    fan_mode TEXT,
+                    updates_available INTEGER
+                )
+            ''')
 
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_timestamp
-            ON metrics(timestamp)
-        ''')
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_timestamp
+                ON metrics(timestamp)
+            ''')
 
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME,
-                event_type TEXT,
-                severity TEXT,
-                message TEXT,
-                data JSON
-            )
-        ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME,
+                    event_type TEXT,
+                    severity TEXT,
+                    message TEXT,
+                    data JSON
+                )
+            ''')
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     def log_metrics(self, metrics: Dict):
         """
@@ -68,60 +67,59 @@ class DataLogger:
         La timestamp se genera con datetime.now() para usar la hora local del sistema,
         evitando el desfase UTC que produce DEFAULT CURRENT_TIMESTAMP de SQLite.
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        # Hora local explícita — SQLite CURRENT_TIMESTAMP siempre es UTC
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Hora local explícita — SQLite CURRENT_TIMESTAMP siempre es UTC
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        cursor.execute('''
-            INSERT INTO metrics (
-                timestamp,
-                cpu_percent, ram_percent, ram_used_gb, temperature,
-                disk_used_percent, disk_read_mb, disk_write_mb,
-                net_download_mb, net_upload_mb, fan_pwm, fan_mode, updates_available
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            now,
-            metrics.get('cpu_percent'),
-            metrics.get('ram_percent'),
-            metrics.get('ram_used_gb'),
-            metrics.get('temperature'),
-            metrics.get('disk_used_percent'),
-            metrics.get('disk_read_mb'),
-            metrics.get('disk_write_mb'),
-            metrics.get('net_download_mb'),
-            metrics.get('net_upload_mb'),
-            metrics.get('fan_pwm'),
-            metrics.get('fan_mode'),
-            metrics.get('updates_available'),
-        ))
+            cursor.execute('''
+                INSERT INTO metrics (
+                    timestamp,
+                    cpu_percent, ram_percent, ram_used_gb, temperature,
+                    disk_used_percent, disk_read_mb, disk_write_mb,
+                    net_download_mb, net_upload_mb, fan_pwm, fan_mode, updates_available
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                now,
+                metrics.get('cpu_percent'),
+                metrics.get('ram_percent'),
+                metrics.get('ram_used_gb'),
+                metrics.get('temperature'),
+                metrics.get('disk_used_percent'),
+                metrics.get('disk_read_mb'),
+                metrics.get('disk_write_mb'),
+                metrics.get('net_download_mb'),
+                metrics.get('net_upload_mb'),
+                metrics.get('fan_pwm'),
+                metrics.get('fan_mode'),
+                metrics.get('updates_available'),
+            ))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     def log_event(self, event_type: str, severity: str, message: str, data: Dict = None):
         """Registra un evento con hora local."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        cursor.execute('''
-            INSERT INTO events (timestamp, event_type, severity, message, data)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (now, event_type, severity, message, json.dumps(data) if data else None))
+            cursor.execute('''
+                INSERT INTO events (timestamp, event_type, severity, message, data)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (now, event_type, severity, message, json.dumps(data) if data else None))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+
 
     def get_metrics_count(self) -> int:
         """Obtiene el número total de registros"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM metrics')
-        count = cursor.fetchone()[0]
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM metrics')
+            count = cursor.fetchone()[0]
+
         return count
 
     def get_db_size_mb(self) -> float:
@@ -133,17 +131,17 @@ class DataLogger:
 
     def clean_old_data(self, days: int = 7):
         """Elimina datos más antiguos de X días"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+            cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
 
-        cursor.execute('DELETE FROM metrics WHERE timestamp < ?', (cutoff,))
-        cursor.execute('DELETE FROM events  WHERE timestamp < ?', (cutoff,))
+            cursor.execute('DELETE FROM metrics WHERE timestamp < ?', (cutoff,))
+            cursor.execute('DELETE FROM events  WHERE timestamp < ?', (cutoff,))
 
-        conn.commit()
-        cursor.execute('VACUUM')
-        conn.close()
+            conn.commit()
+            cursor.execute('VACUUM')
+
 
     def check_and_rotate_db(self, max_mb: float = 5.0):
         """Si la DB supera el tamaño máximo, elimina datos antiguos"""

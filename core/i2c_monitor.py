@@ -11,7 +11,7 @@ Arquitectura:
   - smbus2 es opcional — si no está instalado devuelve error descriptivo
 """
 import threading
-import time
+import os
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -57,12 +57,16 @@ class I2CMonitor:
         self._lock    = threading.Lock()
         self._stats   = {}
         self._running = False
+        self._stop_evt = threading.Event()
         self._thread  = None
 
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def start(self) -> None:
+        if self._running:
+            return
         self._running = True
+        self._stop_evt.clear()
         self._thread  = threading.Thread(
             target=self._loop, daemon=True, name="I2CMonitor")
         self._thread.start()
@@ -70,6 +74,7 @@ class I2CMonitor:
 
     def stop(self) -> None:
         self._running = False
+        self._stop_evt.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=3)
         with self._lock:
@@ -92,8 +97,7 @@ class I2CMonitor:
 
     def _loop(self) -> None:
         self._scan()
-        while self._running:
-            time.sleep(INTERVAL_SECONDS)
+        while not self._stop_evt.wait(timeout=INTERVAL_SECONDS):
             if self._running:
                 self._scan()
 
@@ -109,7 +113,7 @@ class I2CMonitor:
                 }
             return
 
-        import os
+        
         # Detectar buses disponibles
         buses = sorted([
             int(f[5:]) for f in os.listdir("/dev")
