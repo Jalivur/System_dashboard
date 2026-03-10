@@ -31,29 +31,27 @@ class DataAnalyzer:
     def get_data_range(self, hours: int = 24) -> List[Dict]:
         """Obtiene datos de las últimas X horas"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            cutoff = _fmt(datetime.now() - timedelta(hours=hours))
+                cutoff = _fmt(datetime.now() - timedelta(hours=hours))
 
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ?
-                ORDER BY timestamp ASC
-            ''', (cutoff,))
+                cursor.execute('''
+                    SELECT * FROM metrics
+                    WHERE timestamp >= ?
+                    ORDER BY timestamp ASC
+                ''', (cutoff,))
 
-            rows = cursor.fetchall()
-            conn.close()
-
-            logger.debug(f"[DataAnalyzer] get_data_range: {len(rows)} registros (últimas {hours}h)")
+                rows = cursor.fetchall()
+            logger.debug("[DataAnalyzer] get_data_range: %d registros (últimas %dh)", len(rows), hours)
             return [dict(row) for row in rows]
 
         except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error BD: {e}")
+            logger.error("[DataAnalyzer] get_data_range: error BD: %s", e)
             return []
         except Exception as e:
-            logger.error(f"[DataAnalyzer] get_data_range: error inesperado: {e}")
+            logger.error("[DataAnalyzer] get_data_range: error inesperado: %s", e)
             return []
 
     def get_stats(self, hours: int = 24) -> Dict:
@@ -68,7 +66,7 @@ class DataAnalyzer:
             data = self.get_data_range(hours)
             return self._extract_metric(data, metric)
         except Exception as e:
-            logger.error(f"[DataAnalyzer] get_graph_data '{metric}': {e}")
+            logger.error("[DataAnalyzer] get_graph_data %s: %s", metric, e)
             return [], []
 
     def export_to_csv(self, output_path: str, hours: int = 24):
@@ -83,30 +81,26 @@ class DataAnalyzer:
     def get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]:
         """Obtiene datos entre dos fechas exactas"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT * FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-                ORDER BY timestamp ASC
-            ''', (_fmt(start), _fmt(end)))
+                cursor.execute('''
+                    SELECT * FROM metrics
+                    WHERE timestamp >= ? AND timestamp <= ?
+                    ORDER BY timestamp ASC
+                ''', (_fmt(start), _fmt(end)))
 
-            rows = cursor.fetchall()
-            conn.close()
-
+                rows = cursor.fetchall()
             logger.debug(
-                f"[DataAnalyzer] get_data_range_between: {len(rows)} registros "
-                f"({_fmt(start)} → {_fmt(end)})"
-            )
+                "[DataAnalyzer] get_data_range_between: %d registros (%s → %s)", len(rows), start, end)
             return [dict(row) for row in rows]
 
         except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] get_data_range_between: error BD: {e}")
+            logger.error("[DataAnalyzer] get_data_range_between: error BD: %s", e)
             return []
         except Exception as e:
-            logger.error(f"[DataAnalyzer] get_data_range_between: error inesperado: {e}")
+            logger.error("[DataAnalyzer] get_data_range_between: error inesperado: %s", e)
             return []
 
     def get_stats_between(self, start: datetime, end: datetime) -> Dict:
@@ -119,7 +113,7 @@ class DataAnalyzer:
             data = self.get_data_range_between(start, end)
             return self._extract_metric(data, metric)
         except Exception as e:
-            logger.error(f"[DataAnalyzer] get_graph_data_between '{metric}': {e}")
+            logger.error("[DataAnalyzer] get_graph_data_between '%s': %s", metric, e)
             return [], []
 
     def export_to_csv_between(self, output_path: str, start: datetime, end: datetime):
@@ -142,17 +136,17 @@ class DataAnalyzer:
         if stats.get('cpu_avg', 0) > 80:
             anomalies.append({'type': 'cpu_high', 'severity': 'warning',
                                'message': f"CPU promedio alta: {stats['cpu_avg']:.1f}%"})
-            logger.warning(f"[DataAnalyzer] CPU promedio {stats['cpu_avg']:.1f}%")
+            logger.warning("[DataAnalyzer] CPU promedio %.1f%%", stats['cpu_avg'])
 
         if stats.get('temp_max', 0) > 80:
             anomalies.append({'type': 'temp_high', 'severity': 'critical',
                                'message': f"Temperatura máxima: {stats['temp_max']:.1f}°C"})
-            logger.warning(f"[DataAnalyzer] Temperatura máxima {stats['temp_max']:.1f}°C")
+            logger.warning("[DataAnalyzer] Temperatura máxima %.1f°C", stats['temp_max'])
 
         if stats.get('ram_avg', 0) > 85:
             anomalies.append({'type': 'ram_high', 'severity': 'warning',
                                'message': f"RAM promedio alta: {stats['ram_avg']:.1f}%"})
-            logger.warning(f"[DataAnalyzer] RAM promedio {stats['ram_avg']:.1f}%")
+            logger.warning("[DataAnalyzer] RAM promedio %.1f%%", stats['ram_avg'])
 
         return anomalies
 
@@ -163,30 +157,29 @@ class DataAnalyzer:
     def _get_stats_between(self, start: datetime, end: datetime) -> Dict:
         """Lógica común de estadísticas para cualquier rango start→end."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT
-                    AVG(cpu_percent), MAX(cpu_percent), MIN(cpu_percent),
-                    AVG(ram_percent), MAX(ram_percent), MIN(ram_percent),
-                    AVG(temperature), MAX(temperature), MIN(temperature),
-                    AVG(net_download_mb), MAX(net_download_mb), MIN(net_download_mb),
-                    AVG(net_upload_mb), MAX(net_upload_mb), MIN(net_upload_mb),
-                    AVG(disk_read_mb), MAX(disk_read_mb), MIN(disk_read_mb),
-                    AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
-                    AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
-                    MAX(updates_available), MIN(updates_available), AVG(updates_available),
-                    COUNT(*)
-                FROM metrics
-                WHERE timestamp >= ? AND timestamp <= ?
-            ''', (_fmt(start), _fmt(end)))
+                cursor.execute('''
+                    SELECT
+                        AVG(cpu_percent), MAX(cpu_percent), MIN(cpu_percent),
+                        AVG(ram_percent), MAX(ram_percent), MIN(ram_percent),
+                        AVG(temperature), MAX(temperature), MIN(temperature),
+                        AVG(net_download_mb), MAX(net_download_mb), MIN(net_download_mb),
+                        AVG(net_upload_mb), MAX(net_upload_mb), MIN(net_upload_mb),
+                        AVG(disk_read_mb), MAX(disk_read_mb), MIN(disk_read_mb),
+                        AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
+                        AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
+                        MAX(updates_available), MIN(updates_available), AVG(updates_available),
+                        COUNT(*)
+                    FROM metrics
+                    WHERE timestamp >= ? AND timestamp <= ?
+                ''', (_fmt(start), _fmt(end)))
 
-            row = cursor.fetchone()
-            conn.close()
-
+                row = cursor.fetchone()
+                
             if row and row[27]:
-                logger.debug(f"[DataAnalyzer] _get_stats_between: {row[27]} muestras")
+                logger.debug("[DataAnalyzer] _get_stats_between: %s muestras", row[27])
                 return {
                     'cpu_avg':   round(row[0],  1) if row[0]  else 0,
                     'cpu_max':   round(row[1],  1) if row[1]  else 0,
@@ -222,10 +215,10 @@ class DataAnalyzer:
             return {}
 
         except sqlite3.OperationalError as e:
-            logger.error(f"[DataAnalyzer] _get_stats_between: error BD: {e}")
+            logger.error("[DataAnalyzer] _get_stats_between: error BD: %s", e)
             return {}
         except Exception as e:
-            logger.error(f"[DataAnalyzer] _get_stats_between: error inesperado: {e}")
+            logger.error("[DataAnalyzer] _get_stats_between: error inesperado: %s", e)
             return {}
 
     def _extract_metric(self, data: List[Dict], metric: str) -> Tuple[List, List]:
@@ -251,8 +244,8 @@ class DataAnalyzer:
                 writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
                 writer.writeheader()
                 writer.writerows(data)
-            logger.info(f"[DataAnalyzer] _write_csv: {len(data)} registros → {output_path}")
+            logger.info("[DataAnalyzer] _write_csv: %d registros → %s", len(data), output_path)
         except OSError as e:
-            logger.error(f"[DataAnalyzer] _write_csv: error escribiendo {output_path}: {e}")
+            logger.error("[DataAnalyzer] _write_csv: error escribiendo %s: %s", output_path, e)
         except Exception as e:
-            logger.error(f"[DataAnalyzer] _write_csv: error inesperado: {e}")
+            logger.error("[DataAnalyzer] _write_csv: error inesperado: %s", e)

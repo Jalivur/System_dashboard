@@ -154,6 +154,7 @@ class GPIOMonitor:
     def start(self):
         if self._running:
             return
+        self._running = True
         self._stop_evt.clear()
         self._thread = threading.Thread(
             target=self._run, daemon=True, name="GPIOMonitor")
@@ -177,7 +178,6 @@ class GPIOMonitor:
     # ── Thread ────────────────────────────────────────────────────────────────
 
     def _run(self):
-        self._running = True
         if self._op_mode == OP_CONTROLANDO:
             self._setup_devices()
         try:
@@ -330,7 +330,7 @@ class GPIOMonitor:
             return {pin: dict(data) for pin, data in self._state.items()}
 
     def is_gpio_available(self) -> bool:
-        return True
+        return self._gpio_available
 
     def get_pins(self) -> list[int]:
         return sorted(self._state.keys())

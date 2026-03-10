@@ -3,6 +3,7 @@ Monitor de actualizaciones del sistema
 """
 import subprocess
 import time
+import threading
 from typing import Dict
 from utils.logger import get_logger
 
@@ -14,11 +15,12 @@ class UpdateMonitor:
 
     def __init__(self):
         self._running = True
+        self._lock          = threading.Lock()
         # Inicializar con tiempo actual para que la caché sea válida desde el inicio
         # Solo ejecuta apt update real cuando: arranque (main.py) o usuario pulsa "Buscar"
-        self.last_check_time = time.time()
-        self.cached_result = {"pending": 0, "status": "Unknown", "message": "No comprobado"}
-        self.check_interval = 43200  # 12 horas en segundos
+        self._last_check_time = time.time()
+        self._cached_result = {"pending": 0, "status": "Unknown", "message": "No comprobado"}
+        self._check_interval = 43200  # 12 horas en segundos
 
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
@@ -28,7 +30,8 @@ class UpdateMonitor:
 
     def stop(self) -> None:
         self._running = False
-        self.cached_result = {"pending": 0, "status": "Unknown", "message": "Servicio parado"}
+        with self._lock:
+            self._cached_result = {"pending": 0, "status": "Unknown", "message": "Servicio parado"}
         logger.info("[UpdateMonitor] Detenido")
 
     # ── API pública ───────────────────────────────────────────────────────────
@@ -48,11 +51,14 @@ class UpdateMonitor:
             return {"pending": 0, "status": "Stopped", "message": "Servicio parado"}
 
         current_time = time.time()
+        with self._lock:
+            cached = dict(self._cached_result)
+            last   = self._last_check_time
 
         # Devolver caché si no ha pasado el intervalo y no se fuerza
-        if not force and (current_time - self.last_check_time) < self.check_interval:
+        if not force and (current_time - last) < self._check_interval:
             logger.debug("[UpdateMonitor] Devolviendo resultado en caché")
-            return self.cached_result
+            return cached
 
         try:
             logger.info("[UpdateMonitor] Ejecutando búsqueda real de actualizaciones (apt update)...")
@@ -63,24 +69,26 @@ class UpdateMonitor:
                 timeout=60
             )
             if result.returncode != 0:
-                logger.warning(f"[UpdateMonitor] apt update retornó código {result.returncode}")
+                logger.warning("[UpdateMonitor] apt update retornó código %d", result.returncode)
 
             cmd = "apt-get -s upgrade | grep '^Inst ' | wc -l"
             output = subprocess.check_output(cmd, shell=True).decode().strip()
             count = int(output) if output else 0
 
             if count > 0:
-                logger.info(f"[UpdateMonitor] {count} paquetes pendientes de actualización")
+                logger.info("[UpdateMonitor] %d paquetes pendientes de actualización", count)
             else:
                 logger.debug("[UpdateMonitor] Sistema al día, sin actualizaciones pendientes")
 
-            self.cached_result = {
+            result= {
                 "pending": count,
                 "status": "Ready" if count > 0 else "Updated",
                 "message": f"{count} paquetes pendientes" if count > 0 else "Sistema al día"
             }
-            self.last_check_time = current_time
-            return self.cached_result
+            with self._lock:
+                self._cached_result = result
+                self._last_check_time  = current_time
+            return result
 
         except subprocess.TimeoutExpired:
             logger.error("[UpdateMonitor] check_updates: timeout ejecutando apt update (>60s)")
@@ -89,8 +97,8 @@ class UpdateMonitor:
             logger.error("[UpdateMonitor] check_updates: apt no encontrado en el sistema")
             return {"pending": 0, "status": "Error", "message": "apt no encontrado"}
         except ValueError as e:
-            logger.error(f"[UpdateMonitor] check_updates: error parseando resultado: {e}")
+            logger.error("[UpdateMonitor] check_updates: error parseando resultado: %s", e)
             return {"pending": 0, "status": "Error", "message": str(e)}
         except Exception as e:
-            logger.error(f"[UpdateMonitor] check_updates: error inesperado: {e}")
+            logger.error("[UpdateMonitor] check_updates: error inesperado: %s", e)
             return {"pending": 0, "status": "Error", "message": str(e)}

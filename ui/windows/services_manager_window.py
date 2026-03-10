@@ -308,9 +308,15 @@ class ServicesManagerWindow(ctk.CTkToplevel):
             on_confirm=lambda: [self._execute(k, stop=False) for k in keys])
 
     def _save_defaults(self):
-        """Persiste el estado actual al services.json como configuración de arranque."""
+        """Persiste el estado actual al services.json como configuración de arranque.
+        Llama set_service_enabled() por cada servicio según su estado en la UI —
+        no depende de que save_config() lea _running directamente."""
+        def _do_save():
+            for key in self._rows:
+                self._registry.set_service_enabled(key, self._is_running(key))
+
         confirm_dialog(
             parent=self,
             text=f"{Icons.SAVE} ¿Guardar el estado actual como configuración de arranque?\n\n"
                  "Los servicios PARADOS no arrancarán en el próximo inicio.",
-            on_confirm=self._registry.save_config)
+            on_confirm=_do_save)
