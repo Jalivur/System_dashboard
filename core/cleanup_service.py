@@ -63,6 +63,7 @@ class CleanupService:
             interval_hours:  Horas entre ejecuciones del ciclo de limpieza.
         """
         if hasattr(self, '_initialized'):
+            logger.debug("[CleanupService] Instancia singleton ya inicializada — parámetros ignorados")
             return
 
         self.data_logger    = data_logger

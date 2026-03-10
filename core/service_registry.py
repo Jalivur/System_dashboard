@@ -10,8 +10,9 @@ Uso en main.py:
     registry = ServiceRegistry()
     registry.register("system_monitor", SystemMonitor())
     ...
-    registry.apply_config()    # para los que estén en False en services.json
-    registry.save_config()     # persiste el estado actual al JSON
+    registry.apply_config()              # para los que estén en False en services.json
+    registry.set_service_enabled(k, v)   # marca habilitado/deshabilitado y persiste
+    registry.save_config()               # persiste _config al JSON (sin leer estado live)
 """
 import json
 import os
@@ -83,7 +84,7 @@ _DEFAULT_CONFIG = {
         "weather_window":   True,
         "i2c_window":       True,
         "gpio_window":      True
-        
+
     }
 }
 
@@ -119,9 +120,9 @@ class ServiceRegistry:
             logger.info("[ServiceRegistry] services.json creado en %s", self._config_path)
 
     def save_config(self):
-        """Persiste el estado actual de _running de cada servicio al JSON."""
-        for key, svc in self._services.items():
-            self._config["services"][key] = getattr(svc, "_running", True)
+        """Persiste la configuración actual (_config) al JSON.
+        No lee el estado live de los servicios — guarda lo que se haya
+        establecido explícitamente via set_service_enabled()."""
         try:
             os.makedirs(os.path.dirname(self._config_path), exist_ok=True)
             with open(self._config_path, "w") as f:
@@ -129,6 +130,11 @@ class ServiceRegistry:
             logger.info("[ServiceRegistry] Config guardada en %s", self._config_path)
         except Exception as e:
             logger.error("[ServiceRegistry] Error guardando config: %s", e)
+
+    def set_service_enabled(self, key: str, enabled: bool) -> None:
+        """Marca un servicio como habilitado/deshabilitado en la config y persiste."""
+        self._config["services"][key] = enabled
+        self.save_config()
 
     # ── Registro y acceso ─────────────────────────────────────────────────────
 

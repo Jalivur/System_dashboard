@@ -25,6 +25,7 @@ from .audio_service import AudioService
 from .weather_service import WeatherService
 from .i2c_monitor import I2CMonitor
 from .gpio_monitor import GPIOMonitor
+from .event_bus import EventBus, get_event_bus
 
 __all__ = [
     'FanController',
@@ -51,4 +52,6 @@ __all__ = [
     'WeatherService',
     'I2CMonitor',
     'GPIOMonitor',
+    'EventBus',
+    'get_event_bus'
 ]
