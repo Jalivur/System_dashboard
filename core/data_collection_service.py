@@ -78,8 +78,6 @@ class DataCollectionService:
         """Bucle principal de recolección"""
         self._collect_and_save()
         while not self._stop_evt.wait(timeout=self._interval_minutes * 60):
-            if not self._running:
-                break
             try:
                 self._collect_and_save()
             except Exception as e:
