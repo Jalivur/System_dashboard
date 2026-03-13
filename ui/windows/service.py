@@ -190,11 +190,8 @@ class ServiceWindow(ctk.CTkToplevel):
 
     def _on_sort_change(self, column: str):
         self._update_paused = True
-
-        if self._service_monitor.sort_by == column:
-            self._service_monitor.sort_reverse = not self._service_monitor.sort_reverse
-        else:
-            self._service_monitor.set_sort(column, reverse=False)
+        
+        self._service_monitor.toggle_sort(column)
 
         self._update_now()
         self.after(2000, self._resume_updates)
