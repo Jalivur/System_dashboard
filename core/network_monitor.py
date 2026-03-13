@@ -49,6 +49,10 @@ class NetworkMonitor:
         self._upload_hist.clear()
         self._speedtest_result = {"status": "idle", "ping": 0, "download": 0.0, "upload": 0.0}
         logger.info("[NetworkMonitor] Detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

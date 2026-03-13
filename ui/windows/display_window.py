@@ -210,7 +210,7 @@ class DisplayWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.display_service._running:
+        if not self.display_service.is_running():
             if not self._banner_shown:
                 for w in self._inner.winfo_children():
                     w.destroy()

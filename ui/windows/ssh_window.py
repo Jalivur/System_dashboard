@@ -333,7 +333,7 @@ class SSHWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-        if not self.ssh_monitor._running:
+        if not self.ssh_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._inner, "SSH Monitor")
             return
         stats    = self.ssh_monitor.get_stats()

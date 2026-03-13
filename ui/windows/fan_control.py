@@ -124,7 +124,7 @@ class FanControlWindow(ctk.CTkToplevel):
         """Muestra u oculta el aviso según si fan_service está corriendo."""
         if not self.winfo_exists():
             return
-        if self.fan_service is not None and not self.fan_service._running:
+        if self.fan_service is not None and not self.fan_service.is_running():
             self._service_warning.pack(fill="x", padx=10, pady=(4, 0))
         else:
             self._service_warning.pack_forget()

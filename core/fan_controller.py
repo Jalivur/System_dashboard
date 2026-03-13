@@ -20,6 +20,10 @@ class FanController:
 
     def stop(self) -> None:
         self._running = False
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
     
     def compute_pwm_from_curve(self, temp: float) -> int:
         """

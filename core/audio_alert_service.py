@@ -87,6 +87,9 @@ class AudioAlertService:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         logger.info("[AudioAlertService] Detenido")
+    
+    def is_running(self) -> bool:
+        return self._running
 
     def set_enabled(self, enabled: bool):
         with self._lock:

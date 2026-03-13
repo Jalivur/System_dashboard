@@ -544,7 +544,7 @@ class WeatherWindow(ctk.CTkToplevel):
             return
         stats = self._svc.get_stats()
         
-        if not self._svc._running:
+        if not self._svc.is_running():
             StyleManager.show_service_stopped_banner(self.inner, "Weather Service")
             return
 

@@ -124,6 +124,10 @@ class SSHMonitor:
             self._history=[]
             self._last_update=""
         logger.info("[SSHMonitor] Servicio detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── Loop interno ──────────────────────────────────────────────────────────
 

@@ -64,6 +64,10 @@ class DiskMonitor:
                 'nvme_temp':    0.0,
             }
         logger.info("[DiskMonitor] Detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     def _poll_loop(self) -> None:
         self._do_poll()

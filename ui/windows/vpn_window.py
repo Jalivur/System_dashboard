@@ -195,7 +195,7 @@ class VpnWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
         
-        if not self.vpn_monitor._running:
+        if not self.vpn_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._content_frame, "VPN Monitor")
             self.after(UPDATE_MS, self._update)
             return
@@ -234,7 +234,7 @@ class VpnWindow(ctk.CTkToplevel):
 
     def _connect(self):
         """Ejecuta conectar_vpn.sh con terminal en vivo."""
-        if not self.vpn_monitor._running:
+        if not self.vpn_monitor.is_running():
             return
 
         if not os.path.exists(_SCRIPT_CONNECT):
@@ -255,7 +255,7 @@ class VpnWindow(ctk.CTkToplevel):
 
     def _disconnect(self):
         """Ejecuta desconectar_vpn.sh con terminal en vivo."""
-        if not self.vpn_monitor._running:
+        if not self.vpn_monitor.is_running():
             return
         
         if not os.path.exists(_SCRIPT_DISCONNECT):

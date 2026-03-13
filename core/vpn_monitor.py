@@ -60,6 +60,10 @@ class VpnMonitor:
             self._connected = False
             self._vpn_ip    = ""
         logger.info("[VpnMonitor] Servicio detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── Bucle de sondeo ───────────────────────────────────────────────────────
 

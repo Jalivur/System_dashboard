@@ -5,7 +5,9 @@ Los widgets se crean una sola vez — solo se actualizan los valores.
 """
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES,
-                             DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y)
+                             DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y,
+                             NET_CRIT, NET_WARN)
+from core import WiFiMonitor
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets import GraphWidget
 from utils.logger import get_logger
@@ -305,7 +307,7 @@ class WiFiWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-        if not self.wifi_monitor._running:
+        if not self.wifi_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._inner, "Wifi Monitor")
             return
         stats = self.wifi_monitor.get_stats()
@@ -332,7 +334,7 @@ class WiFiWindow(ctk.CTkToplevel):
 
     def _refresh_connection(self, info: dict):
         """Actualiza widgets de conexión sin recrearlos."""
-        from core.wifi_monitor import WiFiMonitor
+        
 
         # SSID
         self._lbl_ssid.configure(
@@ -382,13 +384,12 @@ class WiFiWindow(ctk.CTkToplevel):
 
     def _refresh_traffic(self, stats: dict):
         """Actualiza widgets de tráfico sin recrearlos."""
-        from core.wifi_monitor import WiFiMonitor
 
         rx = stats["rx_mbps"]
         tx = stats["tx_mbps"]
 
         # Colores dinámicos usando mismo criterio que network_monitor
-        from config.settings import NET_WARN, NET_CRIT
+        
         def _traffic_color(v):
             if v >= NET_CRIT:
                 return COLORS['danger']

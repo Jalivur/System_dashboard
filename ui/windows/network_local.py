@@ -94,7 +94,7 @@ class NetworkLocalWindow(ctk.CTkToplevel):
     def _start_scan(self):
         """Lanza el escaneo y activa el polling de resultado."""
         # ── guard: servicio detenido ──────────────────────────────────────────
-        if not self._scanner._running:
+        if not self._scanner.is_running():
             StyleManager.show_service_stopped_banner(self._device_frame, "Escáner de Red")
             self._header.status_label.configure(text="Servicio detenido")
             self._scan_btn.configure(state="disabled")
@@ -113,7 +113,7 @@ class NetworkLocalWindow(ctk.CTkToplevel):
     def _poll_result(self):
         """Comprueba cada 500ms si el escaneo terminó."""
         # Si el servicio se paró durante el escaneo, mostrar banner
-        if not self._scanner._running:
+        if not self._scanner.is_running():
             self._start_scan()  # redirige al banner
             return
 

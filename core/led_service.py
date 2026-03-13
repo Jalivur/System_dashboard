@@ -48,6 +48,10 @@ class LedService:
         self._running = False
         self._save({"mode": "off", "r": 0, "g": 0, "b": 0})
         logger.info("[LedService] Detenido — LEDs apagados")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

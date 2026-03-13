@@ -52,6 +52,10 @@ class ProcessMonitor:
         with self._lock:
             self._cached_processes = []
         logger.info("[ProcessMonitor] Sondeo detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     def _poll_loop(self) -> None:
         self._do_poll()

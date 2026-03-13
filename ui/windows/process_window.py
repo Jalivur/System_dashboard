@@ -271,7 +271,7 @@ class ProcessWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.process_monitor._running:
+        if not self.process_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._content, "Process Monitor")
             self.after(UPDATE_MS, self._update)
             return

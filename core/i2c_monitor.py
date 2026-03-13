@@ -80,6 +80,10 @@ class I2CMonitor:
         with self._lock:
             self._stats   = {}
         logger.info("[I2CMonitor] Detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

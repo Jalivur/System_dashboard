@@ -105,6 +105,10 @@ class PiholeMonitor:
         with self._stats_lock:
             self._stats = dict(_EMPTY_STATS)
         logger.info("[PiholeMonitor] Sondeo detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     def _poll_loop(self) -> None:
         while self._running:

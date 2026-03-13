@@ -178,7 +178,7 @@ class OverviewWindow(ctk.CTkToplevel):
         return COLORS['primary']
 
     def _refresh_system(self):
-        if not self.system_monitor._running:
+        if not self.system_monitor.is_running():
             for key in ('cpu', 'ram', 'temp', 'disk'):
                 self._widgets[key].configure(text="-- (parado)", text_color=COLORS['text_dim'])
             return
@@ -199,7 +199,7 @@ class OverviewWindow(ctk.CTkToplevel):
             text=f"{disk:.0f}%", text_color=self._color_for(disk, 80, 90))
 
     def _refresh_services(self):
-        if not self.service_monitor._running:
+        if not self.service_monitor.is_running():
             self._widgets['services'].configure(text="-- (parado)", text_color=COLORS['text_dim'])
             return
 
@@ -212,7 +212,7 @@ class OverviewWindow(ctk.CTkToplevel):
 
     def _refresh_net(self):
         """Refresca la tarjeta de red."""
-        if not self.network_monitor._running:
+        if not self.network_monitor.is_running():
             self._widgets['net'].configure(text="-- (parado)", text_color=COLORS['text_dim'])
             return
 
@@ -228,7 +228,7 @@ class OverviewWindow(ctk.CTkToplevel):
             self._widgets['net'].configure(text="--")
 
     def _refresh_pihole(self):
-        if not self.pihole_monitor._running:
+        if not self.pihole_monitor.is_running():
             for k in ('pihole_blocked', 'pihole_pct', 'pihole_total', 'pihole_status'):
                 self._widgets[k].configure(text="-- (parado)", text_color=COLORS['text_dim'])
             return

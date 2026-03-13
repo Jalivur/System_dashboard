@@ -343,7 +343,7 @@ class GPIOWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-        if not self._monitor._running:
+        if not self._monitor.is_running():
             StyleManager.show_service_stopped_banner(self._inner, "GPIO Monitor")
             self._btn_op.configure(state = "disabled")
             self._pin_btn.configure(state = "disabled")

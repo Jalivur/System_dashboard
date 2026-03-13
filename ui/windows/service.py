@@ -231,7 +231,7 @@ class ServiceWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.service_monitor._running:
+        if not self.service_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._content_frame, "Service Monitor")
             self.update_job = self.after(UPDATE_MS, self._update)
             return

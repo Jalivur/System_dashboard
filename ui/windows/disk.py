@@ -168,7 +168,7 @@ class DiskWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-        if not self.disk_monitor._running:
+        if not self.disk_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._content_inner, "Disk Monitor")
             self.after(UPDATE_MS, self._update)
             return

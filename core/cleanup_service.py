@@ -115,6 +115,10 @@ class CleanupService:
         while not self._stop_evt.wait(timeout=interval_seconds):
             if self._running:
                 self._cleanup_cycle()
+                
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── Lógica de limpieza ────────────────────────────────────────────────────
 
@@ -283,6 +287,4 @@ class CleanupService:
             'db_ok':       db_ok,
         }
 
-    def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo."""
-        return self._running
+    

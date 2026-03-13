@@ -19,7 +19,7 @@ class MonitorWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, system_monitor: SystemMonitor, hardware_monitor=None):
         super().__init__(parent)
-        self.system_monitor   = system_monitor
+        self._system_monitor   = system_monitor
         self.hardware_monitor = hardware_monitor
         self.widgets = {}
         self.graphs  = {}
@@ -138,14 +138,14 @@ class MonitorWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.system_monitor._running:
+        if not self._system_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._content_frame, "System Monitor")
             self.after(UPDATE_MS, self._update)
             return
 
-        stats   = self.system_monitor.get_current_stats()
-        self.system_monitor.update_history(stats)
-        history = self.system_monitor.get_history()
+        stats   = self._system_monitor.get_current_stats()
+        self._system_monitor.update_history(stats)
+        history = self._system_monitor.get_history()
 
         self._update_metric('cpu',  stats['cpu'],  history['cpu'],  "%",  CPU_WARN,  CPU_CRIT)
         self._update_metric('ram',  stats['ram'],  history['ram'],  "%",  RAM_WARN,  RAM_CRIT)
@@ -171,7 +171,7 @@ class MonitorWindow(ctk.CTkToplevel):
                     if val is None:
                         lbl.configure(text=f"-- {unit}", text_color=COLORS['text_dim'])
                     else:
-                        color = self.system_monitor.level_color(val, warn, crit)
+                        color = self._system_monitor.level_color(val, warn, crit)
                         lbl.configure(text=f"{val:.0f} {unit}", text_color=color)
             else:
                 for key in ("chassis_temp", "fan0_pct", "fan1_pct"):
@@ -182,7 +182,7 @@ class MonitorWindow(ctk.CTkToplevel):
         self.after(UPDATE_MS, self._update)
 
     def _update_metric(self, key, value, history, unit, warn, crit):
-        color = self.system_monitor.level_color(value, warn, crit)
+        color = self._system_monitor.level_color(value, warn, crit)
         self.widgets[f"{key}_value"].configure(text=f"{value:.1f} {unit}", text_color=color)
         self.widgets[f"{key}_label"].configure(text_color=color)
         g = self.graphs[key]

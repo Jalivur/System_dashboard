@@ -85,7 +85,7 @@ class UpdatesWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.monitor._running:
+        if not self.monitor.is_running():
             if not self._banner_shown:
                 for w in self._content.winfo_children():
                     w.destroy()
@@ -104,7 +104,7 @@ class UpdatesWindow(ctk.CTkToplevel):
 
     def _refresh_status(self, force=False):
         """Consulta el estado de actualizaciones"""
-        if not self.monitor._running:
+        if not self.monitor.is_running():
             return
         if force:
             self._polling = False

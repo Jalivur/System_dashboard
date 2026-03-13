@@ -63,6 +63,10 @@ class ServiceMonitor:
         with self._lock:
             self._cached_services = []
         logger.info("[ServiceMonitor] Sondeo detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     def _poll_loop(self) -> None:
         self._do_poll()

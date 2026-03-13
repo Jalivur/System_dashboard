@@ -129,6 +129,10 @@ class HomebridgeMonitor:
             self._token = None
         self._reachable = False
         logger.info("[HomebridgeMonitor] Sondeo detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     def _poll_loop(self) -> None:
         """

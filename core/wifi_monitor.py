@@ -152,6 +152,10 @@ class WiFiMonitor:
         with self._lock:
             self._info={}
         logger.info("[WiFiMonitor] Servicio detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── Loop interno ──────────────────────────────────────────────────────────
 

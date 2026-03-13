@@ -17,7 +17,7 @@ class NetworkWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, network_monitor):
         super().__init__(parent)
-        self.network_monitor = network_monitor
+        self._network_monitor = network_monitor
         self.widgets  = {}
         self.graphs   = {}
         self._interface_update_counter = 0
@@ -161,16 +161,16 @@ class NetworkWindow(ctk.CTkToplevel):
     # ── Speedtest ─────────────────────────────────────────────────────────────
 
     def _run_speedtest(self):
-        result = self.network_monitor.get_speedtest_result()
+        result = self._network_monitor.get_speedtest_result()
         if result['status'] == 'running':
             return
-        self.network_monitor.reset_speedtest()
-        self.network_monitor.run_speedtest()
+        self._network_monitor.reset_speedtest()
+        self._network_monitor.run_speedtest()
         self.speedtest_btn.configure(state="disabled")
         self.speedtest_result.configure(text="Ejecutando...", text_color=COLORS['warning'])
 
     def _update_speedtest(self):
-        result = self.network_monitor.get_speedtest_result()
+        result = self._network_monitor.get_speedtest_result()
         status = result['status']
         if status == 'idle':
             self.speedtest_result.configure(
@@ -198,7 +198,7 @@ class NetworkWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.network_monitor._running:
+        if not self._network_monitor.is_running():
             if not self._banner_shown:
                 StyleManager.show_service_stopped_banner(self._inner, f"{Icons.MONITOR_RED} Monitor de Red")
                 self._banner_shown = True
@@ -213,21 +213,21 @@ class NetworkWindow(ctk.CTkToplevel):
                 w.destroy()
             self._build_content(self._inner)
 
-        stats = self.network_monitor.get_current_stats(NET_INTERFACE)
-        self.network_monitor.update_history(stats)
-        self.network_monitor.update_dynamic_scale()
-        history = self.network_monitor.get_history()
+        stats = self._network_monitor.get_current_stats(NET_INTERFACE)
+        self._network_monitor.update_history(stats)
+        self._network_monitor.update_dynamic_scale()
+        history = self._network_monitor.get_history()
 
         self._header.status_label.configure(
             text=f"{stats['interface']}  · {Icons.DOWN} {stats['download_mb']:.2f} {Icons.UP} {stats['upload_mb']:.2f} MB/s")
 
-        dl_color = self.network_monitor.net_color(stats['download_mb'])
+        dl_color = self._network_monitor.net_color(stats['download_mb'])
         self.widgets['download_label'].configure(text_color=dl_color)
         self.widgets['download_value'].configure(
             text=f"{stats['download_mb']:.2f} MB/s", text_color=dl_color)
         self.graphs['download'].update(history['download'], history['dynamic_max'], dl_color)
 
-        ul_color = self.network_monitor.net_color(stats['upload_mb'])
+        ul_color = self._network_monitor.net_color(stats['upload_mb'])
         self.widgets['upload_label'].configure(text_color=ul_color)
         self.widgets['upload_value'].configure(
             text=f"{stats['upload_mb']:.2f} MB/s", text_color=ul_color)

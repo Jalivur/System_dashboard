@@ -125,7 +125,7 @@ class PiholeWindow(ctk.CTkToplevel):
 
     def _force_refresh(self):
         """Pide al monitor que sondee de inmediato (en background)."""
-        if not self.pihole._running:
+        if not self.pihole.is_running():
             return
 
         threading.Thread(
@@ -140,7 +140,7 @@ class PiholeWindow(ctk.CTkToplevel):
         """Actualiza los valores en pantalla con la caché del monitor."""
         if not self.winfo_exists():
             return
-        if not self.pihole._running:
+        if not self.pihole.is_running():
             StyleManager.show_service_stopped_banner(self._grid_frame, "Pi-hole Monitor")
             self._update_job = self.after(UPDATE_MS, self._render)
             return
