@@ -129,7 +129,7 @@ class PiholeWindow(ctk.CTkToplevel):
             return
 
         threading.Thread(
-            target=self._pihole._fetch,
+            target=self._pihole.fetch_now(),
             daemon=True, name="PiholeForceRefresh"
         ).start()
         self._header.status_label.configure(text="Actualizando...")
