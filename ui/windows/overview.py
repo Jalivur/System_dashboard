@@ -178,26 +178,24 @@ class OverviewWindow(ctk.CTkToplevel):
         return COLORS['primary']
 
     def _refresh_system(self):
-        if not self._system_monitor.is_running() and self._disk_monitor.is_running():
-            for key in ('cpu', 'ram', 'temp', 'disk'):
+        if self._system_monitor.is_running():
+            sys_stats = self._system_monitor.get_current_stats()
+            cpu  = sys_stats.get('cpu', 0)
+            ram  = sys_stats.get('ram', 0)
+            temp = sys_stats.get('temp', 0)
+            self._widgets['cpu'].configure(text=f"{cpu:.0f}%",   text_color=self._color_for(cpu,  CPU_WARN,  CPU_CRIT))
+            self._widgets['ram'].configure(text=f"{ram:.0f}%",   text_color=self._color_for(ram,  RAM_WARN,  RAM_CRIT))
+            self._widgets['temp'].configure(text=f"{temp:.0f}°C", text_color=self._color_for(temp, TEMP_WARN, TEMP_CRIT))
+        else:
+            for key in ('cpu', 'ram', 'temp'):
                 self._widgets[key].configure(text="-- (parado)", text_color=COLORS['text_dim'])
-            return
 
-        sys_stats = self._system_monitor.get_current_stats()
-        disk_stats= self._disk_monitor.get_current_stats()
-        cpu   = sys_stats.get('cpu', 0)
-        ram   = sys_stats.get('ram', 0)
-        temp  = sys_stats.get('temp', 0)
-        disk  = disk_stats.get('disk_usage', 0)
-
-        self._widgets['cpu'].configure(
-            text=f"{cpu:.0f}%", text_color=self._color_for(cpu, CPU_WARN, CPU_CRIT))
-        self._widgets['ram'].configure(
-            text=f"{ram:.0f}%", text_color=self._color_for(ram, RAM_WARN, RAM_CRIT))
-        self._widgets['temp'].configure(
-            text=f"{temp:.0f}°C", text_color=self._color_for(temp, TEMP_WARN, TEMP_CRIT))
-        self._widgets['disk'].configure(
-            text=f"{disk:.0f}%", text_color=self._color_for(disk, 80, 90))
+        if self._disk_monitor.is_running():
+            disk_stats = self._disk_monitor.get_current_stats()
+            disk = disk_stats.get('disk_usage', 0)
+            self._widgets['disk'].configure(text=f"{disk:.0f}%", text_color=self._color_for(disk, 80, 90))
+        else:
+            self._widgets['disk'].configure(text="-- (parado)", text_color=COLORS['text_dim'])
 
     def _refresh_services(self):
         if not self._service_monitor.is_running():
