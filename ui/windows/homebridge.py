@@ -136,7 +136,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         self._busy = False
 
         if self._hb.is_reachable():
-            on_count      = sum(1 for a in accessories if a["on"])
+            on_count      = sum(1 for a in accessories if a.get('on', False))
             total         = len(accessories)
             header_status = f"{on_count}/{total} encendidos"
             self._set_status(
