@@ -381,6 +381,9 @@ class HistoryWindow(ctk.CTkToplevel):
             f"• Actualizaciones disponibles promedio: {stats.get('updates_available_avg', 0):.2f}\n"
             f"• Actualizaciones disponibles (min: {stats.get('updates_available_min', 0)})\n"
             f"• Actualizaciones disponibles (max: {stats.get('updates_available_max', 0)})\n"
+            f"• Uptime promedio: {stats.get('uptime_avg')}\n"
+            f"• Uptime maximo: {stats.get('uptime_max')}\n"
+            f"• Uptime minimo: {stats.get('uptime_min')}\n"
             f"• Muestras: {stats.get('total_samples', 0)} en {rango_label}\n"
             f"• Total registros: {total_records}  |  DB: {db_size:.2f} MB"
         )
