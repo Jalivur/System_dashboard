@@ -6,8 +6,8 @@ usando los scripts del usuario.
 import customtkinter as ctk
 from config.settings import (
     COLORS, FONT_FAMILY, FONT_SIZES,
-    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR
-, Icons)
+    DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y, SCRIPTS_DIR, 
+    Icons, UPDATE_MS)
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets.dialogs import terminal_dialog
 from utils.logger import get_logger
@@ -19,8 +19,6 @@ logger = get_logger(__name__)
 _SCRIPT_CONNECT    = str(SCRIPTS_DIR / "conectar_vpn.sh")
 _SCRIPT_DISCONNECT = str(SCRIPTS_DIR / "desconectar_vpn.sh")
 
-# Intervalo de refresco del estado en ms
-UPDATE_MS = 3000
 
 
 class VpnWindow(ctk.CTkToplevel):
@@ -38,7 +36,6 @@ class VpnWindow(ctk.CTkToplevel):
         self.transient(parent)
         self.after(150, self.focus_set)
 
-        self._running = True
         self._widgets = {}
 
         self._create_ui()
@@ -46,7 +43,7 @@ class VpnWindow(ctk.CTkToplevel):
         logger.info("[VpnWindow] Ventana abierta")
 
     def destroy(self):
-        self._running = False
+        logger.info("[VpnWindow] Ventana cerrada")
         super().destroy()
 
     # ── UI ────────────────────────────────────────────────────────────────────
