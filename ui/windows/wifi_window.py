@@ -5,8 +5,7 @@ Los widgets se crean una sola vez — solo se actualizan los valores.
 """
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES,
-                             DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y,
-                             NET_CRIT, NET_WARN)
+                             DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y)
 from core import WiFiMonitor, NetworkMonitor
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets import GraphWidget
