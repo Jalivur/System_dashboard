@@ -74,6 +74,9 @@ class FanAutoService:
             self._thread.join(timeout=5)
         logger.info("[FanAutoService] Servicio detenido")
 
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
     # ── Bucle ─────────────────────────────────────────────────────────────────
 
     def _run(self):
@@ -114,9 +117,6 @@ class FanAutoService:
         """Cambia el intervalo de actualización (mínimo 1.0s)."""
         self._update_interval = max(1.0, seconds)
 
-    def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo."""
-        return self._running
 
     def get_status(self) -> dict:
         return {

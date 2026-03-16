@@ -63,7 +63,17 @@ class ServiceMonitor:
         with self._lock:
             self._cached_services = []
         logger.info("[ServiceMonitor] Sondeo detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
+    def toggle_sort(self, column: str) -> None:
+        if self.sort_by == column:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.set_sort(column, reverse=False)
+        
     def _poll_loop(self) -> None:
         self._do_poll()
         while self._running:

@@ -107,6 +107,10 @@ class DisplayService:
         self._running = False
         self._cancel_dim_timer()
         logger.info("[DisplayService] Detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

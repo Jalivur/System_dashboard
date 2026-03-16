@@ -6,6 +6,7 @@ Los widgets se crean una sola vez — solo se actualizan los valores.
 import customtkinter as ctk
 from config.settings import (COLORS, FONT_FAMILY, FONT_SIZES,
                              DSI_WIDTH, DSI_HEIGHT, DSI_X, DSI_Y)
+from core import WiFiMonitor, NetworkMonitor
 from ui.styles import StyleManager, make_window_header, make_futuristic_button
 from ui.widgets import GraphWidget
 from utils.logger import get_logger
@@ -22,7 +23,7 @@ class WiFiWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, wifi_monitor):
         super().__init__(parent)
-        self.wifi_monitor = wifi_monitor
+        self._wifi_monitor = wifi_monitor
 
         self.title("Monitor WiFi")
         self.configure(fg_color=COLORS['bg_medium'])
@@ -122,7 +123,7 @@ class WiFiWindow(ctk.CTkToplevel):
         ).pack(side="left")
 
         self._lbl_iface = ctk.CTkLabel(
-            hdr, text=self.wifi_monitor.interface,
+            hdr, text=self._wifi_monitor.interface,
             font=(FONT_FAMILY, FONT_SIZES['small']),
             text_color=COLORS['text_dim'],
             anchor="e")
@@ -305,10 +306,10 @@ class WiFiWindow(ctk.CTkToplevel):
     def _update(self):
         if not self.winfo_exists():
             return
-        if not self.wifi_monitor._running:
+        if not self._wifi_monitor.is_running():
             StyleManager.show_service_stopped_banner(self._inner, "Wifi Monitor")
             return
-        stats = self.wifi_monitor.get_stats()
+        stats = self._wifi_monitor.get_stats()
         info  = stats["info"]
 
         self._refresh_connection(info)
@@ -321,7 +322,7 @@ class WiFiWindow(ctk.CTkToplevel):
                 text=f"{info['ssid']}  ·  {dbm_str}")
         else:
             self._header.status_label.configure(
-                text=f"Sin conexión — {self.wifi_monitor.interface}",
+                text=f"Sin conexión — {self._wifi_monitor.interface}",
                 text_color=COLORS['warning'])
 
         ts = stats["last_update"]
@@ -332,7 +333,7 @@ class WiFiWindow(ctk.CTkToplevel):
 
     def _refresh_connection(self, info: dict):
         """Actualiza widgets de conexión sin recrearlos."""
-        from core.wifi_monitor import WiFiMonitor
+        
 
         # SSID
         self._lbl_ssid.configure(
@@ -373,7 +374,7 @@ class WiFiWindow(ctk.CTkToplevel):
             text_color=COLORS['text'])
 
         # Gráfica señal — invertir signo para mostrar "más es mejor"
-        signal_hist = self._stats_signal_hist()
+        signal_hist = self._wifi_monitor.get_signal_history()
         if signal_hist:
             # Normalizar: convertir dBm negativos a valores positivos para GraphWidget
             # -30 → 100, -90 → 0
@@ -382,22 +383,16 @@ class WiFiWindow(ctk.CTkToplevel):
 
     def _refresh_traffic(self, stats: dict):
         """Actualiza widgets de tráfico sin recrearlos."""
-        from core.wifi_monitor import WiFiMonitor
 
         rx = stats["rx_mbps"]
         tx = stats["tx_mbps"]
 
         # Colores dinámicos usando mismo criterio que network_monitor
-        from config.settings import NET_WARN, NET_CRIT
-        def _traffic_color(v):
-            if v >= NET_CRIT:
-                return COLORS['danger']
-            if v >= NET_WARN:
-                return COLORS['warning']
-            return COLORS['primary']
+        
+        
 
-        rx_color = _traffic_color(rx)
-        tx_color = _traffic_color(tx)
+        rx_color = NetworkMonitor.net_color(rx)
+        tx_color = NetworkMonitor.net_color(tx)
 
         self._lbl_rx.configure(text=f"{rx:.3f} MB/s", text_color=rx_color)
         self._lbl_tx.configure(text=f"{tx:.3f} MB/s", text_color=tx_color)
@@ -410,16 +405,6 @@ class WiFiWindow(ctk.CTkToplevel):
 
         self._graph_rx.update(rx_hist, scale, rx_color)
         self._graph_tx.update(tx_hist, scale, tx_color)
-
-    def _stats_signal_hist(self):
-        """Devuelve el historial de señal desde el monitor."""
-        acquired = self.wifi_monitor._lock.acquire(blocking=False)
-        if not acquired:
-            return []
-        try:
-            return list(self.wifi_monitor.signal_hist)
-        finally:
-            self.wifi_monitor._lock.release()
 
     @staticmethod
     def _signal_bars(pct: int) -> str:

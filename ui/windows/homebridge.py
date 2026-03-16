@@ -20,7 +20,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, homebridge_monitor: HomebridgeMonitor):
         super().__init__(parent)
-        self.hb = homebridge_monitor
+        self._hb = homebridge_monitor
         self._accessories = []
         self._update_job  = None
         self._busy        = False
@@ -38,17 +38,17 @@ class HomebridgeWindow(ctk.CTkToplevel):
     # ── Interfaz ──────────────────────────────────────────────────────────────
 
     def _create_ui(self):
-        self.main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
-        self.main.pack(fill="both", expand=True, padx=5, pady=5)
+        self._main = ctk.CTkFrame(self, fg_color=COLORS['bg_medium'])
+        self._main.pack(fill="both", expand=True, padx=5, pady=5)
 
         self._header = make_window_header(
-            self.main,
+            self._main,
             title="HOMEBRIDGE",
             on_close=self._on_close,
             status_text="Conectando...",
         )
 
-        status_bar = ctk.CTkFrame(self.main, fg_color=COLORS['bg_dark'])
+        status_bar = ctk.CTkFrame(self._main, fg_color=COLORS['bg_dark'])
         status_bar.pack(fill="x", padx=5, pady=(0, 4))
         self._status_label = ctk.CTkLabel(
             status_bar,
@@ -59,7 +59,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         )
         self._status_label.pack(pady=4, padx=10, fill="x")
 
-        scroll_container = ctk.CTkFrame(self.main, fg_color=COLORS['bg_medium'])
+        scroll_container = ctk.CTkFrame(self._main, fg_color=COLORS['bg_medium'])
         scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
 
         max_height = DSI_HEIGHT - 220
@@ -91,7 +91,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         )
         self._content_frame = self._device_frame
 
-        bottom = ctk.CTkFrame(self.main, fg_color=COLORS['bg_medium'])
+        bottom = ctk.CTkFrame(self._main, fg_color=COLORS['bg_medium'])
         bottom.pack(fill="x", pady=8, padx=10)
 
         make_futuristic_button(
@@ -113,7 +113,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         self._fetch_and_render()
 
     def _fetch_and_render(self):
-        if not self.hb._running:
+        if not self._hb.is_running():
             StyleManager.show_service_stopped_banner(self._device_frame, "Homebridge Monitor")
             self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
             return
@@ -125,7 +125,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         self._set_status("Actualizando...")
 
         def fetch():
-            accessories = self.hb.get_accessories()
+            accessories = self._hb.get_accessories()
             if self.winfo_exists():
                 self.after(0, lambda: self._render(accessories))
 
@@ -135,8 +135,8 @@ class HomebridgeWindow(ctk.CTkToplevel):
         self._accessories = accessories
         self._busy = False
 
-        if self.hb.is_reachable():
-            on_count      = sum(1 for a in accessories if a["on"])
+        if self._hb.is_reachable():
+            on_count      = sum(1 for a in accessories if a.get('on', False))
             total         = len(accessories)
             header_status = f"{on_count}/{total} encendidos"
             self._set_status(
@@ -158,7 +158,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
         if not accessories:
             msg = (
                 "Sin conexión con Homebridge"
-                if not self.hb.is_reachable()
+                if not self._hb.is_reachable()
                 else "No se encontraron enchufes ni interruptores"
             )
             ctk.CTkLabel(
@@ -273,7 +273,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
             _temp[0] = round(_temp[0] + delta, 1)
             target_var.set(f"{_temp[0]:.1f}°C")
             threading.Thread(
-                target=lambda: self.hb.set_target_temp(uid, _temp[0]),
+                target=lambda: self._hb.set_target_temp(uid, _temp[0]),
                 daemon=True, name="HB-SetTemp"
             ).start()
 
@@ -342,7 +342,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
 
     def _toggle(self, unique_id: str, turn_on: bool):
         """Envía el comando ON/OFF en background."""
-        if not self.hb._running:
+        if not self._hb.is_running():
             StyleManager.show_service_stopped_banner(self._device_frame, "Homebridge Monitor")
             self._update_job = self.after(HB_UPDATE_MS, self._fetch_and_render)
             return
@@ -351,7 +351,7 @@ class HomebridgeWindow(ctk.CTkToplevel):
             return
 
         def send():
-            ok = self.hb.toggle(unique_id, turn_on)
+            ok = self._hb.toggle(unique_id, turn_on)
             if not self.winfo_exists():
                 return
             if ok:

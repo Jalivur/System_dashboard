@@ -109,7 +109,7 @@ class I2CWindow(ctk.CTkToplevel):
     def _update(self) -> None:
         if not self.winfo_exists():
             return
-        if not self._mon._running:
+        if not self._mon.is_running():
             StyleManager.show_service_stopped_banner(self._inner, "I2C Monitor" )
             self._scan_btn.configure(state="disabled")
             return

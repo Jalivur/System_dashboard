@@ -107,6 +107,9 @@ class AlertService:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         logger.info("[AlertService] Servicio detenido")
+    
+    def is_running(self) -> bool:
+        return self._running
 
     # ── Bucle principal ───────────────────────────────────────────────────────
 

@@ -33,6 +33,10 @@ class UpdateMonitor:
         with self._lock:
             self._cached_result = {"pending": 0, "status": "Unknown", "message": "Servicio parado"}
         logger.info("[UpdateMonitor] Detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

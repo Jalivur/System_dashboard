@@ -55,6 +55,10 @@ class HardwareMonitor:
             self._thread.join(timeout=5)
         self._cache = {}
         logger.info("[HardwareMonitor] Detenido")
+        
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── Bucle ─────────────────────────────────────────────────────────────────
 

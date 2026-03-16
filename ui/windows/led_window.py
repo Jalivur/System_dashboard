@@ -17,7 +17,7 @@ class LedWindow(ctk.CTkToplevel):
 
     def __init__(self, parent, led_service):
         super().__init__(parent)
-        self.led_service = led_service
+        self._led_service = led_service
 
         self.title("Control LEDs")
         self.configure(fg_color=COLORS['bg_medium'])
@@ -189,7 +189,7 @@ class LedWindow(ctk.CTkToplevel):
         if not self.winfo_exists():
             return
 
-        if not self.led_service._running:
+        if not self._led_service.is_running():
             # Mostrar banner si no estaba ya
             if not self._banner_shown:
                 for w in self._inner.winfo_children():
@@ -210,7 +210,7 @@ class LedWindow(ctk.CTkToplevel):
 
     def _set_mode(self, mode: str):
         r, g, b = self._r.get(), self._g.get(), self._b.get()
-        self.led_service.set_mode(mode, r, g, b)
+        self._led_service.set_mode(mode, r, g, b)
         self._mode_var.set(mode)
         self._highlight_mode_btn(mode)
         self._update_status()
@@ -224,7 +224,7 @@ class LedWindow(ctk.CTkToplevel):
         if mode in ("auto", "rainbow", "off"):
             mode = "static"
             self._mode_var.set(mode)
-        self.led_service.set_mode(mode, r, g, b)
+        self._led_service.set_mode(mode, r, g, b)
         self._highlight_mode_btn(mode)
         self._update_status()
 
@@ -260,7 +260,7 @@ class LedWindow(ctk.CTkToplevel):
     def _update_status(self):
         if not hasattr(self, "_status_label"):
             return
-        state = self.led_service.get_state()
+        state = self._led_service.get_state()
         mode  = state.get("mode", "auto")
         label = LED_MODE_LABELS.get(mode, mode)
         r, g, b = state.get("r", 0), state.get("g", 255), state.get("b", 0)
@@ -272,7 +272,7 @@ class LedWindow(ctk.CTkToplevel):
             )
 
     def _load_current_state(self):
-        state = self.led_service.get_state()
+        state = self._led_service.get_state()
         mode  = state.get("mode", "auto")
         self._mode_var.set(mode)
         self._r.set(state.get("r", 0))

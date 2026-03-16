@@ -52,7 +52,17 @@ class ProcessMonitor:
         with self._lock:
             self._cached_processes = []
         logger.info("[ProcessMonitor] Sondeo detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
+    def toggle_sort(self, column: str) -> None:
+        if self.sort_by == column:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.set_sort(column, reverse=True)
+            
     def _poll_loop(self) -> None:
         self._do_poll()
         while self._running:

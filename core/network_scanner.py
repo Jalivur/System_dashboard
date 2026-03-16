@@ -53,6 +53,10 @@ class NetworkScanner:
             self._status  = "idle"
             self._error   = ""
         logger.info("[NetworkScanner] Detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
     # ── API pública ───────────────────────────────────────────────────────────
 

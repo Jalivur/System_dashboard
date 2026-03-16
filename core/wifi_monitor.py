@@ -125,7 +125,7 @@ class WiFiMonitor:
         self._tx_mbps: float = 0.0
 
         # Históricos
-        self.signal_hist = deque(maxlen=HISTORY)
+        self._signal_hist = deque(maxlen=HISTORY)
         self._rx_hist     = deque(maxlen=HISTORY)
         self._tx_hist     = deque(maxlen=HISTORY)
 
@@ -152,7 +152,14 @@ class WiFiMonitor:
         with self._lock:
             self._info={}
         logger.info("[WiFiMonitor] Servicio detenido")
+    
+    def is_running(self) -> bool:
+        """Verifica si el servicio está corriendo."""
+        return self._running
 
+    def get_signal_history(self) -> list:
+        with self._lock:
+            return list(self._signal_hist)
     # ── Loop interno ──────────────────────────────────────────────────────────
 
     def _loop(self):
@@ -192,15 +199,13 @@ class WiFiMonitor:
                 self._last_update = ts
 
                 if iw_data["signal_dbm"] is not None:
-                    self.signal_hist.append(iw_data["signal_dbm"])
+                    self._signal_hist.append(iw_data["signal_dbm"])
                 self._rx_hist.append(rx_mbps)
                 self._tx_hist.append(tx_mbps)
 
-            """logger.debug(
-                f"[WiFiMonitor] Poll: ssid={iw_data['ssid']} "
-                f"signal={iw_data['signal_dbm']}dBm "
-                f"rx={rx_mbps:.3f} tx={tx_mbps:.3f} MB/s"
-            )"""
+            logger.debug(
+                "[WiFiMonitor] Poll: ssid=%s signal=%s dBm rx=%.2f tx=%.2f Mb/s", iw_data['ssid'],iw_data['signal_dbm'], rx_mbps, tx_mbps
+            )
 
         except Exception as e:
             logger.error("[WiFiMonitor] Error en poll: %s", e)
@@ -255,7 +260,7 @@ class WiFiMonitor:
                 "info":        dict(self._info),
                 "rx_mbps":     self._rx_mbps,
                 "tx_mbps":     self._tx_mbps,
-                "signal_hist": list(self.signal_hist),
+                "signal_hist": list(self._signal_hist),
                 "rx_hist":     list(self._rx_hist),
                 "tx_hist":     list(self._tx_hist),
                 "last_update": self._last_update,
@@ -263,6 +268,7 @@ class WiFiMonitor:
         finally:
             self._lock.release()
 
+    
     @property
     def interface(self) -> str:
         return self._iface
