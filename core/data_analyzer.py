@@ -171,6 +171,7 @@ class DataAnalyzer:
                         AVG(disk_write_mb), MAX(disk_write_mb), MIN(disk_write_mb),
                         AVG(fan_pwm), MAX(fan_pwm), MIN(fan_pwm),
                         MAX(updates_available), MIN(updates_available), AVG(updates_available),
+                        MAX(uptime_s), MIN(uptime_s), AVG(uptime_s),
                         COUNT(*)
                     FROM metrics
                     WHERE timestamp >= ? AND timestamp <= ?
@@ -178,8 +179,8 @@ class DataAnalyzer:
 
                 row = cursor.fetchone()
                 
-            if row and row[27]:
-                logger.debug("[DataAnalyzer] _get_stats_between: %s muestras", row[27])
+            if row and row[30]:
+                logger.debug("[DataAnalyzer] _get_stats_between: %s muestras", row[30])
                 return {
                     'cpu_avg':   round(row[0],  1) if row[0]  else 0,
                     'cpu_max':   round(row[1],  1) if row[1]  else 0,
@@ -208,7 +209,10 @@ class DataAnalyzer:
                     'updates_available_max': row[24] if row[24] else 0,
                     'updates_available_min': row[25] if row[25] else 0,
                     'updates_available_avg': row[26] if row[26] else 0,
-                    'total_samples': row[27],
+                    'uptime_max': self._format_uptime(row[27]) if row[27] else 0,
+                    'uptime_min': self._format_uptime(row[28]) if row[28] else 0,
+                    'uptime_avg': self._format_uptime(row[29]) if row[29] else 0,
+                    'total_samples': row[30],
                 }
 
             logger.debug("[DataAnalyzer] _get_stats_between: sin datos en el rango")
@@ -249,3 +253,16 @@ class DataAnalyzer:
             logger.error("[DataAnalyzer] _write_csv: error escribiendo %s: %s", output_path, e)
         except Exception as e:
             logger.error("[DataAnalyzer] _write_csv: error inesperado: %s", e)
+            
+    def _format_uptime(self, seconds: float) -> str:
+        """Convierte segundos brutos (float/int) a formato D:HH:MM."""
+        if seconds is None: 
+            return "0:00:00"
+        
+        segundos_totales = int(seconds) # <--- Importante para el AVG
+        dias = segundos_totales // 86400
+        horas = (segundos_totales % 86400) // 3600
+        minutos = (segundos_totales % 3600) // 60
+        
+        return f"{dias}d:{horas:02d}h:{minutos:02d}m"
+
