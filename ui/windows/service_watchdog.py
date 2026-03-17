@@ -26,8 +26,10 @@ class ServiceWatchdogWindow(ctk.CTkToplevel):
         self._critical_list_label = None
         self._update_paused = False
         self._update_job = None
-        self._umbral_var = ctk.IntVar(value=watchdog._threshold)
-        self._interval_var = ctk.IntVar(value=watchdog._interval)
+        self._umbral_debounce_id = None
+        self._interval_debounce_id = None
+        self._umbral_var = ctk.StringVar(value=str(watchdog._threshold))
+        self._interval_var = ctk.StringVar(value=str(watchdog._interval))
 
         self.title("Service Watchdog")
         self.configure(fg_color=COLORS['bg_medium'])
@@ -66,18 +68,18 @@ class ServiceWatchdogWindow(ctk.CTkToplevel):
         # Umbral
         ctk.CTkLabel(config_frame, text="Umbral:", font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), 
                     text_color=COLORS['text']).pack(side="left", padx=(10,5), pady=8)
-        self._umbral_slider = ctk.CTkSlider(config_frame, from_=1, to=10, width=50, height=25,
-                                          command=self._on_umbral_change)
-        self._umbral_slider.pack(side="left", padx=5, pady=8)
+        self._umbral_entry = ctk.CTkEntry(config_frame, textvariable=self._umbral_var, width=50, height=25, justify="center")
+        self._umbral_entry.pack(side="left", padx=5, pady=8)
+        self._umbral_entry.bind("<KeyRelease>", lambda e: self._debounce_umbral_update())
         self._umbral_val = ctk.CTkLabel(config_frame, text="3", width=40, font=(FONT_FAMILY, 16, "bold"))
         self._umbral_val.pack(side="left", padx=5, pady=8)
 
         # Intervalo
         ctk.CTkLabel(config_frame, text="Intervalo(s):", font=(FONT_FAMILY, FONT_SIZES['small'], "bold"), 
                     text_color=COLORS['text']).pack(side="left", padx=(20,5), pady=8)
-        self._interval_slider = ctk.CTkSlider(config_frame, from_=30, to=300, width=70, height=25,
-                                            command=self._on_interval_change)
-        self._interval_slider.pack(side="left", padx=5, pady=8)
+        self._interval_entry = ctk.CTkEntry(config_frame, textvariable=self._interval_var, width=70, height=25, justify="center")
+        self._interval_entry.pack(side="left", padx=5, pady=8)
+        self._interval_entry.bind("<KeyRelease>", lambda e: self._debounce_interval_update())
         self._interval_val = ctk.CTkLabel(config_frame, text="60", width=50, font=(FONT_FAMILY, 16, "bold"))
         self._interval_val.pack(side="left", padx=5, pady=8)
 
@@ -146,18 +148,43 @@ class ServiceWatchdogWindow(ctk.CTkToplevel):
         ctk.CTkLabel(headers, text="Fallos", font=(FONT_FAMILY, FONT_SIZES['small'], "bold")).grid(row=0, column=2, sticky="w", padx=5)
         ctk.CTkLabel(headers, text="Actions", font=(FONT_FAMILY, FONT_SIZES['small'], "bold")).grid(row=0, column=3, sticky="w", padx=5)
 
+    def _debounce_umbral_update(self):
+        if self._umbral_debounce_id:
+            self.after_cancel(self._umbral_debounce_id)
+        self._umbral_debounce_id = self.after(400, lambda: self._on_umbral_change(self._umbral_var.get()))
+
     def _on_umbral_change(self, val):
-        self._umbral_val.configure(text=str(int(val)))
+        try:
+            v = int(val)
+            v = max(1, min(10, v))
+            self._umbral_var.set(str(v))
+            self._umbral_val.configure(text=str(v))
+        except ValueError:
+            pass
+
+    def _debounce_interval_update(self):
+        if self._interval_debounce_id:
+            self.after_cancel(self._interval_debounce_id)
+        self._interval_debounce_id = self.after(400, lambda: self._on_interval_change(self._interval_var.get()))
 
     def _on_interval_change(self, val):
-        self._interval_val.configure(text=str(int(val)))
+        try:
+            v = int(val)
+            v = max(30, min(300, v))
+            self._interval_var.set(str(v))
+            self._interval_val.configure(text=str(v))
+        except ValueError:
+            pass
 
     def _apply_config(self):
-        threshold = int(self._umbral_slider.get())
-        interval = int(self._interval_slider.get())
-        self._watchdog.set_threshold(threshold)
-        self._watchdog.set_interval(interval)
-        custom_msgbox(self, f"Umbral: {threshold} | Intervalo: {interval}s")
+        try:
+            threshold = max(1, min(10, int(self._umbral_var.get())))
+            interval = max(30, min(300, int(self._interval_var.get())))
+            self._watchdog.set_threshold(threshold)
+            self._watchdog.set_interval(interval)
+            custom_msgbox(self, f"Umbral: {threshold} | Intervalo: {interval}s")
+        except ValueError:
+            custom_msgbox(self, "Valores inválidos. Usa enteros (Umbral:1-10, Intervalo:30-300)")
 
     def _debounced_search(self):
         if hasattr(self, '_search_id'):
