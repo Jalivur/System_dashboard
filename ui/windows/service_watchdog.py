@@ -22,14 +22,15 @@ class ServiceWatchdogWindow(ctk.CTkToplevel):
 
         self._search_var = ctk.StringVar(master=self)
         self._filter_var = ctk.StringVar(master=self, value="critical")
-        self._critical_entry = ctk.StringVar()
+        self._critical_entry = ctk.StringVar(master=self)
         self._critical_list_label = None
         self._update_paused = False
         self._update_job = None
         self._umbral_debounce_id = None
         self._interval_debounce_id = None
-        self._umbral_var = ctk.StringVar(value=str(watchdog._threshold))
-        self._interval_var = ctk.StringVar(value=str(watchdog._interval))
+        _stats = watchdog.get_stats()
+        self._umbral_var = ctk.StringVar(master=self, value=str(_stats['threshold']))
+        self._interval_var = ctk.StringVar(master=self, value=str(_stats['interval']))
 
         self.title("Service Watchdog")
         self.configure(fg_color=COLORS['bg_medium'])
@@ -254,26 +255,30 @@ class ServiceWatchdogWindow(ctk.CTkToplevel):
             success, msg = self._service_monitor.restart_service(name)
             custom_msgbox(self, msg)
             self._update_now()
-        confirm_dialog(self, f"Reiniciar {name}?", action)
+        confirm_dialog(
+            self,
+            f"¿Reiniciar {name}?",
+            title=f"{Icons.WARNING} Confirmar",
+            on_confirm=action
+        )
 
     def _show_logs(self, name):
-        logs = self._service_monitor.get_logs(name)
-        # Dialog or console - simplified
-        print(f"LOGS {name}:\n{logs[:500]}")
+        logs = self._service_monitor.get_logs(name, lines=30)
+        custom_msgbox(self, logs[:800] if logs else "Sin logs", title=f"Logs — {name}")
         
     def _add_critical(self):
         name = self._critical_entry.get().strip()
         if not name:
             return custom_msgbox(self, "Nombre vacío")
-        if name in self._watchdog._critical_services:
-            return custom_msgbox(self, f"{name} ya crítico")
-        self._watchdog._critical_services.append(name)
+        if not self._watchdog.add_critical_service(name):
+            return custom_msgbox(self, f"{name} ya es crítico")
         self._update_critical_label()
         self._update_now()
         custom_msgbox(self, f"'{name}' añadido a críticos")
 
     def _save_criticals(self):
-        self._watchdog.set_critical_services(self._watchdog._critical_services)
+        services = self._watchdog.get_stats()['services']
+        self._watchdog.set_critical_services(services)
         custom_msgbox(self, "Lista críticos guardada")
 
     def _update_critical_label(self):

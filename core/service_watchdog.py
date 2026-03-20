@@ -14,6 +14,7 @@ import threading
 import time
 from typing import Dict, List
 from pathlib import Path
+import json
 from utils.logger import get_logger
 from config.settings import SERVICE_WATCHDOG_INTERVAL, SERVICE_WATCHDOG_THRESHOLD
 from config.local_settings_io import get_param, update_params
@@ -37,6 +38,7 @@ class ServiceWatchdog:
         self._restart_counts: Dict[str, int] = {}  # Today restarts per service
         self._consec_failed: Dict[str, int] = {}   # Consec failed checks
         DATA_DIR.mkdir(exist_ok=True)
+        self._load_state()
 
     def start(self):
         if self._running:
@@ -71,6 +73,13 @@ class ServiceWatchdog:
     def set_interval(self, interval: int):
         self._interval = interval
         update_params({'watchdog_interval': interval})
+    
+    def add_critical_service(self, name: str) -> bool:
+        """Añade un servicio a la lista de críticos. Devuelve False si ya existe."""
+        if name in self._critical_services:
+            return False
+        self._critical_services.append(name)
+        return True
 
     def get_stats(self) -> Dict:
         return {
@@ -117,10 +126,15 @@ class ServiceWatchdog:
             'restart_counts': self._restart_counts,
             'last_reset': time.strftime('%Y-%m-%d')
         }
-        WD_STATE_FILE.write_text(str(state))  # Simple JSON-like for now
+        WD_STATE_FILE.write_text(json.dumps(state))
 
     def _load_state(self):
         if WD_STATE_FILE.exists():
-            # Load logic if needed (reset daily)
-            pass
-
+            try:
+                data = json.loads(WD_STATE_FILE.read_text())
+                today = time.strftime('%Y-%m-%d')
+                if data.get('last_reset') == today:
+                    self._restart_counts = data.get('restart_counts', {})
+                # Si es otro día se deja restart_counts vacío — reset automático
+            except Exception:
+                pass
