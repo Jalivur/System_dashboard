@@ -121,6 +121,7 @@ class UpdateLoop:
         self._update_service_badge()
         self._update_system_badges()
         self._update_weather_badge()
+        self._update_watchdog_badge()
         self._badges_after_id = self._root.after(self._update_interval, self._update_badges)
 
     def _update_misc_badges(self) -> None:
@@ -183,6 +184,18 @@ class UpdateLoop:
                 bm.update("weather_rain", 0)
         except Exception as e:
             logger.warning("[UpdateLoop] badge 'weather_rain' error: %s", e)
+    
+    def _update_watchdog_badge(self) -> None:
+        bm = self._badge_mgr
+        try:
+            wd = self._monitors.get("service_watchdog")
+            if wd is None:
+                return
+            restarts = wd.get_stats().get('restarts_today', 0)
+            bm.update("service_watchdog_restarts", restarts,
+                    color=COLORS['danger'] if restarts > 0 else None)
+        except Exception as e:
+            logger.warning("[UpdateLoop] badge 'service_watchdog_restarts' error: %s", e)
 
     def _update_system_badges(self) -> None:
         bm = self._badge_mgr
