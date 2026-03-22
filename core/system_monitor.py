@@ -66,10 +66,18 @@ class SystemMonitor:
         logger.info("[SystemMonitor] Sondeo detenido")
     
     def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo."""
+        """
+        Indica si el monitor está activo.
+
+        Returns:
+            bool: True si el thread de polling está corriendo.
+        """
         return self._running
 
     def _poll_loop(self) -> None:
+        """
+        Bucle principal del thread de sondeo background (daemon=True).
+        """
         self._do_poll()
         while self._running:
             self._stop_evt.wait(timeout=self._interval_s)
@@ -78,6 +86,10 @@ class SystemMonitor:
             self._do_poll()
 
     def _do_poll(self) -> None:
+        """
+        Captura rápida de métricas CPU/RAM/TEMP/UPTIME y actualiza caché.
+        Maneja exceptions silenciosamente.
+        """
         try:
             cpu  = psutil.cpu_percent()
             vm   = psutil.virtual_memory()
@@ -119,11 +131,23 @@ class SystemMonitor:
     get_cached_stats = get_current_stats
 
     def update_history(self, stats: Dict) -> None:
+        """
+        Actualiza deques históricos para gráficos (últimos HISTORY puntos).
+
+        Args:
+            stats (Dict): Métricas actuales CPU/RAM/TEMP.
+        """
         self._cpu_hist.append(stats['cpu'])
         self._ram_hist.append(stats['ram'])
         self._temp_hist.append(stats['temp'])
 
     def get_history(self) -> Dict:
+        """
+        Retorna listas históricas para UI/gráficos.
+
+        Returns:
+            Dict: {'cpu': [...], 'ram': [...], 'temp': [...]}
+        """
         return {
             'cpu':  list(self._cpu_hist),
             'ram':  list(self._ram_hist),
@@ -132,6 +156,17 @@ class SystemMonitor:
 
     @staticmethod
     def level_color(value: float, warn: float, crit: float) -> str:
+        """
+        Determina color semáforo por umbrales (primary/warning/danger).
+
+        Args:
+            value (float): Valor métrica (CPU%, RAM%, TEMP).
+            warn (float): Umbral warning.
+            crit (float): Umbral crítico.
+
+        Returns:
+            str: Clave color de config.COLORS.
+        """
         if value >= crit:
             return COLORS['danger']
         elif value >= warn:

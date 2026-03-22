@@ -51,31 +51,68 @@ class WindowManager:
     ]
 
     def __init__(self, registry, menu_btns: dict):
+        """
+        Inicializa gestor ventanas/botones con registry servicios.
+
+        Args:
+            registry (ServiceRegistry): Central servicios/monitors.
+            menu_btns (dict): Botones pestañas principales.
+        """
         self._registry    = registry
         self._menu_btns   = menu_btns
         self._columns     = 2
         self._rerender_cb = None
 
     def set_rerender_callback(self, cb) -> None:
+        """
+        Establece callback para re-render pestañas al cambiar ui_enabled.
+
+        Args:
+            cb (Callable): Función MainWindow._switch_tab activa.
+        """
         self._rerender_cb = cb
 
     def apply_config(self) -> None:
         self._rerender()
 
     def show(self, key: str) -> None:
+        """
+        Habilita botón/ventana en services.json['ui'][key] = true + re-render.
+
+        Args:
+            key (str): ID ventana (e.g., 'fan_control').
+        """
         self._registry._config["ui"][key] = True
         self._rerender()
         logger.info("[WindowManager] Boton visible: %s", key)
 
     def hide(self, key: str) -> None:
+        """
+        Oculta botón/ventana services.json['ui'][key] = false + re-render.
+
+        Args:
+            key (str): ID ventana (e.g., 'fan_control').
+        """
         self._registry._config["ui"][key] = False
         self._rerender()
         logger.info("[WindowManager] Boton oculto: %s", key)
 
     def is_enabled(self, key: str) -> bool:
+        """
+        Consulta si ventana/botón está habilitado en config UI.
+
+        Args:
+            key (str): ID ventana.
+
+        Returns:
+            bool: services.json['ui'][key].
+        """
         return self._registry.ui_enabled(key)
 
     def _rerender(self) -> None:
+        """
+        Llama callback re-render pestañas (MainWindow._switch_tab).
+        """
         if self._rerender_cb is not None:
             self._rerender_cb()
         else:
