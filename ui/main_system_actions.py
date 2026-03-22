@@ -43,7 +43,6 @@ def exit_application(root, update_loop=None) -> None:
     selection_window.geometry(f"450x280+{x}+{y}")
     selection_window.transient(root)
     selection_window.after(150, selection_window.focus_set)
-    selection_window.grab_set()
 
     main_frame = ctk.CTkFrame(selection_window, fg_color=COLORS['bg_medium'])
     main_frame.pack(fill="both", expand=True, padx=20, pady=5)

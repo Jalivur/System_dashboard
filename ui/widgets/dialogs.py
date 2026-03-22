@@ -81,10 +81,9 @@ def custom_msgbox(parent, text: str, title: str = "Info") -> None:
 
     popup.geometry(f"{w}x{h}+{x}+{y}")
 
+    popup.transient(parent)
     popup.lift()
     popup.after(150, popup.focus_set)
-    popup.grab_set()
-
 
 def confirm_dialog(parent, text: str, title: str = "Confirmar",
                    on_confirm=None, on_cancel=None) -> None:
@@ -175,13 +174,13 @@ def confirm_dialog(parent, text: str, title: str = "Confirmar",
 
     popup.geometry(f"{w}x{h}+{x}+{y}")
 
+    popup.transient(parent)
     popup.lift()
     popup.after(150, popup.focus_set)
-    popup.grab_set()
-
 
 def terminal_dialog(parent, script_path, title="Consola de Sistema", on_close=None):
     popup = ctk.CTkToplevel(parent)
+    popup.transient(parent)
     popup.overrideredirect(True)
     popup.configure(fg_color=COLORS['bg_dark'])
 

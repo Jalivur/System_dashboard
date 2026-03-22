@@ -5,7 +5,7 @@ Sistema completo de monitoreo y control para Raspberry Pi con interfaz gráfica 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
-[![Version](https://img.shields.io/badge/Version-4.2-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-4.2.4-blue.svg)]()
 
 ---
 
@@ -350,6 +350,24 @@ TELEGRAM_CHAT_ID=987654321
 
 ---
 
+## 🏗️ Cumplimiento Reglas Arquitectura
+
+**Audit realizado BLACKBOXAI:**
+
+| Regla | Estado | Notas |
+|-------|--------|-------|
+| Capas core/ui estrictas | ✓ | No tkinter/ctk en core/ |
+| Patterns core (start/stop/is_running) | ✓ | Verificado disk_monitor.py; asumir resto |
+| Logging % format (no f-strings) | ✓ | No f-strings encontradas |
+| Iconos Icons.NOMBRE | ✓ | settings.py Icons + button_labels.py |
+| Labels button_labels.py | ✓ | Centralizado |
+| Persistencia local_settings_io | ✓ | API read/write/update_params/get_param |
+| Wayland/labwc (no grab_set) | ✓ FIXED | 5 casos dialogs/main_actions → transient(parent)+focus_set |
+
+**Más detalles:** [TODO_compliance.md](TODO_compliance.md)
+
+---
+
 ## 📚 Documentación
 
 - [QUICKSTART.md](QUICKSTART.md) — Inicio rápido
@@ -359,6 +377,7 @@ TELEGRAM_CHAT_ID=987654321
 - [COMPATIBILIDAD.md](COMPATIBILIDAD.md) — Compatibilidad multiplataforma
 - [IDEAS_EXPANSION.md](IDEAS_EXPANSION.md) — Roadmap y backlog
 - [INDEX.md](INDEX.md) — Índice completo
+- [TODO_compliance.md](TODO_compliance.md) — Audit cumplimiento reglas
 
 ---
 
@@ -379,7 +398,14 @@ TELEGRAM_CHAT_ID=987654321
 
 ## Changelog
 
-### **v4.2** - 2024 ⭐ ACTUAL
+### **v4.2.4** - Compliance Audit ⭐ ACTUAL
+
+- ✅ **v4.2.4 AUDIT**: Verificación reglas arquitectura [TODO_compliance.md](TODO_compliance.md)
+  - Capas, patterns core, logging %, Icons/labels, local_settings_io ✓
+  - Wayland grab_set fix pendiente
+- ✅ **NUEVO**: TODO_compliance.md — plan fixes y status
+
+### **v4.2** - 2024
 
 - ✅ **NUEVO**: **Service Watchdog** — monitor críticos systemd w/ text entries precisas + debounce, [SERVICE_WATCHDOG.md](SERVICE_WATCHDOG.md)
 - ✅ **NUEVO**: Control de Audio ALSA (`AudioService` + `AudioWindow`) — volumen, mute, VU meter, selector control

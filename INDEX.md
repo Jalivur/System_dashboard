@@ -4,7 +4,7 @@
 
 ## 🚀 Documentos Esenciales
 
-**[README.md](README.md)** ⭐ — Documentación completa v4.1. **Empieza aquí.**
+[**README.md](README.md)** ⭐ — Documentación completa v4.2.4. **Empieza aquí.**
 
 **[QUICKSTART.md](QUICKSTART.md)** ⚡ — Instalación y ejecución en 5 minutos.
 
@@ -74,11 +74,11 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 
 ---
 
-## 🗂️ Estructura de documentos v4.1
+## 🗂️ Estructura de documentos v4.2.4
 
 ```
 📚 Documentación/
-├── README.md                         ⭐ Principal v4.1
+├── README.md                         ⭐ Principal v4.2.4
 ├── QUICKSTART.md                     ⚡ Inicio rápido
 ├── INDEX.md                          📑 Este archivo
 ├── REQUIREMENTS.md                   📋 Requisitos
@@ -86,8 +86,9 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 ├── THEMES_GUIDE.md                   🎨 Temas
 ├── INTEGRATION_GUIDE.md              🤝 Integración fase1
 ├── IDEAS_EXPANSION.md                💡 Roadmap v4.2+
-└── COMPATIBILIDAD.md                 🌐 Compatibilidad
-```
+├── COMPATIBILIDAD.md                 🌐 Compatibilidad
+└── TODO_compliance.md                🏗️ Cumplimiento reglas
+`
 
 ---
 
