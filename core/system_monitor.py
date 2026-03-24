@@ -1,5 +1,7 @@
 """
 Monitor del sistema
+Monitor centralizado de métricas CPU, RAM, temperatura y uptime con histórico para UI.
+Thread background no-bloqueante, thread-safe con lock.
 """
 import time
 import threading
@@ -24,6 +26,12 @@ class SystemMonitor:
     """
 
     def __init__(self):
+        """
+        Inicializa el monitor del sistema.
+
+        Crea SystemUtils, deques históricos maxlen=HISTORY, cache inicial,
+        configura lock y parámetros de polling. Inicia automáticamente el thread.
+        """
         self._system_utils = SystemUtils()
 
         self._cpu_hist  = deque(maxlen=HISTORY)
@@ -44,6 +52,11 @@ class SystemMonitor:
         self.start()
 
     def start(self) -> None:
+        """
+        Inicia el thread de sondeo background (daemon=True).
+
+        Idempotente. Log de inicio con intervalo.
+        """
         if self._running:
             return
         self._running = True
@@ -54,6 +67,11 @@ class SystemMonitor:
         logger.info("[SystemMonitor] Sondeo iniciado (cada %.1fs)", self._interval_s)
 
     def stop(self) -> None:
+        """
+        Detiene el monitor limpiamente.
+
+        Join thread timeout 3s, resetea cache. Log de detención.
+        """
         self._running = False
         self._stop_evt.set()
         if self._thread and self._thread.is_alive():
@@ -121,6 +139,12 @@ class SystemMonitor:
             logger.error("[SystemMonitor] Error en _do_poll: %s", e)
 
     def get_current_stats(self) -> Dict:
+        """
+        Obtiene métricas actuales del cache (thread-safe).
+
+        Returns:
+            Dict: {'cpu': float, 'ram': float, 'ram_used': int, 'temp': float, 'uptime_str': str}
+        """
         if not self._running:
             return {
                 'cpu': 0.0, 'ram': 0.0, 'temp': 0.0, 'uptime_str': '--',
@@ -165,10 +189,11 @@ class SystemMonitor:
             crit (float): Umbral crítico.
 
         Returns:
-            str: Clave color de config.COLORS.
+            str: Clase color de config.COLORS.
         """
         if value >= crit:
             return COLORS['danger']
         elif value >= warn:
             return COLORS['warning']
         return COLORS['primary']
+

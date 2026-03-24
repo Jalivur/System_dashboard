@@ -27,6 +27,30 @@ WD_STATE_FILE = DATA_DIR / "service_watchdog_state.json"
 
 
 class ServiceWatchdog:
+    """
+    Watchdog profesional para monitoreo y auto-reinicio de servicios críticos systemd.
+
+    Características principales:
+    * Verificación periódica del estado 'active' cada INTERVAL segundos (predeterminado: 60s).
+    * Reinicio automático al superar THRESHOLD fallos consecutivos (predeterminado: 3).
+    * Persistencia de contadores de reinicios diarios en data/service_watchdog_state.json.
+    * Configuración dinámica mediante parámetros en local_settings.py:
+      - watchdog_critical_services: Lista de servicios críticos.
+      - watchdog_threshold: Umbral de fallos.
+      - watchdog_interval: Intervalo de polling.
+    * Logging detallado con niveles INFO/WARNING y estadísticas exportables para UI/dashboard.
+    * Ejecución en thread daemon no bloqueante con métodos start/stop limpios (join con timeout 5s).
+    * Manejo robusto de errores: servicios no encontrados, JSON corrupto, etc.
+    * Reset automático de contadores al cambiar de día.
+
+    Uso recomendado:
+        wd = ServiceWatchdog(service_monitor)
+        wd.start()
+        # Opcional: registry.register('service_watchdog', wd)
+
+    Dependencias: ServiceMonitor para operaciones de servicio, utils.logger, config.local_settings_io.
+    Compatible con systemd servicios.
+    """
     def __init__(self, service_monitor: ServiceMonitor):
         """
         Inicializa el ServiceWatchdog.
