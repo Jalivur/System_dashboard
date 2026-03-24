@@ -1,13 +1,10 @@
-# TODO Docstrings Español - BLACKBOXAI
+# TODO: Añadir docstrings faltantes
 
-## Progreso core/develop/
-- [x] fan_auto_service.py (completo)
-- [x] fan_controller.py (completo) 
-- [ ] gpio_monitor.py (23 pendientes - Lote 1)
-- [x] Lote 1: lifecycle (__init__, start, stop...)
+## styles.py (completado)
+✅ Docstrings añadidos a funciones internas
 
-  - [ ] Lote 2: devices
-  - [ ] Lote 3: API pública
-
-Iniciando gpio_monitor.py...
-
+## window_manager.py
+✅ Crear/editar TODO.md (completado)
+✅ Añadir docstrings a WindowManager class y apply_config
+✅ Verificar con read_file
+- [ ] Completar tarea

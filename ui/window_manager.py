@@ -8,6 +8,10 @@ logger = get_logger(__name__)
 
 
 class WindowManager:
+    """
+    Gestor centralizado de visibilidad de ventanas y botones del menú principal.
+    """
+    
     _BTN_MAP = {
         "hardware_info":        BL.HARDWARE_INFO,
         "fan_control":          BL.FAN_CONTROL,
@@ -73,6 +77,9 @@ class WindowManager:
         self._rerender_cb = cb
 
     def apply_config(self) -> None:
+        """
+        Aplica configuración UI y ejecuta re-render.
+        """
         self._rerender()
 
     def show(self, key: str) -> None:
