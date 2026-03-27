@@ -1,2 +1,0 @@
-# Plan de implementación: Añadir docstrings faltantes a homebridge.py (COMPLETADO)\n\n## Completado:\n- [x] 1. Docstrings para _create_ui, _schedule_update, _force_refresh\n- [x] 2. Docstrings para _fetch_and_render, _render\n- [x] 3. Docstrings para _create_device_card, _set_status, _on_close (_card_switch ya tenía)\n- [x] 4. Revisión final y TODO actualizado\n\nTodas las clases y funciones ahora tienen docstrings en español descriptivos. Errores Pylance por formato escapes ignorados (no afectan código).
-
