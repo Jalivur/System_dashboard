@@ -2,9 +2,27 @@
 
 > **Ruta**: `ui/windows/log_viewer.py`
 
+> **Cobertura de documentación**: 🟢 100% (19/19)
+
 Ventana de visualización del log del dashboard.
 Permite filtrar por nivel, módulo, texto libre e intervalo de tiempo
 y exportar el resultado filtrado a un archivo .log
+
+---
+
+## Tabla de contenidos
+
+**Clase [`LogViewerWindow`](#clase-logviewerwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.cleanup_service`
+- `ui.styles`
+- `ui.widgets.dialogs`
+- `utils.logger`
 
 ## Imports
 

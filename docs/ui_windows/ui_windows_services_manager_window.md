@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/services_manager_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (14/14)
+
 Ventana de gestión total de servicios background del Dashboard.
 
 Permite parar y arrancar cada servicio de forma manual y completa.
@@ -15,6 +17,21 @@ que aparezcan en _DEFINITIONS.
 
 El botón "Guardar predeterminado" persiste el estado actual al services.json
 para que en el próximo arranque los servicios parados no se inicien.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServicesManagerWindow`](#clase-servicesmanagerwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

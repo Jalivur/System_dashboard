@@ -2,8 +2,25 @@
 
 > **Ruta**: `ui/windows/alert_history.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 Ventana de historial de alertas disparadas por AlertService.
 Lee data/alert_history.json y muestra las entradas con colores por nivel.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`AlertHistoryWindow`](#clase-alerthistorywindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

@@ -2,9 +2,28 @@
 
 > **Ruta**: `core/hardware_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Monitor de hardware del GPIO Board (Freenove FNK0100K).
 Lee hardware_state.json que escribe fase1.py cada 5s.
 Expone: temperatura del chasis, duty% real de cada fan.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`HardwareMonitor`](#clase-hardwaremonitor)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`is_available()`](#is_availableself-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

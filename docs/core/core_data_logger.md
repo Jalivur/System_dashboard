@@ -2,7 +2,27 @@
 
 > **Ruta**: `core/data_logger.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Sistema de logging de datos históricos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DataLogger`](#clase-datalogger)**
+  - [`log_metrics()`](#log_metricsself-metrics-dict)
+  - [`log_event()`](#log_eventself-event_type-str-severity-str-message-str-data-dict-none)
+  - [`get_metrics_count()`](#get_metrics_countself-int)
+  - [`get_db_size_mb()`](#get_db_size_mbself-float)
+  - [`clean_old_data()`](#clean_old_dataself-days-int-30)
+  - [`check_and_rotate_db()`](#check_and_rotate_dbself-max_mb-float-50)
+
+---
+
+## Dependencias internas
+
+- `utils`
 
 ## Imports
 

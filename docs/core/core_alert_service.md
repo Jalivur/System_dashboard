@@ -2,12 +2,32 @@
 
 > **Ruta**: `core/alert_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (16/16)
+
 Servicio de alertas externas por Telegram.
 Sin dependencias nuevas — usa urllib de la stdlib.
 
 Lógica anti-spam: cada alerta debe mantenerse activa durante
 ALERT_SUSTAIN_S segundos antes de enviarse, y no se repite
 hasta que baje del umbral y vuelva a subir (edge-trigger).
+
+---
+
+## Tabla de contenidos
+
+**Clase [`AlertService`](#clase-alertservice)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_history()`](#get_historyself-list)
+  - [`clear_history()`](#clear_historyself-none)
+  - [`send_test()`](#send_testself-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

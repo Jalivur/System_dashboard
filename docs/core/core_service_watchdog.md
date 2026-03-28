@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/service_watchdog.py`
 
+> **Cobertura de documentación**: 🟢 100% (15/15)
+
 Service Watchdog v4.2 — Auto-restart servicios críticos del sistema (FIXED: maneja inactive).
 
 Monitoriza servicios críticos definidos en local_settings.py.
@@ -12,6 +14,29 @@ Uso:
   wd = ServiceWatchdog(service_monitor)
   wd.start()
   registry.register('service_watchdog', wd)
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServiceWatchdog`](#clase-servicewatchdog)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`set_critical_services()`](#set_critical_servicesself-services-liststr)
+  - [`set_threshold()`](#set_thresholdself-thresh-int)
+  - [`set_interval()`](#set_intervalself-interval-int)
+  - [`add_critical_service()`](#add_critical_serviceself-name-str-bool)
+  - [`get_stats()`](#get_statsself-dict)
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
+- `config.settings`
+- `core.service_monitor`
+- `utils.logger`
 
 ## Imports
 

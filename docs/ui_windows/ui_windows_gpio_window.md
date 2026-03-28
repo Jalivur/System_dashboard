@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/gpio_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (28/28)
+
 Ventana de control y monitorización de pines GPIO.
 
 Modos de operación (toggle en barra superior):
@@ -25,6 +27,25 @@ Arquitectura:
   - Actualizaciones de estado vía .configure() — nunca recrear en el loop.
   - Comandos OUTPUT/PWM lanzados en threads para no bloquear la UI.
   - Toda la lógica de hardware delegada a GPIOMonitor.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`GPIOWindow`](#clase-gpiowindow)**
+  - [`destroy()`](#destroyself)
+
+**Clase [`_GPIOConfigDialog`](#clase-_gpioconfigdialog)**
+  - [`destroy()`](#destroyself-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.gpio_monitor`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

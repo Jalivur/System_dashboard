@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (6/6)
+
 Ventana de monitoreo del sistema
+
+---
+
+## Tabla de contenidos
+
+**Clase [`MonitorWindow`](#clase-monitorwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.system_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

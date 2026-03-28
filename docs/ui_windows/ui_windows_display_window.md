@@ -2,8 +2,25 @@
 
 > **Ruta**: `ui/windows/display_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Ventana de control de brillo de la pantalla.
 Hardware: Freenove FNK0100K — Raspberry Pi 5.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DisplayWindow`](#clase-displaywindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.display_service`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

@@ -2,7 +2,24 @@
 
 > **Ruta**: `ui/windows/pihole_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 Ventana de estadísticas de Pi-hole.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`PiholeWindow`](#clase-piholewindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.pihole_monitor`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

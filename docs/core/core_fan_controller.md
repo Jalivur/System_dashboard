@@ -2,7 +2,30 @@
 
 > **Ruta**: `core/fan_controller.py`
 
+> **Cobertura de documentación**: 🟢 100% (10/10)
+
 Controlador de ventiladores
+
+---
+
+## Tabla de contenidos
+
+**Clase [`FanController`](#clase-fancontroller)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`compute_pwm_from_curve()`](#compute_pwm_from_curveself-temp-float-int)
+  - [`get_pwm_for_mode()`](#get_pwm_for_modeself-mode-str-temp-float-manual_pwm-int-128-int)
+  - [`update_fan_state()`](#update_fan_stateself-mode-str-temp-float-current_target-int-none-manual_pwm-int-128-dict)
+  - [`add_curve_point()`](#add_curve_pointself-temp-int-pwm-int-listdict)
+  - [`remove_curve_point()`](#remove_curve_pointself-temp-int-listdict)
+
+---
+
+## Dependencias internas
+
+- `utils.file_manager`
+- `utils.logger`
 
 ## Imports
 

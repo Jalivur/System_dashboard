@@ -2,7 +2,27 @@
 
 > **Ruta**: `ui/window_manager.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Gestor centralizado de ventanas y botones del menu principal.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WindowManager`](#clase-windowmanager)**
+  - [`set_rerender_callback()`](#set_rerender_callbackself-cb-none)
+  - [`apply_config()`](#apply_configself-none)
+  - [`show()`](#showself-key-str-none)
+  - [`hide()`](#hideself-key-str-none)
+  - [`is_enabled()`](#is_enabledself-key-str-bool)
+
+---
+
+## Dependencias internas
+
+- `config.button_labels`
+- `utils.logger`
 
 ## Imports
 

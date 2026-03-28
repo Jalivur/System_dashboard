@@ -2,7 +2,31 @@
 
 > **Ruta**: `core/cleanup_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (15/15)
+
 Servicio de limpieza automática de archivos exportados y datos antiguos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`CleanupService`](#clase-cleanupservice)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`clean_csv()`](#clean_csvself-max_files-int-none-int)
+  - [`clean_png()`](#clean_pngself-max_files-int-none-int)
+  - [`clean_log_exports()`](#clean_log_exportsself-max_files-int-none-int)
+  - [`clean_db()`](#clean_dbself-days-int-none-bool)
+  - [`get_status()`](#get_statusself-dict)
+  - [`force_cleanup()`](#force_cleanupself-dict)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
 
 ## Imports
 

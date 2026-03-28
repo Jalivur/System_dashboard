@@ -2,7 +2,24 @@
 
 > **Ruta**: `config/settings.py`
 
+> **Cobertura de documentación**: 🟢 100% (2/2)
+
 Configuración centralizada del sistema de monitoreo
+
+---
+
+## Tabla de contenidos
+
+**Clase [`Icons`](#clase-icons)**
+
+**Clase [`UI`](#clase-ui)**
+
+---
+
+## Dependencias internas
+
+- `config.local_settings`
+- `config.themes`
 
 ## Imports
 

@@ -2,7 +2,27 @@
 
 > **Ruta**: `core/data_collection_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Servicio de recolección automática de datos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DataCollectionService`](#clase-datacollectionservice)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`force_collection()`](#force_collectionself)
+
+---
+
+## Dependencias internas
+
+- `core`
+- `utils.file_manager`
+- `utils.logger`
 
 ## Imports
 

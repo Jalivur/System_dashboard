@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/window_lifecycle.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 Gestor del ciclo de vida de las ventanas hijas del dashboard.
 
 Encapsula el patron repetido en MainWindow:
@@ -24,6 +26,22 @@ Uso en MainWindow:
     # Para ButtonManagerWindow (necesita la instancia):
     self._wlm.open("button_manager")
     instance = self._wlm.get("button_manager")
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WindowLifecycleManager`](#clase-windowlifecyclemanager)**
+  - [`register()`](#registerself-key-str-label-str-factory-badge_keys-none-none)
+  - [`open()`](#openself-key-str-none)
+  - [`get()`](#getself-key-str)
+  - [`is_open()`](#is_openself-key-str-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

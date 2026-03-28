@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/weather_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (31/31)
+
 Ventana de Widget de Clima.
 
 Muestra datos meteorológicos actuales y previsión de las próximas 12 horas
@@ -16,6 +18,21 @@ Arquitectura:
   - Scroll vertical para todo el contenido
   - Scroll horizontal para la previsión por horas
   - StringVar siempre con master= explícito
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WeatherWindow`](#clase-weatherwindow)**
+  - [`destroy()`](#destroyself)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

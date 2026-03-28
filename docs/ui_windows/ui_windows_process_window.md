@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/process_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (16/16)
+
 Ventana de monitor de procesos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ProcessWindow`](#clase-processwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.process_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

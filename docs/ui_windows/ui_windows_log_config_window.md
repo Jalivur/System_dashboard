@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/log_config_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (15/15)
+
 Ventana de configuración del sistema de logging en runtime.
 Permite cambiar niveles de fichero y consola, controlar módulos
 individualmente y forzar la rotación del log.
@@ -11,6 +13,21 @@ Diseño ligero para Wayland/labwc:
   - Módulos: tk.Listbox nativo (un solo widget X11) + CTkScrollbar + un CTkOptionMenu compartido
 
 Ubicación: ui/windows/log_config_window.py
+
+---
+
+## Tabla de contenidos
+
+**Clase [`LogConfigWindow`](#clase-logconfigwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets.dialogs`
+- `utils.logger`
 
 ## Imports
 

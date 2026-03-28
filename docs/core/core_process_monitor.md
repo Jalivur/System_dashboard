@@ -2,7 +2,33 @@
 
 > **Ruta**: `core/process_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (17/17)
+
 Monitor de procesos del sistema
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ProcessMonitor`](#clase-processmonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`toggle_sort()`](#toggle_sortself-column-str-none)
+  - [`refresh_now()`](#refresh_nowself-none)
+  - [`get_processes()`](#get_processesself-limit-int-20-listdict)
+  - [`search_processes()`](#search_processesself-query-str-listdict)
+  - [`kill_process()`](#kill_processself-pid-int-tuple)
+  - [`get_system_stats()`](#get_system_statsself-dict)
+  - [`set_sort()`](#set_sortself-column-str-reverse-bool-true)
+  - [`set_filter()`](#set_filterself-filter_type-str)
+  - [`get_process_color()`](#get_process_colorvalue-float-str)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

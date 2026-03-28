@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/theme_selector.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Ventana de selección de temas
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ThemeSelector`](#clase-themeselector)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `config.themes`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

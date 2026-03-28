@@ -2,10 +2,39 @@
 
 > **Ruta**: `utils/logger.py`
 
+> **Cobertura de documentación**: 🟢 100% (18/18)
+
 Sistema de logging robusto para el dashboard
 Funciona correctamente tanto desde terminal como desde auto-start
 
 Ubicación: utils/logger.py
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`get_logger()`](#funcion-get_logger)
+- [`get_dashboard_logger()`](#funcion-get_dashboard_logger)
+- [`log_startup_info()`](#funcion-log_startup_info)
+
+**Clase [`_ExactLevelFilter`](#clase-_exactlevelfilter)**
+  - [`filter()`](#filterself-record-logginglogrecord-bool)
+
+**Clase [`DashboardLogger`](#clase-dashboardlogger)**
+  - [`set_file_level()`](#set_file_levelself-level-int-none)
+  - [`set_console_level()`](#set_console_levelself-level-int-exact-bool-false-none)
+  - [`set_module_level()`](#set_module_levelself-module-str-level-int-none)
+  - [`force_rollover()`](#force_rolloverself-none)
+  - [`get_status()`](#get_statusself-dict)
+  - [`get_active_modules()`](#get_active_modulesself-list)
+  - [`get_logger()`](#get_loggerself-name-str-logginglogger)
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
 
 ## Imports
 

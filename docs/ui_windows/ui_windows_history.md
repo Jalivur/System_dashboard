@@ -2,7 +2,27 @@
 
 > **Ruta**: `ui/windows/history.py`
 
+> **Cobertura de documentación**: 🟢 100% (24/24)
+
 Ventana de histórico de datos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`HistoryWindow`](#clase-historywindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.cleanup_service`
+- `core.data_analyzer`
+- `core.data_logger`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

@@ -12,7 +12,18 @@ logger = get_logger(__name__)
  
  
 class DataCollectionService:
-    """Servicio que recolecta métricas cada X minutos"""
+    """Servicio que recolecta métricas cada X minutos.
+    Args:
+        system_monitor: Fuente de métricas del sistema.
+        fan_controller: Controlador de ventiladores.
+        network_monitor: Monitor de red.
+        disk_monitor: Monitor de disco.
+        update_monitor: Monitor de actualizaciones.
+        interval_minutes (int): Minutos entre recolecciones (default 5).
+    Returns:
+        None
+    Raises:
+        None"""
  
     _instance = None
     _lock = threading.Lock()
@@ -20,6 +31,11 @@ class DataCollectionService:
     def __new__(cls, *args, **kwargs):
         """
         Implementa patrón singleton thread-safe.
+        Args:
+            *args: Argumentos posicionales.
+            **kwargs: Argumentos clave-valor.
+        Returns:
+            La instancia única de la clase.
         """
         if not cls._instance:
             with cls._lock:
@@ -31,8 +47,7 @@ class DataCollectionService:
     def __init__(self, system_monitor, fan_controller, network_monitor,
                  disk_monitor, update_monitor, interval_minutes: int = 5):
         """
-        Inicializa singleton DataCollectionService.
-
+        Inicializa el servicio de recolección de datos con fuentes métricas y un intervalo de actualización.
         Args:
             system_monitor, fan_controller, network_monitor, disk_monitor, update_monitor: Fuentes métricas.
             interval_minutes (int): Minutos entre recolecciones (default 5).
@@ -58,7 +73,10 @@ class DataCollectionService:
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
  
     def start(self):
-        """Inicia el servicio de recolección"""
+        """Inicia el servicio de recolección de datos en segundo plano.
+        Args: None
+        Returns: None
+        Raises: None"""
         if self._running:
             logger.info("[DataCollection] Servicio ya está corriendo")
             return
@@ -71,7 +89,13 @@ class DataCollectionService:
         logger.info("[DataCollection] Servicio iniciado (cada %d min)", self._interval_minutes)
  
     def stop(self):
-        """Detiene el servicio limpiamente."""
+        """Detiene el servicio limpiamente. 
+        Args: 
+            None
+        Returns: 
+            None
+        Raises: 
+            None"""
         if not self._running:
             return
         self._running = False
@@ -81,13 +105,25 @@ class DataCollectionService:
         logger.info("[DataCollection] Servicio detenido")
  
     def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo"""
+        """Verifica si el servicio está corriendo. 
+        Args: 
+            None
+        Returns: 
+            bool: True si el servicio está corriendo, False de lo contrario.
+        Raises: 
+            None"""
         return self._running
  
     # ── Bucle principal ───────────────────────────────────────────────────────
  
     def _collection_loop(self):
-        """Bucle principal de recolección"""
+        """Ejecuta el bucle principal de recolección de datos.
+        Args:
+            None
+        Returns:
+            None
+        Raises:
+            Exception: Si ocurre un error durante la recolección de datos"""
         self._collect_and_save()
         while not self._stop_evt.wait(timeout=self._interval_minutes * 60):
             try:
@@ -96,7 +132,10 @@ class DataCollectionService:
                 logger.error("[DataCollection] Error en recolección: %s", e)
  
     def _collect_and_save(self):
-        """Recolecta métricas y las guarda"""
+        """Recolecta y guarda métricas del sistema, red, disco y ventilador.
+        Args: None
+        Returns: None
+        Raises: None"""
         system_stats  = self._system_monitor.get_current_stats()
         network_stats = self._network_monitor.get_current_stats()
         disk_stats    = self._disk_monitor.get_current_stats()
@@ -141,5 +180,11 @@ class DataCollectionService:
         )
  
     def force_collection(self):
-        """Fuerza una recolección inmediata"""
+        """Fuerza una recolección inmediata de datos. 
+        Args: 
+            No requiere parámetros adicionales.
+        Returns: 
+            No devuelve valor.
+        Raises: 
+            No lanza excepciones explícitas."""
         self._collect_and_save()

@@ -2,8 +2,26 @@
 
 > **Ruta**: `ui/windows/homebridge.py`
 
+> **Cobertura de documentación**: 🟢 100% (19/19)
+
 Ventana de control de dispositivos Homebridge
 Muestra enchufes e interruptores y permite encenderlos / apagarlos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`HomebridgeWindow`](#clase-homebridgewindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.homebridge_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

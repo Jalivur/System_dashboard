@@ -2,10 +2,26 @@
 
 > **Ruta**: `ui/windows/ssh_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (14/14)
+
 Ventana de monitor de sesiones SSH.
 Muestra sesiones activas (who) e historial de conexiones (last).
 Se refresca automáticamente cada 30 segundos via SSHMonitor.
 Los widgets se crean una sola vez — solo se actualizan los valores.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`SSHWindow`](#clase-sshwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

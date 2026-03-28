@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/weather_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (22/22)
+
 Servicio de datos meteorológicos via Open-Meteo (gratuito, sin clave API).
 
 Flujo:
@@ -19,6 +21,31 @@ Favoritos:
 Arquitectura:
   - core/ — cero imports tkinter/ctk
   - get_stats() acquire(blocking=False) — nunca bloquea
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WeatherService`](#clase-weatherservice)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`set_city()`](#set_cityself-city-str-dict)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`get_city()`](#get_cityself-str)
+  - [`fetch_now()`](#fetch_nowself-none)
+  - [`get_favorites()`](#get_favoritesself-liststr)
+  - [`get_max_favorites()`](#get_max_favoritesself-int)
+  - [`add_favorite()`](#add_favoriteself-city-str-dict)
+  - [`remove_favorite()`](#remove_favoriteself-city-str-none)
+  - [`set_max_favorites()`](#set_max_favoritesself-n-int-none)
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
+- `utils.logger`
 
 ## Imports
 

@@ -2,7 +2,29 @@
 
 > **Ruta**: `ui/widgets/graphs.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Widgets para gráficas y visualización
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`update_graph_lines()`](#funcion-update_graph_lines)
+- [`recolor_lines()`](#funcion-recolor_lines)
+
+**Clase [`GraphWidget`](#clase-graphwidget)**
+  - [`update()`](#updateself-data-listfloat-max_val-float-color-str-00ffff-none)
+  - [`recolor()`](#recolorself-color-str-none)
+  - [`pack()`](#packself-kwargs)
+  - [`grid()`](#gridself-kwargs)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
 
 ## Imports
 

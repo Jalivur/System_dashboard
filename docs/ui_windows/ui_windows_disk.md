@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/disk.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Ventana de monitoreo de disco
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DiskWindow`](#clase-diskwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.disk_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

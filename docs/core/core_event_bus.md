@@ -2,10 +2,32 @@
 
 > **Ruta**: `core/event_bus.py`
 
+> **Cobertura de documentación**: 🟢 100% (10/10)
+
 Sistema central de Event Bus thread-safe para comunicación between servicios y UI.
 
 Previene acceso directo a Tkinter desde threads secundarios.
 Los servicios publican eventos, la UI se suscribe y actualiza widgets en el thread principal.
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`get_event_bus()`](#funcion-get_event_bus)
+
+**Clase [`EventBus`](#clase-eventbus)**
+  - [`subscribe()`](#subscribeself-event_name-str-callback-callable-none)
+  - [`unsubscribe()`](#unsubscribeself-event_name-str-callback-callable-none)
+  - [`publish()`](#publishself-event_name-str-data-any-none-none)
+  - [`process_events()`](#process_eventsself-none)
+  - [`clear()`](#clearself-none)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

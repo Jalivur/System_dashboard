@@ -2,7 +2,27 @@
 
 > **Ruta**: `ui/windows/fan_control.py`
 
+> **Cobertura de documentación**: 🟢 100% (17/17)
+
 Ventana de control de ventiladores
+
+---
+
+## Tabla de contenidos
+
+**Clase [`FanControlWindow`](#clase-fancontrolwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.fan_controller`
+- `core.system_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.file_manager`
+- `utils.logger`
 
 ## Imports
 

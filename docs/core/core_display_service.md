@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/display_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (25/25)
+
 Servicio de control de brillo de la pantalla.
 Detecta automáticamente el método disponible:
   - 'sysfs'     : /sys/class/backlight/ (driver kernel estándar)
@@ -10,6 +12,30 @@ Detecta automáticamente el método disponible:
   - 'none'      : no disponible (ventana muestra aviso)
 
 Hardware: Freenove FNK0100K (4.3" IPS DSI) — Raspberry Pi 5.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DisplayService`](#clase-displayservice)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`is_available()`](#is_availableself-bool)
+  - [`get_method()`](#get_methodself-str)
+  - [`get_brightness()`](#get_brightnessself-int)
+  - [`set_brightness()`](#set_brightnessself-pct-int-bool)
+  - [`screen_off()`](#screen_offself-bool)
+  - [`screen_on()`](#screen_onself-bool)
+  - [`notify_activity()`](#notify_activityself)
+  - [`enable_dim_on_idle()`](#enable_dim_on_idleself)
+  - [`disable_dim_on_idle()`](#disable_dim_on_idleself)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

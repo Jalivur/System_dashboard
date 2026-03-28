@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/main_badges.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 Gestor de badges del menu principal.
 
 Los badges son indicadores visuales circulares superpuestos sobre los botones
@@ -13,6 +15,22 @@ Uso en MainWindow:
     self._badge_mgr.create(btn, key="updates", offset_index=0)
     self._badge_mgr.update("updates", value=3)
     self._badge_mgr.update_temp("temp_fan", temp=72, color="#ff4444")
+
+---
+
+## Tabla de contenidos
+
+**Clase [`BadgeManager`](#clase-badgemanager)**
+  - [`create()`](#createself-btn-key-str-offset_index-int-0-none)
+  - [`update()`](#updateself-key-str-value-int-color-str-none-none)
+  - [`update_temp()`](#update_tempself-key-str-temp-int-color-str-none)
+  - [`hide()`](#hideself-key-str-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
 
 ## Imports
 

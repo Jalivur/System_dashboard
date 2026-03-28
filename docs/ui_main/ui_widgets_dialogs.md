@@ -2,7 +2,26 @@
 
 > **Ruta**: `ui/widgets/dialogs.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Diálogos y ventanas modales personalizadas
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`custom_msgbox()`](#funcion-custom_msgbox)
+- [`confirm_dialog()`](#funcion-confirm_dialog)
+- [`terminal_dialog()`](#funcion-terminal_dialog)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.event_bus`
+- `ui.styles`
 
 ## Imports
 

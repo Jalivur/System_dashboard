@@ -2,7 +2,26 @@
 
 > **Ruta**: `utils/file_manager.py`
 
+> **Cobertura de documentación**: 🟢 100% (5/5)
+
 Gestión de archivos JSON para estado y configuración
+
+---
+
+## Tabla de contenidos
+
+**Clase [`FileManager`](#clase-filemanager)**
+  - [`write_state()`](#write_statedata-dictstr-any-none)
+  - [`load_state()`](#load_state-dictstr-any)
+  - [`load_curve()`](#load_curve-listdictstr-int)
+  - [`save_curve()`](#save_curvepoints-listdictstr-int-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
 
 ## Imports
 

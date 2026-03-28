@@ -2,6 +2,8 @@
 
 > **Ruta**: `config/local_settings_io.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 config/local_settings_io.py
 
 Lectura y escritura de config/local_settings.py de forma segura y sin
@@ -14,6 +16,21 @@ Formato del fichero:
 Cualquier módulo que necesite leer o escribir local_settings.py debe
 importar este módulo y usar read() / write_params() / write_icons().
 Nunca escribir directamente el fichero desde fuera de este módulo.
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`read()`](#funcion-read)
+- [`write()`](#funcion-write)
+- [`update_params()`](#funcion-update_params)
+- [`write_params()`](#funcion-write_params)
+- [`write_icons()`](#funcion-write_icons)
+- [`update_icons()`](#funcion-update_icons)
+- [`get_param()`](#funcion-get_param)
+
+---
 
 ## Imports
 

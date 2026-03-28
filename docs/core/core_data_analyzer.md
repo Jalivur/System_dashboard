@@ -2,7 +2,31 @@
 
 > **Ruta**: `core/data_analyzer.py`
 
+> **Cobertura de documentación**: 🟢 100% (16/16)
+
 Análisis de datos históricos
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DataAnalyzer`](#clase-dataanalyzer)**
+  - [`get_data_range()`](#get_data_rangeself-hours-int-24-listdict)
+  - [`get_stats()`](#get_statsself-hours-int-24-dict)
+  - [`get_graph_data()`](#get_graph_dataself-metric-str-hours-int-24-tuplelist-list)
+  - [`export_to_csv()`](#export_to_csvself-output_path-str-hours-int-24)
+  - [`get_data_range_between()`](#get_data_range_betweenself-start-datetime-end-datetime-listdict)
+  - [`get_stats_between()`](#get_stats_betweenself-start-datetime-end-datetime-dict)
+  - [`get_graph_data_between()`](#get_graph_data_betweenself-metric-str-start-datetime-end-datetime-tuplelist-list)
+  - [`export_to_csv_between()`](#export_to_csv_betweenself-output_path-str-start-datetime-end-datetime)
+  - [`detect_anomalies()`](#detect_anomaliesself-hours-int-24-listdict)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
 
 ## Imports
 

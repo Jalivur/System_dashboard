@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/service.py`
 
+> **Cobertura de documentación**: 🟢 100% (25/25)
+
 Ventana de monitor de servicios systemd
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServiceWindow`](#clase-servicewindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.service_monitor`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

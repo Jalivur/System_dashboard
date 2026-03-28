@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/main_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Ventana principal del sistema de monitoreo.
 
 Responsabilidades de este fichero:
@@ -15,6 +17,28 @@ Todo lo demas vive en modulos especializados:
   ui/main_system_actions.py — exit_application, restart_application
   ui/window_lifecycle.py    — WindowLifecycleManager
   ui/window_manager.py      — WindowManager (visibilidad JSON)
+
+---
+
+## Tabla de contenidos
+
+**Clase [`MainWindow`](#clase-mainwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.button_labels`
+- `config.settings`
+- `ui.main_badges`
+- `ui.main_system_actions`
+- `ui.main_update_loop`
+- `ui.styles`
+- `ui.window_lifecycle`
+- `ui.window_manager`
+- `ui.windows`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

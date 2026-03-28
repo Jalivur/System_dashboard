@@ -2,7 +2,26 @@
 
 > **Ruta**: `ui/windows/service_watchdog.py`
 
+> **Cobertura de documentación**: 🟢 100% (22/22)
+
 Ventana Service Watchdog - monitor críticos + config inline
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServiceWatchdogWindow`](#clase-servicewatchdogwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.service_monitor`
+- `core.service_watchdog`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

@@ -2,12 +2,38 @@
 
 > **Ruta**: `core/homebridge_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (19/19)
+
 Monitor de Homebridge
 Integración con la API REST de homebridge-config-ui-x
 Credenciales cargadas desde .env (nunca hardcodeadas)
 
 Incluye sondeo ligero en background cada 30s para mantener
 los badges del menú actualizados sin necesidad de abrir la ventana.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`HomebridgeMonitor`](#clase-homebridgemonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_accessories()`](#get_accessoriesself-listdict)
+  - [`get_accessories_cached()`](#get_accessories_cachedself-listdict)
+  - [`toggle()`](#toggleself-unique_id-str-turn_on-bool-bool)
+  - [`is_reachable()`](#is_reachableself-bool)
+  - [`get_offline_count()`](#get_offline_countself-int)
+  - [`get_on_count()`](#get_on_countself-int)
+  - [`get_fault_count()`](#get_fault_countself-int)
+  - [`set_brightness()`](#set_brightnessself-unique_id-str-brightness-int-bool)
+  - [`set_target_temp()`](#set_target_tempself-unique_id-str-temp-float-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

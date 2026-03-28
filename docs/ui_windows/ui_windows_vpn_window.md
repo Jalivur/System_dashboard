@@ -2,9 +2,27 @@
 
 > **Ruta**: `ui/windows/vpn_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Ventana de gestión de conexiones VPN.
 Muestra el estado en tiempo real y permite conectar/desconectar
 usando los scripts del usuario.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`VpnWindow`](#clase-vpnwindow)**
+  - [`destroy()`](#destroyself)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets.dialogs`
+- `utils.logger`
 
 ## Imports
 

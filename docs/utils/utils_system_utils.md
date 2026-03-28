@@ -2,7 +2,33 @@
 
 > **Ruta**: `utils/system_utils.py`
 
+> **Cobertura de documentación**: 🟢 100% (12/12)
+
 Utilidades para obtener información del sistema
+
+---
+
+## Tabla de contenidos
+
+**Clase [`SystemUtils`](#clase-systemutils)**
+  - [`get_cpu_temp()`](#get_cpu_temp-float)
+  - [`get_hostname()`](#get_hostname-str)
+  - [`get_net_io()`](#get_net_iointerface-optionalstr-none-tuplestr-any)
+  - [`safe_net_speed()`](#safe_net_speedcurrent-any-previous-optionalany-tuplefloat-float)
+  - [`list_usb_storage_devices()`](#list_usb_storage_devices-list)
+  - [`list_usb_other_devices()`](#list_usb_other_devices-list)
+  - [`list_usb_devices()`](#list_usb_devices-list)
+  - [`eject_usb_device()`](#eject_usb_devicedevice-dict-tuplebool-str)
+  - [`run_script()`](#run_scriptscript_path-str-tuplebool-str)
+  - [`get_interfaces_ips()`](#get_interfaces_ips-dictstr-str)
+  - [`get_nvme_temp()`](#get_nvme_temp-float)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
 
 ## Imports
 

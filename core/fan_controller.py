@@ -39,19 +39,21 @@ class FanController:
 
         
     def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo."""
+        """Verifica si el servicio está corriendo. 
+        Args: 
+            None
+        Returns: 
+            bool: True si el servicio está corriendo, False de lo contrario.
+        Raises: 
+            None"""
         return self._running
     
     def compute_pwm_from_curve(self, temp: float) -> int:
-        """
-        Calcula el PWM basado en la curva y la temperatura
-
+        """Calcula el valor PWM según la curva de temperatura.
         Args:
             temp: Temperatura actual en °C
-
         Returns:
-            Valor PWM (0-255)
-        """
+            Valor PWM (0-255)"""
         curve = self._file_manager.load_curve()
         
         if not curve:
@@ -77,13 +79,11 @@ class FanController:
     
     def get_pwm_for_mode(self, mode: str, temp: float, manual_pwm: int = 128) -> int:
         """
-        Obtiene el PWM según el modo seleccionado
-
+        Obtiene el valor PWM según el modo de operación y la temperatura actual.
         Args:
             mode: Modo de operación (auto, manual, silent, normal, performance)
             temp: Temperatura actual
             manual_pwm: Valor PWM manual si mode='manual'
-
         Returns:
             Valor PWM calculado (0-255)
         """
@@ -103,18 +103,14 @@ class FanController:
     
     def update_fan_state(self, mode: str, temp: float, current_target: int = None,
                          manual_pwm: int = 128) -> Dict:
-        """
-        Actualiza el estado del ventilador
-
+        """Actualiza el estado del ventilador según el modo y la temperatura actuales.
         Args:
             mode: Modo actual
             temp: Temperatura actual
             current_target: PWM objetivo actual
             manual_pwm: PWM manual configurado
-
         Returns:
-            Diccionario con el nuevo estado
-        """
+            Diccionario con el nuevo estado"""
         desired = self.get_pwm_for_mode(mode, temp, manual_pwm)
         desired = max(0, min(255, int(desired)))
         
@@ -128,14 +124,12 @@ class FanController:
     
     def add_curve_point(self, temp: int, pwm: int) -> List[Dict]:
         """
-        Añade un punto a la curva
-
+        Añade un punto a la curva de temperatura y PWM.
         Args:
             temp: Temperatura en °C
             pwm: Valor PWM (0-255)
-
         Returns:
-            Curva actualizada
+            La curva actualizada de temperatura y PWM.
         """
         curve = self._file_manager.load_curve()
         pwm = max(0, min(255, pwm))
@@ -159,13 +153,13 @@ class FanController:
     
     def remove_curve_point(self, temp: int) -> List[Dict]:
         """
-        Elimina un punto de la curva
-
+        Elimina un punto de la curva de temperatura.
         Args:
-            temp: Temperatura del punto a eliminar
-
+            temp: Temperatura del punto a eliminar.
         Returns:
-            Curva actualizada
+            La curva actualizada como lista de diccionarios.
+        Raises:
+            No aplica, maneja la curva de manera interna.
         """
         curve = self._file_manager.load_curve()
         original_len = len(curve)

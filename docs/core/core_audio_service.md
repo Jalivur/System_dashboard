@@ -2,8 +2,29 @@
 
 > **Ruta**: `core/audio_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Servicio de AudioService para control volumen/mute via amixer y play_test con aplay.
 Operaciones síncronas, sin threads. Compatible Raspberry Pi OS.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`AudioService`](#clase-audioservice)**
+  - [`get_volume()`](#get_volumeself-control-str-default_control-int)
+  - [`set_volume()`](#set_volumeself-value-int-control-str-default_control-bool)
+  - [`is_muted()`](#is_mutedself-control-str-default_control-bool)
+  - [`set_mute()`](#set_muteself-muted-bool-control-str-default_control-bool)
+  - [`toggle_mute()`](#toggle_muteself-control-str-default_control-bool)
+  - [`play_test()`](#play_testself-wav_path-str-none-none-none)
+  - [`get_controls()`](#get_controlsself-liststr)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

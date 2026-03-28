@@ -2,7 +2,35 @@
 
 > **Ruta**: `core/network_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (15/15)
+
 Monitor de red
+
+---
+
+## Tabla de contenidos
+
+**Clase [`NetworkMonitor`](#clase-networkmonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_current_stats()`](#get_current_statsself-interface-optionalstr-none-dict)
+  - [`update_history()`](#update_historyself-stats-dict-none)
+  - [`adaptive_scale()`](#adaptive_scaleself-current_max-float-recent_data-list-float)
+  - [`update_dynamic_scale()`](#update_dynamic_scaleself-none)
+  - [`get_history()`](#get_historyself-dict)
+  - [`run_speedtest()`](#run_speedtestself-none)
+  - [`get_speedtest_result()`](#get_speedtest_resultself-dict)
+  - [`reset_speedtest()`](#reset_speedtestself-none)
+  - [`net_color()`](#net_colorvalue-float-str)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

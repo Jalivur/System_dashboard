@@ -2,8 +2,24 @@
 
 > **Ruta**: `ui/windows/network_local.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Ventana de panel de red local.
 Muestra los dispositivos encontrados por arp-scan con IP, MAC, fabricante y hostname.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`NetworkLocalWindow`](#clase-networklocalwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

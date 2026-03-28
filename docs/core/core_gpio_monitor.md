@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/gpio_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (28/28)
+
 Controlador de pines GPIO via gpiozero.
 
 Soporta tres modos por pin:
@@ -26,6 +28,34 @@ Pines reservados por fase1.py — nunca tocar:
   I²C : GPIO 2 (SDA), 3 (SCL)
   PWM : GPIO 12, 13, 18, 19 (hardware PWM ventiladores)
   UART: GPIO 14, 15
+
+---
+
+## Tabla de contenidos
+
+**Clase [`GPIOMonitor`](#clase-gpiomonitor)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_op_mode()`](#get_op_modeself-str)
+  - [`set_op_mode()`](#set_op_modeself-mode-str-none)
+  - [`get_state()`](#get_stateself-dictint-dict)
+  - [`is_gpio_available()`](#is_gpio_availableself-bool)
+  - [`get_pins()`](#get_pinsself-listint)
+  - [`reserved_pins()`](#reserved_pins-setint)
+  - [`set_output()`](#set_outputself-pin-int-high-bool-bool)
+  - [`set_pwm()`](#set_pwmself-pin-int-duty-float-bool)
+  - [`set_label()`](#set_labelself-pin-int-label-str-bool)
+  - [`set_mode()`](#set_modeself-pin-int-mode-str-bool)
+  - [`add_pin()`](#add_pinself-pin-int-mode-str-mode_input-label-str-bool)
+  - [`remove_pin()`](#remove_pinself-pin-int-bool)
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
+- `utils.logger`
 
 ## Imports
 

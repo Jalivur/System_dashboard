@@ -2,11 +2,33 @@
 
 > **Ruta**: `core/pihole_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (17/17)
+
 Monitor de Pi-hole v6.
 Sondea la API REST de Pi-hole v6 cada POLL_INTERVAL_S segundos.
 Credenciales leídas desde .env: PIHOLE_HOST, PIHOLE_PORT, PIHOLE_PASSWORD.
 
 Sin dependencias nuevas — usa urllib de la stdlib.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`PiholeMonitor`](#clase-piholemonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`fetch_now()`](#fetch_nowself-none)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`is_reachable()`](#is_reachableself-bool)
+  - [`is_enabled()`](#is_enabledself-bool)
+  - [`get_offline_count()`](#get_offline_countself-int)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

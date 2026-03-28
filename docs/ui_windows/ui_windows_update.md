@@ -2,11 +2,29 @@
 
 > **Ruta**: `ui/windows/update.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 Módulo para la ventana de control y gestión de actualizaciones del sistema en el dashboard.
 
 Contiene:
 - Clase UpdatesWindow: Interfaz gráfica para monitorear y ejecutar actualizaciones.
 - Integración con monitor de actualizaciones y scripts del sistema.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`UpdatesWindow`](#clase-updateswindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets.dialogs`
+- `utils`
+- `utils.logger`
 
 ## Imports
 

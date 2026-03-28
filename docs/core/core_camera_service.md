@@ -2,9 +2,37 @@
 
 > **Ruta**: `core/camera_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (16/16)
+
 Servicio de cámara y OCR.
 Encapsula la captura con rpicam-still, el preprocesado PIL y el OCR con Tesseract.
 La UI solo llama a capture(), scan() y los métodos de gestión de ficheros.
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`capture()`](#funcion-capture)
+- [`scan()`](#funcion-scan)
+- [`preprocess_image()`](#funcion-preprocess_image)
+- [`run_ocr()`](#funcion-run_ocr)
+- [`save_txt()`](#funcion-save_txt)
+- [`save_md()`](#funcion-save_md)
+- [`list_photos()`](#funcion-list_photos)
+- [`list_scans()`](#funcion-list_scans)
+- [`load_scan_text()`](#funcion-load_scan_text)
+- [`delete_photo()`](#funcion-delete_photo)
+- [`delete_scan()`](#funcion-delete_scan)
+- [`delete_all_photos()`](#funcion-delete_all_photos)
+- [`delete_all_scans()`](#funcion-delete_all_scans)
+- [`cleanup_old_photos()`](#funcion-cleanup_old_photos)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

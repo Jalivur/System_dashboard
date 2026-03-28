@@ -2,9 +2,27 @@
 
 > **Ruta**: `ui/windows/button_manager_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (8/8)
+
 Ventana de gestión de visibilidad de botones del menú principal.
 Permite activar/desactivar qué botones aparecen en el dashboard.
 Los cambios son inmediatos en la UI y se persisten con "Guardar predeterminado".
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ButtonManagerWindow`](#clase-buttonmanagerwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.button_labels`
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

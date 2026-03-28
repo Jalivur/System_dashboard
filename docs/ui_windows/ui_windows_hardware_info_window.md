@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/hardware_info_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Ventana de información estática del hardware.
 Muestra datos del sistema que no cambian en runtime:
 modelo de CPU, núcleos, RAM total, kernel, arquitectura,
@@ -10,6 +12,20 @@ hostname y uptime (este último se refresca cada 60s).
 No requiere core service propio — los datos estáticos se leen
 una sola vez al abrir la ventana via psutil/platform/subprocess.
 El uptime se lee del caché de SystemMonitor.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`HardwareInfoWindow`](#clase-hardwareinfowindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

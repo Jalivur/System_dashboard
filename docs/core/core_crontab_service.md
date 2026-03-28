@@ -2,8 +2,28 @@
 
 > **Ruta**: `core/crontab_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (6/6)
+
 Servicio de gestión de crontab.
 Encapsula la lectura, escritura y parseo del crontab del sistema.
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`describe_cron()`](#funcion-describe_cron)
+- [`read_crontab()`](#funcion-read_crontab)
+- [`write_crontab()`](#funcion-write_crontab)
+- [`parse_line()`](#funcion-parse_line)
+- [`parse_crontab()`](#funcion-parse_crontab)
+- [`build_line()`](#funcion-build_line)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

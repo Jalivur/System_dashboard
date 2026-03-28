@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/i2c_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (9/9)
+
 core/i2c_monitor.py
 
 Escaner I2C de solo lectura usando smbus2.
@@ -12,6 +14,23 @@ Arquitectura:
   - get_stats() devuelve cache — nunca bloquea la UI
   - SOLO LECTURA: usa read_byte() para detectar ACK, nunca escribe
   - smbus2 es opcional — si no está instalado devuelve error descriptivo
+
+---
+
+## Tabla de contenidos
+
+**Clase [`I2CMonitor`](#clase-i2cmonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`scan_now()`](#scan_nowself-none)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

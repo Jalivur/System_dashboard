@@ -2,7 +2,38 @@
 
 > **Ruta**: `core/service_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (25/25)
+
 Monitor de servicios systemd
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServiceMonitor`](#clase-servicemonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`toggle_sort()`](#toggle_sortself-column-str-none)
+  - [`refresh_now()`](#refresh_nowself-none)
+  - [`get_services()`](#get_servicesself-listdict)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`search_services()`](#search_servicesself-query-str-listdict)
+  - [`start_service()`](#start_serviceself-name-str-tuple)
+  - [`stop_service()`](#stop_serviceself-name-str-tuple)
+  - [`restart_service()`](#restart_serviceself-name-str-tuple)
+  - [`enable_service()`](#enable_serviceself-name-str-tuple)
+  - [`disable_service()`](#disable_serviceself-name-str-tuple)
+  - [`get_logs()`](#get_logsself-name-str-lines-int-50-str)
+  - [`set_sort()`](#set_sortself-column-str-reverse-bool-false-none)
+  - [`set_filter()`](#set_filterself-filter_type-str-none)
+  - [`get_state_color()`](#get_state_colorstate-str-str)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

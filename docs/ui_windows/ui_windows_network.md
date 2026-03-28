@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/network.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Ventana de monitoreo de red
+
+---
+
+## Tabla de contenidos
+
+**Clase [`NetworkWindow`](#clase-networkwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

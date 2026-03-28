@@ -2,9 +2,30 @@
 
 > **Ruta**: `core/ssh_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (14/14)
+
 Monitor de sesiones SSH.
 Recopila sesiones activas via `who` e historial via `last`.
 Corre en thread daemon con refresco cada 30 segundos.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`SSHMonitor`](#clase-sshmonitor)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_sessions()`](#get_sessionsself-list)
+  - [`get_history()`](#get_historyself-list)
+  - [`get_last_update()`](#get_last_updateself-str)
+  - [`get_stats()`](#get_statsself-dict)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

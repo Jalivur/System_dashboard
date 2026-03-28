@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/launchers.py`
 
+> **Cobertura de documentación**: 🟢 100% (6/6)
+
 Módulo de ventana de lanzadores para System Dashboard.
 
 Proporciona una interfaz gráfica para ejecutar scripts del sistema configurados
@@ -13,6 +15,22 @@ Dependencias:
 - config.settings
 - ui.styles, ui.widgets
 - utils.system_utils, utils.logger
+
+---
+
+## Tabla de contenidos
+
+**Clase [`LaunchersWindow`](#clase-launcherswindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

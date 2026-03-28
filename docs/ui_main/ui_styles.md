@@ -2,7 +2,34 @@
 
 > **Ruta**: `ui/styles.py`
 
+> **Cobertura de documentación**: 🟢 100% (17/17)
+
 Estilos y temas para la interfaz
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`make_futuristic_button()`](#funcion-make_futuristic_button)
+- [`make_window_header()`](#funcion-make_window_header)
+- [`make_homebridge_switch()`](#funcion-make_homebridge_switch)
+
+**Clase [`StyleManager`](#clase-stylemanager)**
+  - [`style_radiobutton_tk()`](#style_radiobutton_tkrb-tkradiobutton-fg-str-none-bg-str-none-hover_fg-str-none-none)
+  - [`style_radiobutton_ctk()`](#style_radiobutton_ctkrb-ctkctkradiobutton-radiobutton_width-int-25-radiobutton_height-int-25-none)
+  - [`style_slider()`](#style_sliderslider-tkscale-color-str-none-none)
+  - [`style_slider_ctk()`](#style_slider_ctkslider-ctkctkslider-color-str-none-height-30-none)
+  - [`style_scrollbar()`](#style_scrollbarsb-tkscrollbar-color-str-none-none)
+  - [`style_scrollbar_ctk()`](#style_scrollbar_ctksb-ctkctkscrollbar-color-str-none-none)
+  - [`style_ctk_scrollbar()`](#style_ctk_scrollbarscrollable_frame-ctkctkscrollableframe-color-str-none-none)
+  - [`show_service_stopped_banner()`](#show_service_stopped_bannerparent_frame-service_name-str-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
 
 ## Imports
 

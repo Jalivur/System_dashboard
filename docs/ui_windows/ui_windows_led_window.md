@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/led_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Ventana de Control de LEDs RGB
 
 Proporciona una interfaz gráfica intuitiva para controlar 4 LEDs RGB en el GPIO Board
@@ -17,6 +19,21 @@ Características:
 
 Dependencias: customtkinter, led_service, StyleManager.
 Autor: Sistema Dashboard Develop.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`LedWindow`](#clase-ledwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.led_service`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

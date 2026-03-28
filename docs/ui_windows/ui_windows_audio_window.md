@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/audio_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (23/23)
+
 Ventana de control de audio del dashboard de sistema.
 Caracteristicas:
 
@@ -9,6 +11,21 @@ VU meter animado con zonas verde/amarillo/rojo
 Control de volumen por canal (Master, PCM, etc.) con slider y botones rapidos
 Mute/unmute con test de sonido
 Interfaz responsive para DSI
+
+---
+
+## Tabla de contenidos
+
+**Clase [`AudioWindow`](#clase-audiowindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

@@ -2,7 +2,30 @@
 
 > **Ruta**: `core/disk_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (12/12)
+
 Monitor de disco
+
+---
+
+## Tabla de contenidos
+
+**Clase [`DiskMonitor`](#clase-diskmonitor)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_current_stats()`](#get_current_statsself-dict)
+  - [`update_history()`](#update_historyself-stats-dict-none)
+  - [`get_history()`](#get_historyself-dict)
+  - [`get_nvme_smart()`](#get_nvme_smartself-dict)
+  - [`level_color()`](#level_colorvalue-float-warn-float-crit-float-str)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.system_utils`
 
 ## Imports
 

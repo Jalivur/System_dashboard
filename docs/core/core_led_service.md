@@ -2,8 +2,28 @@
 
 > **Ruta**: `core/led_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (10/10)
+
 Servicio de control de LEDs RGB del GPIO Board (Freenove FNK0100K).
 El dashboard escribe led_state.json que fase1.py lee y aplica via I2C.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`LedService`](#clase-ledservice)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_state()`](#get_stateself-dict)
+  - [`set_mode()`](#set_modeself-mode-str-r-int-0-g-int-255-b-int-0-bool)
+  - [`set_color()`](#set_colorself-r-int-g-int-b-int-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

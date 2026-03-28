@@ -2,9 +2,26 @@
 
 > **Ruta**: `ui/windows/overview.py`
 
+> **Cobertura de documentación**: 🟢 100% (10/10)
+
 Ventana de resumen general del sistema.
 Muestra todas las métricas críticas en un solo vistazo.
 Pensada para usarse como pantalla de reposo en la DSI.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`OverviewWindow`](#clase-overviewwindow)**
+  - [`destroy()`](#destroyself)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

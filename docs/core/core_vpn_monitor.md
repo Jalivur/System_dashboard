@@ -2,9 +2,30 @@
 
 > **Ruta**: `core/vpn_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Monitor de estado de VPN.
 Detecta si la interfaz VPN está activa leyendo /proc/net/if_inet6 o ip link.
 Sin dependencias nuevas — usa subprocess con comandos estándar.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`VpnMonitor`](#clase-vpnmonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_status()`](#get_statusself-dict)
+  - [`is_connected()`](#is_connectedself-bool)
+  - [`get_offline_count()`](#get_offline_countself-int)
+  - [`force_poll()`](#force_pollself-none)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

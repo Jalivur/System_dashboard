@@ -2,10 +2,27 @@
 
 > **Ruta**: `ui/windows/i2c_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (12/12)
+
 ui/windows/i2c_window.py
 
 Ventana de escaneo I2C — muestra dispositivos detectados en cada bus.
 Solo lectura. Refresco manual o automático cada 30s.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`I2CWindow`](#clase-i2cwindow)**
+  - [`destroy()`](#destroyself-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

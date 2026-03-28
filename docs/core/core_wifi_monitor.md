@@ -2,10 +2,36 @@
 
 > **Ruta**: `core/wifi_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (21/21)
+
 Monitor de conexión WiFi profesional.
 Recopila SSID, señal (dBm), calidad link, bitrate, ruido, tráfico RX/TX Mbps.
 Thread daemon cada 5s, históricos, cambio interfaz en caliente, persistencia.
 Fallback ip/iwconfig/ifconfig.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WiFiMonitor`](#clase-wifimonitor)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_signal_history()`](#get_signal_historyself-list)
+  - [`set_interface()`](#set_interfaceself-iface-str-none)
+  - [`get_available_interfaces()`](#get_available_interfaces-list)
+  - [`get_stats()`](#get_statsself-dict)
+  - [`interface()`](#interfaceself-str)
+  - [`signal_color()`](#signal_colordbm-optionalint-colors-dict-str)
+  - [`signal_quality_pct()`](#signal_quality_pctdbm-optionalint-int)
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
+- `config.settings`
+- `utils.logger`
 
 ## Imports
 

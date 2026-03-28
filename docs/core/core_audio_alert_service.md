@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/audio_alert_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (14/14)
+
 Servicio de alertas sonoras via los altavoces del FNK0100K.
 
 Comportamiento:
@@ -10,6 +12,26 @@ Comportamiento:
   - {metric}_ok.wav   : una sola vez al recuperarse
 
 Archivos generados por: scripts/generate_sounds.py
+
+---
+
+## Tabla de contenidos
+
+**Clase [`_MetricState`](#clase-_metricstate)**
+
+**Clase [`AudioAlertService`](#clase-audioalertservice)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`set_enabled()`](#set_enabledself-enabled-bool)
+  - [`is_enabled()`](#is_enabledself-bool)
+  - [`play_test()`](#play_testself)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

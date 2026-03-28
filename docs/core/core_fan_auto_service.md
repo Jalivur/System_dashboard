@@ -2,7 +2,29 @@
 
 > **Ruta**: `core/fan_auto_service.py`
 
+> **Cobertura de documentación**: 🟢 100% (10/10)
+
 Servicio en segundo plano para modo AUTO de ventiladores
+
+---
+
+## Tabla de contenidos
+
+**Clase [`FanAutoService`](#clase-fanautoservice)**
+  - [`start()`](#startself)
+  - [`stop()`](#stopself)
+  - [`is_running()`](#is_runningself-bool)
+  - [`set_update_interval()`](#set_update_intervalself-seconds-float)
+  - [`get_status()`](#get_statusself-dict)
+
+---
+
+## Dependencias internas
+
+- `core.fan_controller`
+- `core.system_monitor`
+- `utils`
+- `utils.logger`
 
 ## Imports
 

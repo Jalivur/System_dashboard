@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/camera_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (24/24)
+
 Ventana de cámara del FNK0100K con OCR integrado.
 - Captura fotos con rpicam-still (OV5647, Bookworm)
 - OCR con Tesseract (local, sin internet)
@@ -10,6 +12,21 @@ Ventana de cámara del FNK0100K con OCR integrado.
 Requisitos:
     sudo apt install tesseract-ocr tesseract-ocr-spa rpicam-apps
     pip install pytesseract pillow --break-system-packages
+
+---
+
+## Tabla de contenidos
+
+**Clase [`CameraWindow`](#clase-camerawindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core`
+- `ui.styles`
+- `utils.logger`
 
 ## Imports
 

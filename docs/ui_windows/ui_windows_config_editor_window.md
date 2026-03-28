@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/windows/config_editor_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (21/21)
+
 Ventana de edición de configuración local.
 Lee los valores actuales en memoria y permite modificarlos.
 Al guardar escribe config/local_settings.py con solo los valores
@@ -13,6 +15,22 @@ mantenimiento manual al añadir iconos nuevos a settings.py.
 
 Carga diferida: las filas de iconos se construyen en lotes con after()
 para no bloquear el hilo principal al abrir la ventana.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ConfigEditorWindow`](#clase-configeditorwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.local_settings_io`
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

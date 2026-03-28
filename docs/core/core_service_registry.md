@@ -2,6 +2,8 @@
 
 > **Ruta**: `core/service_registry.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Registro centralizado de servicios del Dashboard.
 
 Gestiona el ciclo de vida de todos los servicios según configuración JSON.
@@ -16,6 +18,26 @@ Uso en main.py:
     registry.apply_config()              # para los que estén en False en services.json
     registry.set_service_enabled(k, v)   # marca habilitado/deshabilitado y persiste
     registry.save_config()               # persiste _config al JSON (sin leer estado live)
+
+---
+
+## Tabla de contenidos
+
+**Clase [`ServiceRegistry`](#clase-serviceregistry)**
+  - [`save_config()`](#save_configself)
+  - [`set_service_enabled()`](#set_service_enabledself-key-str-enabled-bool-none)
+  - [`register()`](#registerself-key-str-instance-none)
+  - [`apply_config()`](#apply_configself-none)
+  - [`get()`](#getself-key-str)
+  - [`get_all()`](#get_allself-dict)
+  - [`service_enabled()`](#service_enabledself-key-str-bool)
+  - [`ui_enabled()`](#ui_enabledself-key-str-bool)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

@@ -2,9 +2,27 @@
 
 > **Ruta**: `ui/windows/wifi_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Ventana de monitor de conexión WiFi.
 Muestra SSID, señal, bitrate, tráfico TX/RX y sus históricos.
 Los widgets se crean una sola vez — solo se actualizan los valores.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`WiFiWindow`](#clase-wifiwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

@@ -15,13 +15,9 @@ logger = get_logger(__name__)
 class FanAutoService:
     """
     Servicio que actualiza automáticamente el PWM en modo AUTO.
-    Se ejecuta en segundo plano independiente de la UI.
-
-    Características:
-    - Singleton: Solo una instancia en toda la aplicación
-    - Thread-safe: Seguro para concurrencia
-    - Daemon: Se cierra automáticamente con el programa
-    - Independiente de UI: Funciona con o sin ventanas abiertas
+    Args:
+        fan_controller (FanController): Controlador del ventilador.
+        system_monitor (SystemMonitor): Monitor del sistema.
     """
 
     _instance: Optional['FanAutoService'] = None
@@ -29,7 +25,12 @@ class FanAutoService:
 
     def __new__(cls, *args, **kwargs):
         """
-        Singleton thread-safe para única instancia del servicio.
+        Crea una instancia única del servicio de forma thread-safe.
+        Args:
+            *args: Argumentos posicionales.
+            **kwargs: Argumentos clave-valor.
+        Returns:
+            La instancia única del servicio.
         """
         if cls._instance is None:
             with cls._lock:
@@ -40,8 +41,7 @@ class FanAutoService:
 
     def __init__(self, fan_controller: FanController, system_monitor: SystemMonitor):
         """
-        Inicializa singleton FanAutoService (solo primera vez).
-
+        Inicializa el servicio de control de ventilador de forma automática.
         Args:
             fan_controller (FanController): Para calcular PWM.
             system_monitor (SystemMonitor): Para temperatura CPU.
@@ -63,12 +63,10 @@ class FanAutoService:
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def start(self):
-        """
-        Inicia thread daemon para bucle auto-PWM.
-
-        Args:
-            Ninguno (usa self._fan_controller, self._system_monitor).
-        """
+        """Inicia el servicio en segundo plano.
+        Args: Ninguno, utiliza atributos de instancia para la configuración.
+        Returns: Ninguno.
+        Raises: Ninguno."""
         """Inicia el servicio en segundo plano."""
         if self._running:
             logger.info("[FanAutoService] ya está corriendo")
@@ -83,7 +81,13 @@ class FanAutoService:
 
 
     def stop(self):
-        """Detiene el servicio."""
+        """Detiene el servicio. 
+        Args: 
+            None
+        Returns: 
+            None
+        Raises: 
+            None"""
         if not self._running:
             logger.debug("[FanAutoService] stop() ignorado — ya estaba parado")
             return
@@ -94,12 +98,21 @@ class FanAutoService:
         logger.info("[FanAutoService] Servicio detenido")
 
     def is_running(self) -> bool:
-        """Verifica si el servicio está corriendo."""
+        """Verifica si el servicio está corriendo. 
+        Args: 
+            None
+        Returns: 
+            bool: True si el servicio está corriendo, False de lo contrario.
+        Raises: 
+            None"""
         return self._running
     # ── Bucle ─────────────────────────────────────────────────────────────────
 
     def _run(self):
-        """Bucle principal del servicio."""
+        """Ejecuta el bucle principal del servicio de ventilador automático.
+        Args: None
+        Returns: None
+        Raises: Exception"""
         self._update_auto_mode()   # primera ejecución inmediata
         while not self._stop_evt.wait(timeout=self._update_interval):
             if not self._running:
@@ -110,7 +123,13 @@ class FanAutoService:
                 logger.error("[FanAutoService] Error en actualización automática: %s", e)
 
     def _update_auto_mode(self):
-        """Actualiza el PWM si está en modo auto."""
+        """Actualiza el modo automático del ventilador si está activado.
+        Args: 
+            None
+        Returns: 
+            None
+        Raises: 
+            Exception: Si ocurre un error al cargar o guardar el estado o al obtener estadísticas del sistema."""
         try:
             state = self._file_manager.load_state()
         except Exception as e:
@@ -133,11 +152,9 @@ class FanAutoService:
     # ── Info ──────────────────────────────────────────────────────────────────
 
     def set_update_interval(self, seconds: float):
-        """
-        Configura intervalo de polling auto-PWM (mín 1s).
-
+        """Configura el intervalo de actualización de polling auto-PWM. 
         Args:
-            seconds (float): Segundos entre updates.
+            seconds (float): Segundos entre actualizaciones.
         """
         """Cambia el intervalo de actualización (mínimo 1.0s)."""
         self._update_interval = max(1.0, seconds)
@@ -145,12 +162,11 @@ class FanAutoService:
 
 
     def get_status(self) -> dict:
-        """
-        Retorna estado para UI (running, interval, thread_alive).
-
+        """Retorna el estado actual del servicio de ventilador.
+        Args: None
         Returns:
-            dict: Status dict del servicio.
-        """
+            dict: Diccionario con el estado del servicio, incluyendo si está en ejecución, el intervalo de actualización y el estado del hilo.
+        Raises: None"""
         return {
             'running':      self._running,
             'interval':     self._update_interval,

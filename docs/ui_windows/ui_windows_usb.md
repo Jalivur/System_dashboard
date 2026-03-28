@@ -2,7 +2,25 @@
 
 > **Ruta**: `ui/windows/usb.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Ventana de monitoreo de dispositivos USB
+
+---
+
+## Tabla de contenidos
+
+**Clase [`USBWindow`](#clase-usbwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

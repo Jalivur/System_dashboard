@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/main_update_loop.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Loop de actualizacion del menu principal.
 
 Gestiona tres ciclos independientes:
@@ -24,6 +26,22 @@ Uso en MainWindow:
 
     # Al salir, antes de root.destroy():
     self._update_loop.stop()
+
+---
+
+## Tabla de contenidos
+
+**Clase [`UpdateLoop`](#clase-updateloop)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.event_bus`
+- `utils.logger`
 
 ## Imports
 

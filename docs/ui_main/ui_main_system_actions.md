@@ -2,6 +2,8 @@
 
 > **Ruta**: `ui/main_system_actions.py`
 
+> **Cobertura de documentación**: 🟢 100% (7/7)
+
 Acciones de sistema del dashboard: salir y reiniciar.
 
 Separado de MainWindow para mantener main_window.py enfocado en UI.
@@ -14,6 +16,23 @@ Uso en MainWindow:
     # En _create_ui footer:
     make_futuristic_button(..., command=lambda: exit_application(self.root, self._update_loop))
     make_futuristic_button(..., command=lambda: restart_application(self.root, self._update_loop))
+
+---
+
+## Tabla de contenidos
+
+**Funciones**
+- [`exit_application()`](#funcion-exit_application)
+- [`restart_application()`](#funcion-restart_application)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 

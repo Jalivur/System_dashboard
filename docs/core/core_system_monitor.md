@@ -2,9 +2,32 @@
 
 > **Ruta**: `core/system_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (11/11)
+
 Monitor del sistema
 Monitor centralizado de métricas CPU, RAM, temperatura y uptime con histórico para UI.
 Thread background no-bloqueante, thread-safe con lock.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`SystemMonitor`](#clase-systemmonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`get_current_stats()`](#get_current_statsself-dict)
+  - [`update_history()`](#update_historyself-stats-dict-none)
+  - [`get_history()`](#get_historyself-dict)
+  - [`level_color()`](#level_colorvalue-float-warn-float-crit-float-str)
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `utils.logger`
+- `utils.system_utils`
 
 ## Imports
 

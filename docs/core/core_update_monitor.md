@@ -2,9 +2,27 @@
 
 > **Ruta**: `core/update_monitor.py`
 
+> **Cobertura de documentación**: 🟢 100% (6/6)
+
 Monitor de actualizaciones del sistema.
 Verifica paquetes pendientes via 'apt list --upgradable' con caché de 12h y lock thread-safe.
 Ejecuta 'sudo apt update' solo cuando necesario (force o timeout caché).
+
+---
+
+## Tabla de contenidos
+
+**Clase [`UpdateMonitor`](#clase-updatemonitor)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`check_updates()`](#check_updatesself-force-false-dict)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

@@ -2,10 +2,32 @@
 
 > **Ruta**: `core/network_scanner.py`
 
+> **Cobertura de documentación**: 🟢 100% (13/13)
+
 Escáner de red local usando arp-scan.
 Requiere: sudo arp-scan (disponible en Kali por defecto)
 
 Ejecuta arp-scan en un thread de background para no bloquear la UI.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`NetworkScanner`](#clase-networkscanner)**
+  - [`start()`](#startself-none)
+  - [`stop()`](#stopself-none)
+  - [`is_running()`](#is_runningself-bool)
+  - [`scan()`](#scanself-none)
+  - [`get_devices()`](#get_devicesself-listdict)
+  - [`get_status()`](#get_statusself-str)
+  - [`get_error()`](#get_errorself-str)
+  - [`get_last_scan_age()`](#get_last_scan_ageself-optionalfloat)
+
+---
+
+## Dependencias internas
+
+- `utils.logger`
 
 ## Imports
 

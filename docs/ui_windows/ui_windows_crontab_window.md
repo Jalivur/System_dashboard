@@ -2,9 +2,27 @@
 
 > **Ruta**: `ui/windows/crontab_window.py`
 
+> **Cobertura de documentación**: 🟢 100% (16/16)
+
 Ventana de gestión de crontab.
 Permite ver, añadir, editar y eliminar entradas del crontab
 para el usuario actual (jalivur) o root.
+
+---
+
+## Tabla de contenidos
+
+**Clase [`CrontabWindow`](#clase-crontabwindow)**
+
+---
+
+## Dependencias internas
+
+- `config.settings`
+- `core.crontab_service`
+- `ui.styles`
+- `ui.widgets`
+- `utils.logger`
 
 ## Imports
 
