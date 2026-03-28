@@ -20,7 +20,27 @@ para no bloquear el hilo principal al abrir la ventana.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_get_editable_icons()`](#_get_editable_icons) _(privada)_
+- [`_surrogate_to_cp()`](#_surrogate_to_cp) _(privada)_
+- [`_parse_codepoint()`](#_parse_codepoint) _(privada)_
+- [`_load_local_settings()`](#_load_local_settings) _(privada)_
+- [`_write_local_settings()`](#_write_local_settings) _(privada)_
+
 **Clase [`ConfigEditorWindow`](#clase-configeditorwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_section()`](#_build_section) _(privado)_
+  - [`_build_param_row()`](#_build_param_row) _(privado)_
+  - [`_build_icons_header()`](#_build_icons_header) _(privado)_
+  - [`_build_icon_batch()`](#_build_icon_batch) _(privado)_
+  - [`_build_icon_row()`](#_build_icon_row) _(privado)_
+  - [`_step_value()`](#_step_value) _(privado)_
+  - [`_update_icon_preview()`](#_update_icon_preview) _(privado)_
+  - [`_collect()`](#_collect) _(privado)_
+  - [`_save()`](#_save) _(privado)_
+  - [`_save_and_restart()`](#_save_and_restart) _(privado)_
+  - [`_restore_defaults()`](#_restore_defaults) _(privado)_
 
 ---
 
@@ -53,10 +73,13 @@ from config.local_settings_io import _PATH
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_get_editable_icons() -> list`
+### `_get_editable_icons()`
+
+```python
+_get_editable_icons() -> list
+```
 
 Recupera la lista de iconos editables en tiempo de ejecución.
 
@@ -67,7 +90,11 @@ Returns:
 
 Raises: Ninguno
 
-### `_surrogate_to_cp(high: int, low: int) -> int`
+### `_surrogate_to_cp()`
+
+```python
+_surrogate_to_cp(high: int, low: int) -> int
+```
 
 Convierte un par de surrogates UTF-16 a un codepoint Unicode escalar.
 
@@ -78,7 +105,11 @@ Args:
 Returns:
     El codepoint entero correspondiente (U+10000 a U+10FFFF).
 
-### `_parse_codepoint(raw: str)`
+### `_parse_codepoint()`
+
+```python
+_parse_codepoint(raw: str)
+```
 
 Parsea una representación de un codepoint Unicode en formato hexadecimal.
 
@@ -91,7 +122,11 @@ Returns:
 Raises:
     ValueError: Si la entrada es vacía, el valor hexadecimal no es válido o el formato no es reconocido.
 
-### `_load_local_settings() -> tuple`
+### `_load_local_settings()`
+
+```python
+_load_local_settings() -> tuple
+```
 
 Carga la configuración local del sistema.
 
@@ -104,7 +139,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `_write_local_settings(param_overrides: dict, icon_overrides: dict)`
+### `_write_local_settings()`
+
+```python
+_write_local_settings(param_overrides: dict, icon_overrides: dict)
+```
 
 Escribe las configuraciones locales sobrescritas en el archivo de settings.
 
@@ -117,8 +156,6 @@ Returns:
 
 Raises:
     None
-
-</details>
 
 ## Clase `ConfigEditorWindow(ctk.CTkToplevel)`
 
@@ -139,10 +176,13 @@ Raises:
 | `_icon_card` | `None` |
 | `_icon_loading_lbl` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana editor de configuración.
 
@@ -155,7 +195,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea y configura la interfaz de usuario de la ventana de edición de configuración.
 
@@ -168,7 +212,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_section(self, parent, section: dict)`
+#### `_build_section()`
+
+```python
+_build_section(self, parent, section: dict)
+```
 
 Construye una sección de parámetros con su tarjeta visual y filas de entrada.
 
@@ -182,7 +230,11 @@ Returns:
 Raises:
     None
 
-#### `_build_param_row(self, parent, key, label, typ, vmin, vmax, step, desc)`
+#### `_build_param_row()`
+
+```python
+_build_param_row(self, parent, key, label, typ, vmin, vmax, step, desc)
+```
 
 Crea una fila editable para un parámetro numérico con botones +/- y descripción.
 
@@ -200,7 +252,11 @@ Returns:
 Raises:
     None
 
-#### `_build_icons_header(self, parent)`
+#### `_build_icons_header()`
+
+```python
+_build_icons_header(self, parent)
+```
 
 Construye la cabecera de la sección de iconos con instrucciones y loader.
 
@@ -210,7 +266,11 @@ Args:
 Returns:
     Tuple (card_frame, loading_label).
 
-#### `_build_icon_batch(self)`
+#### `_build_icon_batch()`
+
+```python
+_build_icon_batch(self)
+```
 
 Construye lotes de filas de iconos de forma asíncrona para evitar bloqueo UI.
 
@@ -223,7 +283,11 @@ Returns:
 Raises:
     None
 
-#### `_build_icon_row(self, parent, attr: str, current_char: str)`
+#### `_build_icon_row()`
+
+```python
+_build_icon_row(self, parent, attr: str, current_char: str)
+```
 
 Crea una fila editable para un icono específico con preview y entry codepoint.
 
@@ -238,7 +302,11 @@ Returns:
 Raises:
     None
 
-#### `_step_value(self, key, typ, delta, vmin, vmax)`
+#### `_step_value()`
+
+```python
+_step_value(self, key, typ, delta, vmin, vmax)
+```
 
 Ajusta el valor de un parámetro numérico con botones +/-, respetando límites.
 
@@ -252,7 +320,11 @@ Args:
 Raises:
     ValueError: Si el valor actual no se puede convertir a número.
 
-#### `_update_icon_preview(self, attr: str, var: ctk.StringVar, preview: ctk.CTkLabel)`
+#### `_update_icon_preview()`
+
+```python
+_update_icon_preview(self, attr: str, var: ctk.StringVar, preview: ctk.CTkLabel)
+```
 
 Actualiza la previsualización del icono en tiempo real al editar el codepoint.
 
@@ -267,7 +339,11 @@ Returns:
 Raises:
     ValueError: Si el codepoint ingresado no es válido.
 
-#### `_collect(self)`
+#### `_collect()`
+
+```python
+_collect(self)
+```
 
 Recopila y valida los valores editados en la ventana de configuración.
 
@@ -283,7 +359,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_save(self)`
+#### `_save()`
+
+```python
+_save(self)
+```
 
 Guarda los cambios validados en local_settings.py y muestra confirmación sin reiniciar la aplicación.
 
@@ -296,7 +376,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al guardar los cambios.
 
-#### `_save_and_restart(self)`
+#### `_save_and_restart()`
+
+```python
+_save_and_restart(self)
+```
 
 Guarda cambios de configuración y reinicia el dashboard completo después de confirmación del usuario.
 
@@ -306,7 +390,11 @@ Returns: Ninguno
 
 Raises: Excepciones internas durante el proceso de guardado y reinicio.
 
-#### `_restore_defaults(self)`
+#### `_restore_defaults()`
+
+```python
+_restore_defaults(self)
+```
 
 Restaura todos los campos a valores predeterminados y elimina el archivo local_settings.py.
 
@@ -315,5 +403,3 @@ Args: Ninguno
 Returns: Ninguno
 
 Raises: Ninguno
-
-</details>

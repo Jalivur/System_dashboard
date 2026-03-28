@@ -13,11 +13,14 @@ Expone: temperatura del chasis, duty% real de cada fan.
 ## Tabla de contenidos
 
 **Clase [`HardwareMonitor`](#clase-hardwaremonitor)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`is_available()`](#is_availableself-bool)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_stats()`](#get_stats)
+  - [`is_available()`](#is_available)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_poll()`](#_poll) _(privado)_
 
 ---
 
@@ -63,7 +66,11 @@ Raises: Ninguno
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el hilo daemon para sondear el estado del hardware cada 6 segundos.
 
@@ -73,7 +80,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el monitor de hardware y limpia la caché de datos.
 
@@ -83,7 +94,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de monitoreo de hardware está en ejecución.
 
@@ -96,7 +111,11 @@ Returns:
 Raises:
     None
 
-#### `get_stats(self) -> dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> dict
+```
 
 Retorna el estado actual del hardware, incluyendo temperatura del chasis y porcentajes de ventiladores.
 
@@ -109,7 +128,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `is_available(self) -> bool`
+#### `is_available()`
+
+```python
+is_available(self) -> bool
+```
 
 Indica si el hardware está disponible según el estado actualizado recientemente.
 
@@ -122,10 +145,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de hardware.
 
@@ -141,7 +167,11 @@ Returns:
 Raises:
     None
 
-#### `_loop(self)`
+#### `_loop()`
+
+```python
+_loop(self)
+```
 
 Ejecuta un bucle en un hilo daemon que sondea cada 6 segundos hasta ser detenido.
 
@@ -154,7 +184,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_poll(self)`
+#### `_poll()`
+
+```python
+_poll(self)
+```
 
 Actualiza la información de estado del hardware leyendo el archivo hardware_state.json.
 
@@ -166,5 +200,3 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>

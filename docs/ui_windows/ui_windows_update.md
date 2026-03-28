@@ -15,6 +15,13 @@ Contiene:
 ## Tabla de contenidos
 
 **Clase [`UpdatesWindow`](#clase-updateswindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_content()`](#_build_content) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_refresh_status()`](#_refresh_status) _(privado)_
+  - [`_poll_until_ready()`](#_poll_until_ready) _(privado)_
+  - [`_execute_update_script()`](#_execute_update_script) _(privado)_
 
 ---
 
@@ -71,10 +78,13 @@ Returns:
 | `_polling` | `False` |
 | `_banner_shown` | `False` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, update_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, update_monitor)
+```
 
 Inicializa la ventana de actualizaciones del sistema.
 
@@ -88,7 +98,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario principal de la ventana de actualizaciones.
 
@@ -101,7 +115,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_content(self, parent)`
+#### `_build_content()`
+
+```python
+_build_content(self, parent)
+```
 
 Construye el contenido normal de la ventana de actualizaciones.
 
@@ -114,7 +132,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza periódicamente el estado de la ventana según el monitor de actualizaciones.
 
@@ -129,7 +151,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh_status(self, force = False)`
+#### `_refresh_status()`
+
+```python
+_refresh_status(self, force = False)
+```
 
 Actualiza el estado de la ventana de actualizaciones consultando el estado de actualizaciones.
 
@@ -142,7 +168,11 @@ Returns:
 Raises:
     None
 
-#### `_poll_until_ready(self)`
+#### `_poll_until_ready()`
+
+```python
+_poll_until_ready(self)
+```
 
 Reintenta refrescar el estado de actualización cada 2 segundos mientras el resultado sea desconocido.
 
@@ -152,7 +182,11 @@ Returns: Ninguno
 
 Raises: Ninguna excepción específica
 
-#### `_execute_update_script(self)`
+#### `_execute_update_script()`
+
+```python
+_execute_update_script(self)
+```
 
 Ejecuta el script de actualización en la terminal y refresca la interfaz al finalizar.
 
@@ -161,5 +195,3 @@ Args: Ninguno
 Returns: Ninguno
 
 Raises: Ninguno
-
-</details>

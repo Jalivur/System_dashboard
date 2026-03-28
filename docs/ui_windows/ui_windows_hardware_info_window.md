@@ -17,7 +17,21 @@ El uptime se lee del caché de SystemMonitor.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_read_cpu_model()`](#_read_cpu_model) _(privada)_
+- [`_read_pi_model()`](#_read_pi_model) _(privada)_
+- [`_read_os()`](#_read_os) _(privada)_
+- [`_gather_static_info()`](#_gather_static_info) _(privada)_
+
 **Clase [`HardwareInfoWindow`](#clase-hardwareinfowindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_load_info()`](#_load_info) _(privado)_
+  - [`_populate_info()`](#_populate_info) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_show_loading()`](#_show_loading) _(privado)_
+  - [`_build_content()`](#_build_content) _(privado)_
+  - [`_section()`](#_section) _(privado)_
+  - [`_tick_uptime()`](#_tick_uptime) _(privado)_
 
 ---
 
@@ -46,10 +60,13 @@ from utils.logger import get_logger
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_read_cpu_model() -> str`
+### `_read_cpu_model()`
+
+```python
+_read_cpu_model() -> str
+```
 
 Lee el modelo de CPU desde el sistema.
 
@@ -65,7 +82,11 @@ Raises:
 Nota: Si no se puede leer el modelo de CPU desde /proc/cpuinfo, 
       se devuelve el resultado de platform.processor() o "Desconocido".
 
-### `_read_pi_model() -> str`
+### `_read_pi_model()`
+
+```python
+_read_pi_model() -> str
+```
 
 Lee el modelo de Raspberry Pi desde el archivo /proc/device-tree/model.
 
@@ -78,7 +99,11 @@ Returns:
 Raises:
     Ninguno
 
-### `_read_os() -> str`
+### `_read_os()`
+
+```python
+_read_os() -> str
+```
 
 Obtiene el nombre del sistema operativo.
 
@@ -91,7 +116,11 @@ Returns:
 Raises:
     Ninguna excepción específica, manejo genérico de excepciones.
 
-### `_gather_static_info() -> dict`
+### `_gather_static_info()`
+
+```python
+_gather_static_info() -> dict
+```
 
 Recopila información estática del hardware y sistema operativo.
 
@@ -103,8 +132,6 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>
 
 ## Clase `HardwareInfoWindow(ctk.CTkToplevel)`
 
@@ -129,10 +156,13 @@ Returns:
 | `_uptime_label` | `None` |
 | `_info` | `{}` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, system_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, system_monitor)
+```
 
 Inicializa la ventana de información del hardware.
 
@@ -143,7 +173,11 @@ Args:
 Raises:
     None
 
-#### `_load_info(self) -> None`
+#### `_load_info()`
+
+```python
+_load_info(self) -> None
+```
 
 Carga información estática en segundo plano y actualiza la interfaz de usuario.
 
@@ -156,7 +190,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_populate_info(self, info: dict) -> None`
+#### `_populate_info()`
+
+```python
+_populate_info(self, info: dict) -> None
+```
 
 Rellena la UI con los datos de hardware proporcionados.
 
@@ -169,7 +207,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la estructura de la interfaz de usuario principal para mostrar información del hardware.
 
@@ -182,7 +224,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_show_loading(self, parent) -> None`
+#### `_show_loading()`
+
+```python
+_show_loading(self, parent) -> None
+```
 
 Muestra un mensaje de carga mientras se recopila información del hardware.
 
@@ -195,7 +241,11 @@ Returns:
 Raises:
     None
 
-#### `_build_content(self, inner)`
+#### `_build_content()`
+
+```python
+_build_content(self, inner)
+```
 
 Construye secciones de contenido con datos reales del hardware.
 
@@ -208,7 +258,11 @@ Returns:
 Raises:
     None
 
-#### `_section(self, parent, title: str, rows: list)`
+#### `_section()`
+
+```python
+_section(self, parent, title: str, rows: list)
+```
 
 Crea una tarjeta de sección con filas etiqueta-valor en la ventana de información de hardware.
 
@@ -223,7 +277,11 @@ Returns:
 Raises:
     None
 
-#### `_tick_uptime(self)`
+#### `_tick_uptime()`
+
+```python
+_tick_uptime(self)
+```
 
 Refresca el tiempo de actividad (uptime) de la ventana cada segundo.
 
@@ -235,5 +293,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

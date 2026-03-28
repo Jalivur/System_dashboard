@@ -13,7 +13,22 @@ Los widgets se crean una sola vez — solo se actualizan los valores.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_fmt_tty()`](#_fmt_tty) _(privada)_
+- [`_fmt_ip()`](#_fmt_ip) _(privada)_
+- [`_fmt_time_active()`](#_fmt_time_active) _(privada)_
+- [`_fmt_time_history()`](#_fmt_time_history) _(privada)_
+
 **Clase [`SSHWindow`](#clase-sshwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_sessions_card()`](#_build_sessions_card) _(privado)_
+  - [`_build_history_card()`](#_build_history_card) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_refresh_sessions()`](#_refresh_sessions) _(privado)_
+  - [`_refresh_history()`](#_refresh_history) _(privado)_
+  - [`_force_refresh()`](#_force_refresh) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -39,10 +54,13 @@ from utils.logger import get_logger
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_fmt_tty(raw: str) -> str`
+### `_fmt_tty()`
+
+```python
+_fmt_tty(raw: str) -> str
+```
 
 Formatea una cadena de texto que representa un terminal de tty para su visualización.
 
@@ -55,7 +73,11 @@ Returns:
 Raises:
     None
 
-### `_fmt_ip(raw: str) -> str`
+### `_fmt_ip()`
+
+```python
+_fmt_ip(raw: str) -> str
+```
 
 Formatea una dirección IP para su visualización.
 
@@ -65,7 +87,11 @@ Args:
 Returns:
     str: La dirección IP formateada con indicador de red local si corresponde.
 
-### `_fmt_time_active(date: str, time: str) -> str`
+### `_fmt_time_active()`
+
+```python
+_fmt_time_active(date: str, time: str) -> str
+```
 
 Formatea la fecha y hora de conexión activa en un formato legible.
 
@@ -79,7 +105,11 @@ Returns:
 Raises:
     None
 
-### `_fmt_time_history(raw: str) -> str`
+### `_fmt_time_history()`
+
+```python
+_fmt_time_history(raw: str) -> str
+```
 
 Formatea una cadena de historial de tiempo en un formato legible.
 
@@ -91,8 +121,6 @@ Returns:
 
 Raises:
     Ninguna excepción relevante.
-
-</details>
 
 ## Clase `SSHWindow(ctk.CTkToplevel)`
 
@@ -115,10 +143,13 @@ Returns:
 | `_ssh_monitor` | `ssh_monitor` |
 | `_refresh_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, ssh_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, ssh_monitor)
+```
 
 Inicializa la ventana de monitor SSH.
 
@@ -132,7 +163,11 @@ Raises:
 Returns:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario de la ventana de SSH.
 
@@ -142,7 +177,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_build_sessions_card(self)`
+#### `_build_sessions_card()`
+
+```python
+_build_sessions_card(self)
+```
 
 Crea la tarjeta de sesiones activas con filas fijas.
 
@@ -155,7 +194,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_build_history_card(self)`
+#### `_build_history_card()`
+
+```python
+_build_history_card(self)
+```
 
 Crea la tarjeta de historial con filas fijas para mostrar conexiones.
 
@@ -168,7 +211,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza los datos visuales de sesiones activas e historial de conexiones.
 
@@ -184,7 +231,11 @@ Returns:
 Raises: 
     None
 
-#### `_refresh_sessions(self, sessions: list)`
+#### `_refresh_sessions()`
+
+```python
+_refresh_sessions(self, sessions: list)
+```
 
 Refresca la visualización de las sesiones SSH activas actuales.
 
@@ -201,7 +252,11 @@ Returns:
 Raises:
     None
 
-#### `_refresh_history(self, history: list)`
+#### `_refresh_history()`
+
+```python
+_refresh_history(self, history: list)
+```
 
 Refresca la visualización del historial reciente de conexiones SSH.
 
@@ -210,7 +265,11 @@ Refresca la visualización del historial reciente de conexiones SSH.
 
     Nota: Muestra hasta 50 entradas con colores alternos y oculta extras si la lista está vacía.
 
-#### `_force_refresh(self)`
+#### `_force_refresh()`
+
+```python
+_force_refresh(self)
+```
 
 Fuerza una actualización inmediata de todos los datos SSH.
 
@@ -223,7 +282,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Limpia recursos y cierra la ventana de forma segura.
 
@@ -235,5 +298,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

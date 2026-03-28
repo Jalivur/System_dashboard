@@ -23,6 +23,17 @@ para que en el próximo arranque los servicios parados no se inicien.
 ## Tabla de contenidos
 
 **Clase [`ServicesManagerWindow`](#clase-servicesmanagerwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_row()`](#_create_row) _(privado)_
+  - [`_is_running()`](#_is_running) _(privado)_
+  - [`_update_row()`](#_update_row) _(privado)_
+  - [`_refresh_loop()`](#_refresh_loop) _(privado)_
+  - [`_toggle()`](#_toggle) _(privado)_
+  - [`_execute()`](#_execute) _(privado)_
+  - [`_stop_all()`](#_stop_all) _(privado)_
+  - [`_start_all()`](#_start_all) _(privado)_
+  - [`_save_defaults()`](#_save_defaults) _(privado)_
 
 ---
 
@@ -72,10 +83,13 @@ Raises:
 | `_services` | `registry.get_all()` |
 | `_defs` | `[(k, lbl, emj, warn) for k, lbl, emj, warn in self._DEFINITIONS if k in self._services]` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, registry)`
+#### `__init__()`
+
+```python
+__init__(self, parent, registry)
+```
 
 Inicializa la ventana de gestión de servicios.
 
@@ -89,7 +103,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario completa de la ventana de gestión de servicios.
 
@@ -102,7 +120,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_row(self, parent, key, label, emoji, warn)`
+#### `_create_row()`
+
+```python
+_create_row(self, parent, key, label, emoji, warn)
+```
 
 Crea una fila UI para un servicio específico.
 
@@ -121,7 +143,11 @@ Returns:
 Raises:
     None
 
-#### `_is_running(self, key: str) -> bool`
+#### `_is_running()`
+
+```python
+_is_running(self, key: str) -> bool
+```
 
 Consulta si un servicio está ejecutándose.
 
@@ -134,7 +160,11 @@ Returns:
 Raises:
     None
 
-#### `_update_row(self, key: str)`
+#### `_update_row()`
+
+```python
+_update_row(self, key: str)
+```
 
 Actualiza el estado visual de la fila de un servicio según su estado de ejecución.
 
@@ -147,7 +177,11 @@ Actualiza el estado visual de la fila de un servicio según su estado de ejecuci
     Raises:
         None
 
-#### `_refresh_loop(self)`
+#### `_refresh_loop()`
+
+```python
+_refresh_loop(self)
+```
 
 Establece un bucle infinito que refresca el contenido de la ventana cada 1.5 segundos.
 
@@ -160,7 +194,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_toggle(self, key: str, warn: str)`
+#### `_toggle()`
+
+```python
+_toggle(self, key: str, warn: str)
+```
 
 Manejador del botón toggle de un servicio.
 
@@ -174,7 +212,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_execute(self, key: str, stop: bool)`
+#### `_execute()`
+
+```python
+_execute(self, key: str, stop: bool)
+```
 
 Ejecuta la acción de inicio o detención de un servicio en un hilo daemon.
 
@@ -187,7 +229,11 @@ Args:
 Raises:
     Exception: Si ocurre un error durante la ejecución de la acción.
 
-#### `_stop_all(self)`
+#### `_stop_all()`
+
+```python
+_stop_all(self)
+```
 
 Para todos los servicios en ejecución después de confirmar con el usuario.
 
@@ -200,7 +246,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_start_all(self)`
+#### `_start_all()`
+
+```python
+_start_all(self)
+```
 
 Inicia todos los servicios parados tras confirmar.
 
@@ -213,7 +263,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_save_defaults(self)`
+#### `_save_defaults()`
+
+```python
+_save_defaults(self)
+```
 
 Persiste el estado actual de servicios como configuración de arranque en services.json.
 
@@ -225,5 +279,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

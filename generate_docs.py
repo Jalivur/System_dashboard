@@ -211,32 +211,42 @@ def make_anchor(text: str) -> str:
 def build_toc(tree: ast.Module) -> list[str]:
     """
     Construye la tabla de contenidos del módulo.
-    Incluye funciones de módulo y clases con sus métodos públicos.
+    Incluye funciones y clases con todos sus métodos (públicos y privados).
     """
     toc = []
     toc.append("## Tabla de contenidos\n")
 
+    # Funciones de módulo públicas
     mod_fns = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
     public_fns = [f for f in mod_fns if not is_private(f.name)]
-    if public_fns:
+    private_fns = [f for f in mod_fns if is_private(f.name)]
+    if public_fns or private_fns:
         toc.append("**Funciones**")
         for fn in public_fns:
-            anchor = make_anchor(f"funcion-{fn.name}")
+            anchor = make_anchor(fn.name)
             toc.append(f"- [`{fn.name}()`](#{anchor})")
+        for fn in private_fns:
+            anchor = make_anchor(fn.name)
+            toc.append(f"- [`{fn.name}()`](#{anchor}) _(privada)_")
         toc.append("")
 
+    # Clases con todos sus métodos
     classes = [n for n in tree.body if isinstance(n, ast.ClassDef)]
     for cls in classes:
         anchor = make_anchor(f"clase-{cls.name}")
         toc.append(f"**Clase [`{cls.name}`](#{anchor})**")
-        methods = [
+        all_methods = [
             m for m in cls.body
             if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and not is_private(m.name)
         ]
-        for method in methods:
-            m_anchor = make_anchor(f"{method.name}{get_function_signature(method)}")
+        public_methods  = [m for m in all_methods if not is_private(m.name)]
+        private_methods = [m for m in all_methods if is_private(m.name)]
+        for method in public_methods:
+            m_anchor = make_anchor(method.name)
             toc.append(f"  - [`{method.name}()`](#{m_anchor})")
+        for method in private_methods:
+            m_anchor = make_anchor(method.name)
+            toc.append(f"  - [`{method.name}()`](#{m_anchor}) _(privado)_")
         toc.append("")
 
     return toc
@@ -257,7 +267,10 @@ def render_function(node: ast.FunctionDef, level: int = 3, is_method: bool = Fal
     doc = get_docstring(node)
 
     lines = []
-    lines.append(f"{prefix} `{node.name}{sig}`\n")
+    # Heading solo con el nombre — anchor limpio y navegable
+    # Firma en línea aparte para no contaminar el anchor
+    lines.append(f"{prefix} `{node.name}()`\n")
+    lines.append(f"```python\n{node.name}{sig}\n```\n")
     if doc:
         lines.append(render_docstring(doc))
     else:
@@ -320,10 +333,9 @@ def render_class(node: ast.ClassDef) -> str:
             lines.append(render_function(method, level=4, is_method=True))
 
     if private_methods:
-        lines.append("<details>\n<summary>Métodos privados</summary>\n")
+        lines.append("### Métodos privados\n")
         for method in private_methods:
             lines.append(render_function(method, level=4, is_method=True))
-        lines.append("</details>\n")
 
     return "\n".join(lines)
 
@@ -416,10 +428,10 @@ def render_module(source: str, module_name: str, rel_path: str) -> str:
     # ── Elementos sin documentar (colapsado) ──
     missing = undocumented_list(tree)
     if missing:
-        lines.append(f"<details>\n<summary>⚠️ Sin documentar ({len(missing)} elementos)</summary>\n")
+        lines.append(f"## ⚠️ Sin documentar ({len(missing)} elementos)\n")
         for item in missing:
             lines.append(f"- {item}")
-        lines.append("\n</details>\n")
+        lines.append("")
 
     # ── Funciones de módulo ──
     mod_functions = [
@@ -436,10 +448,9 @@ def render_module(source: str, module_name: str, rel_path: str) -> str:
                 lines.append(render_function(fn, level=3, is_method=False))
 
         if private_fns:
-            lines.append("<details>\n<summary>Funciones privadas</summary>\n")
+            lines.append("## Funciones privadas\n")
             for fn in private_fns:
                 lines.append(render_function(fn, level=3, is_method=False))
-            lines.append("</details>\n")
 
     # ── Clases ──
     classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]

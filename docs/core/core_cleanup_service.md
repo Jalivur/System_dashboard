@@ -11,15 +11,20 @@ Servicio de limpieza automática de archivos exportados y datos antiguos
 ## Tabla de contenidos
 
 **Clase [`CleanupService`](#clase-cleanupservice)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`clean_csv()`](#clean_csvself-max_files-int-none-int)
-  - [`clean_png()`](#clean_pngself-max_files-int-none-int)
-  - [`clean_log_exports()`](#clean_log_exportsself-max_files-int-none-int)
-  - [`clean_db()`](#clean_dbself-days-int-none-bool)
-  - [`get_status()`](#get_statusself-dict)
-  - [`force_cleanup()`](#force_cleanupself-dict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`clean_csv()`](#clean_csv)
+  - [`clean_png()`](#clean_png)
+  - [`clean_log_exports()`](#clean_log_exports)
+  - [`clean_db()`](#clean_db)
+  - [`get_status()`](#get_status)
+  - [`force_cleanup()`](#force_cleanup)
+  - [`__new__()`](#__new__) _(privado)_
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_run()`](#_run) _(privado)_
+  - [`_cleanup_cycle()`](#_cleanup_cycle) _(privado)_
+  - [`_trim_files()`](#_trim_files) _(privado)_
 
 ---
 
@@ -75,7 +80,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el servicio de limpieza en segundo plano.
 
@@ -88,7 +97,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de limpieza.
 
@@ -101,7 +114,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Verifica si el servicio de limpieza está en ejecución.
 
@@ -114,7 +131,11 @@ Returns:
 Raises:
     None
 
-#### `clean_csv(self, max_files: int = None) -> int`
+#### `clean_csv()`
+
+```python
+clean_csv(self, max_files: int = None) -> int
+```
 
 Elimina los archivos CSV de exportación más antiguos que superen el límite especificado.
 
@@ -127,7 +148,11 @@ Returns:
 Raises:
     None
 
-#### `clean_png(self, max_files: int = None) -> int`
+#### `clean_png()`
+
+```python
+clean_png(self, max_files: int = None) -> int
+```
 
 Elimina los PNG exportados más antiguos que superen el límite configurado.
 
@@ -140,7 +165,11 @@ Returns:
 Raises:
     None
 
-#### `clean_log_exports(self, max_files: int = None) -> int`
+#### `clean_log_exports()`
+
+```python
+clean_log_exports(self, max_files: int = None) -> int
+```
 
 Elimina los archivos de exportación de logs más antiguos que superen el límite.
 
@@ -153,7 +182,11 @@ Returns:
 Raises:
     None
 
-#### `clean_db(self, days: int = None) -> bool`
+#### `clean_db()`
+
+```python
+clean_db(self, days: int = None) -> bool
+```
 
 Elimina registros de la base de datos más antiguos que un número determinado de días.
 
@@ -166,7 +199,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la limpieza de la base de datos.
 
-#### `get_status(self) -> dict`
+#### `get_status()`
+
+```python
+get_status(self) -> dict
+```
 
 Devuelve el estado actual del servicio de limpieza.
 Args: 
@@ -177,7 +214,11 @@ Returns:
 Raises: 
     None
 
-#### `force_cleanup(self) -> dict`
+#### `force_cleanup()`
+
+```python
+force_cleanup(self) -> dict
+```
 
 Fuerza un ciclo de limpieza inmediato de archivos y base de datos.
 
@@ -188,10 +229,13 @@ Returns:
 
 Raises: None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__new__(cls, *args, **kwargs)`
+#### `__new__()`
+
+```python
+__new__(cls, *args, **kwargs)
+```
 
 Crea una instancia única de la clase utilizando el patrón singleton thread-safe.
 
@@ -205,7 +249,11 @@ Returns:
 Raises:
     None
 
-#### `__init__(self, data_logger = None, max_csv: int = DEFAULT_MAX_CSV, max_png: int = DEFAULT_MAX_PNG, max_log: int = DEFAULT_MAX_LOG, db_days: int = DEFAULT_DB_DAYS, interval_hours: float = DEFAULT_INTERVAL_HOURS)`
+#### `__init__()`
+
+```python
+__init__(self, data_logger = None, max_csv: int = DEFAULT_MAX_CSV, max_png: int = DEFAULT_MAX_PNG, max_log: int = DEFAULT_MAX_LOG, db_days: int = DEFAULT_DB_DAYS, interval_hours: float = DEFAULT_INTERVAL_HOURS)
+```
 
 Inicializa el servicio de limpieza con los parámetros especificados.
 
@@ -217,7 +265,11 @@ Args:
     db_days: Días de histórico a conservar en la BD.
     interval_hours: Horas entre ejecuciones del ciclo de limpieza.
 
-#### `_run(self)`
+#### `_run()`
+
+```python
+_run(self)
+```
 
 Ejecuta el ciclo de limpieza inicial y luego cada intervalo de horas configurado.
 
@@ -230,7 +282,11 @@ Returns:
 Raises:
     None
 
-#### `_cleanup_cycle(self)`
+#### `_cleanup_cycle()`
+
+```python
+_cleanup_cycle(self)
+```
 
 Ejecuta un ciclo completo de limpieza.
 
@@ -243,7 +299,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_trim_files(self, pattern: str, max_files: int, label: str) -> int`
+#### `_trim_files()`
+
+```python
+_trim_files(self, pattern: str, max_files: int, label: str) -> int
+```
 
 Elimina los archivos más antiguos que superen el número máximo permitido según un patrón.
 
@@ -257,5 +317,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante la eliminación de archivos.
-
-</details>

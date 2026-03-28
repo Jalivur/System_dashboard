@@ -11,6 +11,12 @@ Ventana de estadísticas de Pi-hole.
 ## Tabla de contenidos
 
 **Clase [`PiholeWindow`](#clase-piholewindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_schedule_update()`](#_schedule_update) _(privado)_
+  - [`_force_refresh()`](#_force_refresh) _(privado)_
+  - [`_render()`](#_render) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -60,10 +66,13 @@ Returns:
 | `_pihole` | `pihole_monitor` |
 | `_update_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, pihole_monitor: PiholeMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, pihole_monitor: PiholeMonitor)
+```
 
 Inicializa la ventana de estadísticas de Pi-hole.
 
@@ -80,7 +89,11 @@ Raises:
 Returns:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz gráfica de usuario de la ventana.
 
@@ -93,7 +106,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_schedule_update(self)`
+#### `_schedule_update()`
+
+```python
+_schedule_update(self)
+```
 
 Programa la primera actualización de la interfaz.
 
@@ -106,7 +123,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_force_refresh(self)`
+#### `_force_refresh()`
+
+```python
+_force_refresh(self)
+```
 
 Fuerza la actualización manual de estadísticas Pi-hole en segundo plano de manera no bloqueante.
 
@@ -121,7 +142,11 @@ Raises:
 
 Nota: Verifica si el monitor está activo antes de forzar la actualización.
 
-#### `_render(self)`
+#### `_render()`
+
+```python
+_render(self)
+```
 
 Actualiza los valores en pantalla con la caché del monitor.
 
@@ -134,7 +159,11 @@ Returns:
 Raises:
     None
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Maneja el cierre ordenado de la ventana de Pi-hole.
 
@@ -146,5 +175,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

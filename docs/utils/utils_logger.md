@@ -14,21 +14,26 @@ Ubicación: utils/logger.py
 ## Tabla de contenidos
 
 **Funciones**
-- [`get_logger()`](#funcion-get_logger)
-- [`get_dashboard_logger()`](#funcion-get_dashboard_logger)
-- [`log_startup_info()`](#funcion-log_startup_info)
+- [`get_logger()`](#get_logger)
+- [`get_dashboard_logger()`](#get_dashboard_logger)
+- [`log_startup_info()`](#log_startup_info)
 
 **Clase [`_ExactLevelFilter`](#clase-_exactlevelfilter)**
-  - [`filter()`](#filterself-record-logginglogrecord-bool)
+  - [`filter()`](#filter)
+  - [`__init__()`](#__init__) _(privado)_
 
 **Clase [`DashboardLogger`](#clase-dashboardlogger)**
-  - [`set_file_level()`](#set_file_levelself-level-int-none)
-  - [`set_console_level()`](#set_console_levelself-level-int-exact-bool-false-none)
-  - [`set_module_level()`](#set_module_levelself-module-str-level-int-none)
-  - [`force_rollover()`](#force_rolloverself-none)
-  - [`get_status()`](#get_statusself-dict)
-  - [`get_active_modules()`](#get_active_modulesself-list)
-  - [`get_logger()`](#get_loggerself-name-str-logginglogger)
+  - [`set_file_level()`](#set_file_level)
+  - [`set_console_level()`](#set_console_level)
+  - [`set_module_level()`](#set_module_level)
+  - [`force_rollover()`](#force_rollover)
+  - [`get_status()`](#get_status)
+  - [`get_active_modules()`](#get_active_modules)
+  - [`get_logger()`](#get_logger)
+  - [`__new__()`](#__new__) _(privado)_
+  - [`_setup_logger()`](#_setup_logger) _(privado)_
+  - [`_load_saved_config()`](#_load_saved_config) _(privado)_
+  - [`_persist()`](#_persist) _(privado)_
 
 ---
 
@@ -49,7 +54,11 @@ from config.local_settings_io import update_params
 
 ## Funciones
 
-### `get_logger(name: str) -> logging.Logger`
+### `get_logger()`
+
+```python
+get_logger(name: str) -> logging.Logger
+```
 
 Obtiene un logger para un módulo específico.
 
@@ -62,7 +71,11 @@ Returns:
 Raises:
     None
 
-### `get_dashboard_logger() -> DashboardLogger`
+### `get_dashboard_logger()`
+
+```python
+get_dashboard_logger() -> DashboardLogger
+```
 
 Devuelve la instancia singleton de DashboardLogger para control en runtime.
 
@@ -76,6 +89,10 @@ Raises:
     Ninguno
 
 ### `log_startup_info()`
+
+```python
+log_startup_info()
+```
 
 Registra información de inicio del sistema en el registro de eventos.
 
@@ -109,7 +126,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `filter(self, record: logging.LogRecord) -> bool`
+#### `filter()`
+
+```python
+filter(self, record: logging.LogRecord) -> bool
+```
 
 Filtra registros de log según su nivel exacto.
 
@@ -119,17 +140,18 @@ Args:
 Returns:
     bool: True si el nivel coincide, False en caso contrario.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, level: int)`
+#### `__init__()`
+
+```python
+__init__(self, level: int)
+```
 
 Inicializa el filtro con el nivel de log exacto especificado.
 
 Args:
     level (int): Nivel de logging exacto.
-
-</details>
 
 ## Clase `DashboardLogger`
 
@@ -149,7 +171,11 @@ Notas:
 
 ### Métodos públicos
 
-#### `set_file_level(self, level: int) -> None`
+#### `set_file_level()`
+
+```python
+set_file_level(self, level: int) -> None
+```
 
 Establece el nivel de registro para el handler de fichero y persiste los cambios.
 
@@ -162,7 +188,11 @@ Returns:
 Raises:
     None
 
-#### `set_console_level(self, level: int, exact: bool = False) -> None`
+#### `set_console_level()`
+
+```python
+set_console_level(self, level: int, exact: bool = False) -> None
+```
 
 Establece el nivel de registro de la consola y persiste la configuración.
 
@@ -176,7 +206,11 @@ Returns:
 Raises:
     None
 
-#### `set_module_level(self, module: str, level: int) -> None`
+#### `set_module_level()`
+
+```python
+set_module_level(self, module: str, level: int) -> None
+```
 
 Establece el nivel de registro para un módulo específico en el sistema de registro.
 
@@ -190,7 +224,11 @@ Returns:
 Raises:
     None
 
-#### `force_rollover(self) -> None`
+#### `force_rollover()`
+
+```python
+force_rollover(self) -> None
+```
 
 Fuerza la rotación inmediata del fichero de log.
 
@@ -203,7 +241,11 @@ Returns:
 Raises:
     None
 
-#### `get_status(self) -> dict`
+#### `get_status()`
+
+```python
+get_status(self) -> dict
+```
 
 Devuelve el estado actual de los handlers y módulos con nivel explícito.
 
@@ -216,7 +258,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_active_modules(self) -> list`
+#### `get_active_modules()`
+
+```python
+get_active_modules(self) -> list
+```
 
 Obtiene una lista de nombres cortos de todos los sub-loggers activos instanciados en el dashboard.
 
@@ -229,7 +275,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_logger(self, name: str) -> logging.Logger`
+#### `get_logger()`
+
+```python
+get_logger(self, name: str) -> logging.Logger
+```
 
 Obtiene un logger con prefijo 'Dashboard.' para el módulo especificado.
 
@@ -239,10 +289,13 @@ Args:
 Returns:
     logging.Logger: Logger configurado para el módulo.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__new__(cls)`
+#### `__new__()`
+
+```python
+__new__(cls)
+```
 
 Crea una nueva instancia del logger, aplicando el patrón Singleton para garantizar una única instancia.
 
@@ -255,7 +308,11 @@ Returns:
 Raises:
     None
 
-#### `_setup_logger(self)`
+#### `_setup_logger()`
+
+```python
+_setup_logger(self)
+```
 
 Configura el logger con rutas absolutas y rotación automática.
 
@@ -268,7 +325,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_load_saved_config(self, project_root: Path) -> dict`
+#### `_load_saved_config()`
+
+```python
+_load_saved_config(self, project_root: Path) -> dict
+```
 
 Carga la configuración guardada de niveles de registro desde el archivo local_settings.py.
 
@@ -281,7 +342,11 @@ Returns:
 Raises:
     Ninguna excepción es propagada explícitamente, aunque puede ocurrir una excepción genérica durante la ejecución.
 
-#### `_persist(self) -> None`
+#### `_persist()`
+
+```python
+_persist(self) -> None
+```
 
 Guarda la configuración actual de logging en el archivo local_settings.py.
 
@@ -290,5 +355,3 @@ Args: Ninguno
 Returns: None
 
 Raises: Exception - Si ocurre un error al persistir la configuración, se registra una advertencia.
-
-</details>

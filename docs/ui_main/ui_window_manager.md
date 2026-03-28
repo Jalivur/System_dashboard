@@ -11,11 +11,13 @@ Gestor centralizado de ventanas y botones del menu principal.
 ## Tabla de contenidos
 
 **Clase [`WindowManager`](#clase-windowmanager)**
-  - [`set_rerender_callback()`](#set_rerender_callbackself-cb-none)
-  - [`apply_config()`](#apply_configself-none)
-  - [`show()`](#showself-key-str-none)
-  - [`hide()`](#hideself-key-str-none)
-  - [`is_enabled()`](#is_enabledself-key-str-bool)
+  - [`set_rerender_callback()`](#set_rerender_callback)
+  - [`apply_config()`](#apply_config)
+  - [`show()`](#show)
+  - [`hide()`](#hide)
+  - [`is_enabled()`](#is_enabled)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_rerender()`](#_rerender) _(privado)_
 
 ---
 
@@ -61,7 +63,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `set_rerender_callback(self, cb) -> None`
+#### `set_rerender_callback()`
+
+```python
+set_rerender_callback(self, cb) -> None
+```
 
 Establece el callback para re-renderizar las pestañas al cambiar el estado de ui_enabled.
 
@@ -74,7 +80,11 @@ Returns:
 Raises:
     None
 
-#### `apply_config(self) -> None`
+#### `apply_config()`
+
+```python
+apply_config(self) -> None
+```
 
 Aplica la configuración de la interfaz de usuario y ejecuta un re-renderizado.
 
@@ -84,7 +94,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `show(self, key: str) -> None`
+#### `show()`
+
+```python
+show(self, key: str) -> None
+```
 
 Habilita la visualización de una ventana específica en la interfaz de usuario.
 
@@ -97,7 +111,11 @@ Returns:
 Raises:
     None
 
-#### `hide(self, key: str) -> None`
+#### `hide()`
+
+```python
+hide(self, key: str) -> None
+```
 
 Oculta un botón o ventana específica en la interfaz de usuario.
 
@@ -110,7 +128,11 @@ Returns:
 Raises:
     None
 
-#### `is_enabled(self, key: str) -> bool`
+#### `is_enabled()`
+
+```python
+is_enabled(self, key: str) -> bool
+```
 
 Consulta si una ventana o botón está habilitado en la configuración de la interfaz de usuario.
 
@@ -123,10 +145,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, registry, menu_btns: dict)`
+#### `__init__()`
+
+```python
+__init__(self, registry, menu_btns: dict)
+```
 
 Inicializa el gestor de ventanas y botones con un registro de servicios.
 
@@ -140,7 +165,11 @@ Returns:
 Raises:
     None
 
-#### `_rerender(self) -> None`
+#### `_rerender()`
+
+```python
+_rerender(self) -> None
+```
 
 Re-renderiza la ventana llamando al callback registrado.
 
@@ -152,5 +181,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

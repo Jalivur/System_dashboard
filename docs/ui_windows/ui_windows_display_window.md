@@ -12,6 +12,16 @@ Hardware: Freenove FNK0100K — Raspberry Pi 5.
 ## Tabla de contenidos
 
 **Clase [`DisplayWindow`](#clase-displaywindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_content()`](#_build_content) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_on_slider()`](#_on_slider) _(privado)_
+  - [`_set_quick()`](#_set_quick) _(privado)_
+  - [`_screen_on()`](#_screen_on) _(privado)_
+  - [`_screen_off()`](#_screen_off) _(privado)_
+  - [`_toggle_dim()`](#_toggle_dim) _(privado)_
+  - [`_refresh()`](#_refresh) _(privado)_
 
 ---
 
@@ -62,10 +72,13 @@ Returns:
 | `_banner_shown` | `False` |
 | `_inner` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, display_service)`
+#### `__init__()`
+
+```python
+__init__(self, parent, display_service)
+```
 
 Inicializa la ventana de control de brillo de pantalla.
 
@@ -79,7 +92,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la estructura principal de la interfaz de usuario de la ventana.
 
@@ -92,7 +109,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_content(self, inner)`
+#### `_build_content()`
+
+```python
+_build_content(self, inner)
+```
 
 Construye el contenido real de la ventana de visualización.
 
@@ -105,7 +126,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza la ventana periódicamente para reflejar el estado del servicio.
 
@@ -118,7 +143,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_slider(self, value)`
+#### `_on_slider()`
+
+```python
+_on_slider(self, value)
+```
 
 Actualiza el brillo de la pantalla según el valor del deslizador.
 
@@ -131,7 +160,11 @@ Returns:
 Raises:
     None
 
-#### `_set_quick(self, value)`
+#### `_set_quick()`
+
+```python
+_set_quick(self, value)
+```
 
 Establece un nivel de brillo rápido predefinido.
 
@@ -144,7 +177,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_screen_on(self)`
+#### `_screen_on()`
+
+```python
+_screen_on(self)
+```
 
 Activa la pantalla y la establece al 100% de brillo.
 
@@ -157,7 +194,11 @@ Returns:
 Raises: 
     Excepciones relacionadas con DisplayService
 
-#### `_screen_off(self)`
+#### `_screen_off()`
+
+```python
+_screen_off(self)
+```
 
 Apaga la pantalla configurando el brillo al 0%.
 
@@ -170,7 +211,11 @@ Returns:
 Raises: 
     Excepciones relacionadas con el servicio de pantalla
 
-#### `_toggle_dim(self)`
+#### `_toggle_dim()`
+
+```python
+_toggle_dim(self)
+```
 
 Activa o desactiva el modo de atenuado automático por inactividad.
 
@@ -183,7 +228,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh(self)`
+#### `_refresh()`
+
+```python
+_refresh(self)
+```
 
 Actualiza la etiqueta y slider con el brillo actual.
 
@@ -195,5 +244,3 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>

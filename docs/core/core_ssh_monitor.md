@@ -12,14 +12,22 @@ Corre en thread daemon con refresco cada 30 segundos.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_run()`](#_run) _(privada)_
+- [`_parse_who()`](#_parse_who) _(privada)_
+- [`_parse_last()`](#_parse_last) _(privada)_
+
 **Clase [`SSHMonitor`](#clase-sshmonitor)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_sessions()`](#get_sessionsself-list)
-  - [`get_history()`](#get_historyself-list)
-  - [`get_last_update()`](#get_last_updateself-str)
-  - [`get_stats()`](#get_statsself-dict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_sessions()`](#get_sessions)
+  - [`get_history()`](#get_history)
+  - [`get_last_update()`](#get_last_update)
+  - [`get_stats()`](#get_stats)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_poll()`](#_poll) _(privado)_
 
 ---
 
@@ -42,10 +50,13 @@ from utils.logger import get_logger
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_run(cmd: list) -> str`
+### `_run()`
+
+```python
+_run(cmd: list) -> str
+```
 
 Ejecuta un comando y devuelve la salida estándar o una cadena vacía si falla.
 
@@ -58,7 +69,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución del comando.
 
-### `_parse_who(raw: str) -> list`
+### `_parse_who()`
+
+```python
+_parse_who(raw: str) -> list
+```
 
 Parsea la salida de `who` y devuelve una lista de diccionarios con información de sesión.
 
@@ -71,7 +86,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `_parse_last(raw: str) -> list`
+### `_parse_last()`
+
+```python
+_parse_last(raw: str) -> list
+```
 
 Parsea la salida de `last -n 50` y devuelve una lista de diccionarios con información de sesión.
 
@@ -83,8 +102,6 @@ Returns:
 
 Raises:
     Ninguna excepción es lanzada explícitamente.
-
-</details>
 
 ## Clase `SSHMonitor`
 
@@ -111,7 +128,11 @@ Características:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el servicio de monitoreo en segundo plano.
 
@@ -128,7 +149,11 @@ Nota: Si el servicio ya está ejecutándose, este método no tiene efecto.
 El servicio se ejecuta en un hilo daemon y realiza una primera verificación inmediata,
 posteriormente ejecuta verificaciones cada intervalo configurado.
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de monitoreo SSH de manera limpia.
 
@@ -138,7 +163,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Verifica si el servicio de monitoreo SSH está en ejecución.
 
@@ -151,7 +180,11 @@ Returns:
 Raises:
     None
 
-#### `get_sessions(self) -> list`
+#### `get_sessions()`
+
+```python
+get_sessions(self) -> list
+```
 
 Retorna una lista de sesiones SSH activas actuales.
 
@@ -165,7 +198,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_history(self) -> list`
+#### `get_history()`
+
+```python
+get_history(self) -> list
+```
 
 Retorna el historial reciente de logins.
 
@@ -179,7 +216,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_last_update(self) -> str`
+#### `get_last_update()`
+
+```python
+get_last_update(self) -> str
+```
 
 Retorna el timestamp de la última actualización en formato HH:MM:SS.
 
@@ -192,7 +233,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_stats(self) -> dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> dict
+```
 
 Obtiene un snapshot completo de las estadísticas actuales del monitor SSH.
 
@@ -207,10 +252,13 @@ Raises:
 
 Notas: Si el bloqueo interno está ocupado, devuelve un diccionario vacío.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor SSH.
 
@@ -223,7 +271,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_loop(self)`
+#### `_loop()`
+
+```python
+_loop(self)
+```
 
 Ejecuta el bucle principal del thread de monitoreo.
 
@@ -236,7 +288,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_poll(self)`
+#### `_poll()`
+
+```python
+_poll(self)
+```
 
 Realiza un ciclo de polling completo para obtener información de sesiones activas y historial.
 
@@ -245,5 +301,3 @@ Args: Ninguno
 Returns: Ninguno
 
 Raises: Exception - Si ocurre un error durante la ejecución, se registra en el log de errores.
-
-</details>

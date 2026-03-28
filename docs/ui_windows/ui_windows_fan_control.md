@@ -11,6 +11,22 @@ Ventana de control de ventiladores
 ## Tabla de contenidos
 
 **Clase [`FanControlWindow`](#clase-fancontrolwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_load_initial_state()`](#_load_initial_state) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_update_service_status()`](#_update_service_status) _(privado)_
+  - [`_create_mode_section()`](#_create_mode_section) _(privado)_
+  - [`_create_manual_pwm_section()`](#_create_manual_pwm_section) _(privado)_
+  - [`_create_curve_section()`](#_create_curve_section) _(privado)_
+  - [`_entry_focus_in()`](#_entry_focus_in) _(privado)_
+  - [`_entry_focus_out()`](#_entry_focus_out) _(privado)_
+  - [`_add_curve_point_from_entries()`](#_add_curve_point_from_entries) _(privado)_
+  - [`_refresh_curve_points()`](#_refresh_curve_points) _(privado)_
+  - [`_remove_curve_point()`](#_remove_curve_point) _(privado)_
+  - [`_create_bottom_buttons()`](#_create_bottom_buttons) _(privado)_
+  - [`_on_mode_change()`](#_on_mode_change) _(privado)_
+  - [`_on_pwm_change()`](#_on_pwm_change) _(privado)_
+  - [`_update_pwm_display()`](#_update_pwm_display) _(privado)_
 
 ---
 
@@ -70,10 +86,13 @@ Args:
 | `_new_temp_var` | `tk.StringVar(master=self, value=self._PLACEHOLDER_TEMP)` |
 | `_new_pwm_var` | `tk.StringVar(master=self, value=self._PLACEHOLDER_PWM)` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, fan_controller: FanController, system_monitor: SystemMonitor, fan_service = None)`
+#### `__init__()`
+
+```python
+__init__(self, parent, fan_controller: FanController, system_monitor: SystemMonitor, fan_service = None)
+```
 
 Inicializa la ventana de control de ventiladores con dependencias y configuración.
 
@@ -89,7 +108,11 @@ Returns:
 Raises:
     None
 
-#### `_load_initial_state(self)`
+#### `_load_initial_state()`
+
+```python
+_load_initial_state(self)
+```
 
 Carga el estado inicial de la ventana de control del ventilador desde archivo.
 
@@ -102,7 +125,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario de la ventana de control de ventiladores.
 
@@ -115,7 +142,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_service_status(self)`
+#### `_update_service_status()`
+
+```python
+_update_service_status(self)
+```
 
 Actualiza el estado de la notificación de servicio según el estado del servicio de ventilador.
 
@@ -128,7 +159,11 @@ Returns:
 Raises:
     None
 
-#### `_create_mode_section(self, parent)`
+#### `_create_mode_section()`
+
+```python
+_create_mode_section(self, parent)
+```
 
 Crea la sección de selección de modo en la ventana de control del ventilador.
 
@@ -141,7 +176,11 @@ Returns:
 Raises:
     None
 
-#### `_create_manual_pwm_section(self, parent)`
+#### `_create_manual_pwm_section()`
+
+```python
+_create_manual_pwm_section(self, parent)
+```
 
 Crea la sección de PWM manual en la ventana de control del ventilador.
 
@@ -154,7 +193,11 @@ Returns:
 Raises:
     None
 
-#### `_create_curve_section(self, parent)`
+#### `_create_curve_section()`
+
+```python
+_create_curve_section(self, parent)
+```
 
 Crea la sección de curva temperatura-PWM en la ventana de control del ventilador.
 
@@ -167,7 +210,11 @@ Returns:
 Raises:
     None
 
-#### `_entry_focus_in(self, entry, var, placeholder)`
+#### `_entry_focus_in()`
+
+```python
+_entry_focus_in(self, entry, var, placeholder)
+```
 
 Maneja el evento de foco entrando en un campo de entrada.
 
@@ -184,7 +231,11 @@ Returns:
 Raises:
     None
 
-#### `_entry_focus_out(self, entry, var, placeholder)`
+#### `_entry_focus_out()`
+
+```python
+_entry_focus_out(self, entry, var, placeholder)
+```
 
 Restaura el texto placeholder en un campo de entrada cuando pierde el foco y está vacío.
 
@@ -199,7 +250,11 @@ Returns:
 Raises:
     None
 
-#### `_add_curve_point_from_entries(self)`
+#### `_add_curve_point_from_entries()`
+
+```python
+_add_curve_point_from_entries(self)
+```
 
 Añade un nuevo punto a la curva temperatura-PWM desde los campos de entrada.
 
@@ -214,7 +269,11 @@ Raises:
 
 Nota: Valida rangos (temp 0-100, PWM 0-255), actualiza controlador, refresca UI y muestra confirmación.
 
-#### `_refresh_curve_points(self)`
+#### `_refresh_curve_points()`
+
+```python
+_refresh_curve_points(self)
+```
 
 Refresca la visualización de puntos de la curva en la ventana de control.
 
@@ -227,7 +286,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_remove_curve_point(self, temp: int)`
+#### `_remove_curve_point()`
+
+```python
+_remove_curve_point(self, temp: int)
+```
 
 Elimina un punto específico de la curva por temperatura.
 
@@ -240,7 +303,11 @@ Raises:
 Returns:
     None
 
-#### `_create_bottom_buttons(self, parent)`
+#### `_create_bottom_buttons()`
+
+```python
+_create_bottom_buttons(self, parent)
+```
 
 Crea los botones inferiores de la interfaz de control de ventilador.
 
@@ -253,7 +320,11 @@ Returns:
 Raises:
     None
 
-#### `_on_mode_change(self, mode: str)`
+#### `_on_mode_change()`
+
+```python
+_on_mode_change(self, mode: str)
+```
 
 Actualiza el control de ventilador al cambiar el modo de operación.
 
@@ -263,7 +334,11 @@ Args:
 Raises:
     None
 
-#### `_on_pwm_change(self, value)`
+#### `_on_pwm_change()`
+
+```python
+_on_pwm_change(self, value)
+```
 
 Actualiza la interfaz y guarda el estado al cambiar el valor del PWM manual.
 
@@ -273,7 +348,11 @@ Args:
 Raises:
     Ninguna excepción relevante.
 
-#### `_update_pwm_display(self)`
+#### `_update_pwm_display()`
+
+```python
+_update_pwm_display(self)
+```
 
 Actualiza periódicamente el display PWM cada 2 segundos.
 
@@ -287,5 +366,3 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>

@@ -11,19 +11,19 @@ Estilos y temas para la interfaz
 ## Tabla de contenidos
 
 **Funciones**
-- [`make_futuristic_button()`](#funcion-make_futuristic_button)
-- [`make_window_header()`](#funcion-make_window_header)
-- [`make_homebridge_switch()`](#funcion-make_homebridge_switch)
+- [`make_futuristic_button()`](#make_futuristic_button)
+- [`make_window_header()`](#make_window_header)
+- [`make_homebridge_switch()`](#make_homebridge_switch)
 
 **Clase [`StyleManager`](#clase-stylemanager)**
-  - [`style_radiobutton_tk()`](#style_radiobutton_tkrb-tkradiobutton-fg-str-none-bg-str-none-hover_fg-str-none-none)
-  - [`style_radiobutton_ctk()`](#style_radiobutton_ctkrb-ctkctkradiobutton-radiobutton_width-int-25-radiobutton_height-int-25-none)
-  - [`style_slider()`](#style_sliderslider-tkscale-color-str-none-none)
-  - [`style_slider_ctk()`](#style_slider_ctkslider-ctkctkslider-color-str-none-height-30-none)
-  - [`style_scrollbar()`](#style_scrollbarsb-tkscrollbar-color-str-none-none)
-  - [`style_scrollbar_ctk()`](#style_scrollbar_ctksb-ctkctkscrollbar-color-str-none-none)
-  - [`style_ctk_scrollbar()`](#style_ctk_scrollbarscrollable_frame-ctkctkscrollableframe-color-str-none-none)
-  - [`show_service_stopped_banner()`](#show_service_stopped_bannerparent_frame-service_name-str-none)
+  - [`style_radiobutton_tk()`](#style_radiobutton_tk)
+  - [`style_radiobutton_ctk()`](#style_radiobutton_ctk)
+  - [`style_slider()`](#style_slider)
+  - [`style_slider_ctk()`](#style_slider_ctk)
+  - [`style_scrollbar()`](#style_scrollbar)
+  - [`style_scrollbar_ctk()`](#style_scrollbar_ctk)
+  - [`style_ctk_scrollbar()`](#style_ctk_scrollbar)
+  - [`show_service_stopped_banner()`](#show_service_stopped_banner)
 
 ---
 
@@ -41,7 +41,11 @@ from config.settings import COLORS, FONT_FAMILY, FONT_SIZES, Icons
 
 ## Funciones
 
-### `make_futuristic_button(parent, text: str, command = None, width: int = None, height: int = None, font_size: int = None, state: str = 'normal') -> ctk.CTkButton`
+### `make_futuristic_button()`
+
+```python
+make_futuristic_button(parent, text: str, command = None, width: int = None, height: int = None, font_size: int = None, state: str = 'normal') -> ctk.CTkButton
+```
 
 Crea un botón con estilo futurista.
 
@@ -60,7 +64,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `make_window_header(parent, title: str, on_close, status_text: str = None) -> ctk.CTkFrame`
+### `make_window_header()`
+
+```python
+make_window_header(parent, title: str, on_close, status_text: str = None) -> ctk.CTkFrame
+```
 
 Crea una barra de cabecera unificada para ventanas de monitoreo.
 
@@ -76,7 +84,11 @@ Crea una barra de cabecera unificada para ventanas de monitoreo.
     Raises:
         Ninguno.
 
-### `make_homebridge_switch(parent, text: str, command = None, is_on: bool = False, disabled: bool = False) -> ctk.CTkSwitch`
+### `make_homebridge_switch()`
+
+```python
+make_homebridge_switch(parent, text: str, command = None, is_on: bool = False, disabled: bool = False) -> ctk.CTkSwitch
+```
 
 Crea un CTkSwitch estilado para el control de accesorios Homebridge.
 
@@ -106,7 +118,11 @@ Returns:
 
 ### Métodos públicos
 
-#### `style_radiobutton_tk(rb: tk.Radiobutton, fg: str = None, bg: str = None, hover_fg: str = None) -> None`
+#### `style_radiobutton_tk()`
+
+```python
+style_radiobutton_tk(rb: tk.Radiobutton, fg: str = None, bg: str = None, hover_fg: str = None) -> None
+```
 
 Aplica estilo personalizado a un widget Radiobutton de tkinter.
 
@@ -122,7 +138,11 @@ Returns:
 Raises:
     None
 
-#### `style_radiobutton_ctk(rb: ctk.CTkRadioButton, radiobutton_width: int = 25, radiobutton_height: int = 25) -> None`
+#### `style_radiobutton_ctk()`
+
+```python
+style_radiobutton_ctk(rb: ctk.CTkRadioButton, radiobutton_width: int = 25, radiobutton_height: int = 25) -> None
+```
 
 Aplica estilo personalizado a un widget CTkRadioButton de customtkinter.
 
@@ -134,7 +154,11 @@ Args:
 Returns:
     None
 
-#### `style_slider(slider: tk.Scale, color: str = None) -> None`
+#### `style_slider()`
+
+```python
+style_slider(slider: tk.Scale, color: str = None) -> None
+```
 
 Aplica estilo personalizado a un widget slider de tkinter.
 
@@ -148,7 +172,11 @@ Returns:
 Raises:
     None
 
-#### `style_slider_ctk(slider: ctk.CTkSlider, color: str = None, height = 30) -> None`
+#### `style_slider_ctk()`
+
+```python
+style_slider_ctk(slider: ctk.CTkSlider, color: str = None, height = 30) -> None
+```
 
 Aplica estilo personalizado a un widget CTkSlider de customtkinter.
 
@@ -163,7 +191,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `style_scrollbar(sb: tk.Scrollbar, color: str = None) -> None`
+#### `style_scrollbar()`
+
+```python
+style_scrollbar(sb: tk.Scrollbar, color: str = None) -> None
+```
 
 Aplica estilo personalizado a un widget Scrollbar de tkinter.
 
@@ -177,7 +209,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `style_scrollbar_ctk(sb: ctk.CTkScrollbar, color: str = None) -> None`
+#### `style_scrollbar_ctk()`
+
+```python
+style_scrollbar_ctk(sb: ctk.CTkScrollbar, color: str = None) -> None
+```
 
 Aplica estilo personalizado a un scrollbar de customtkinter.
 
@@ -191,7 +227,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `style_ctk_scrollbar(scrollable_frame: ctk.CTkScrollableFrame, color: str = None) -> None`
+#### `style_ctk_scrollbar()`
+
+```python
+style_ctk_scrollbar(scrollable_frame: ctk.CTkScrollableFrame, color: str = None) -> None
+```
 
 Aplica estilo personalizado al scrollbar de un CTkScrollableFrame de customtkinter.
 
@@ -205,7 +245,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `show_service_stopped_banner(parent_frame, service_name: str) -> None`
+#### `show_service_stopped_banner()`
+
+```python
+show_service_stopped_banner(parent_frame, service_name: str) -> None
+```
 
 Muestra un banner indicando que un servicio ha detenido su ejecución.
 

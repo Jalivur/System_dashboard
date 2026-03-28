@@ -11,18 +11,19 @@ Monitor de red
 ## Tabla de contenidos
 
 **Clase [`NetworkMonitor`](#clase-networkmonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_current_stats()`](#get_current_statsself-interface-optionalstr-none-dict)
-  - [`update_history()`](#update_historyself-stats-dict-none)
-  - [`adaptive_scale()`](#adaptive_scaleself-current_max-float-recent_data-list-float)
-  - [`update_dynamic_scale()`](#update_dynamic_scaleself-none)
-  - [`get_history()`](#get_historyself-dict)
-  - [`run_speedtest()`](#run_speedtestself-none)
-  - [`get_speedtest_result()`](#get_speedtest_resultself-dict)
-  - [`reset_speedtest()`](#reset_speedtestself-none)
-  - [`net_color()`](#net_colorvalue-float-str)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_current_stats()`](#get_current_stats)
+  - [`update_history()`](#update_history)
+  - [`adaptive_scale()`](#adaptive_scale)
+  - [`update_dynamic_scale()`](#update_dynamic_scale)
+  - [`get_history()`](#get_history)
+  - [`run_speedtest()`](#run_speedtest)
+  - [`get_speedtest_result()`](#get_speedtest_result)
+  - [`reset_speedtest()`](#reset_speedtest)
+  - [`net_color()`](#net_color)
+  - [`__init__()`](#__init__) _(privado)_
 
 ---
 
@@ -80,7 +81,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el monitor de red.
 
@@ -93,7 +98,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el monitor de red y limpia los historiales y caché de speedtest.
 
@@ -106,14 +115,22 @@ Returns:
 Raises:
     Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor de red está actualmente activo.
 
 Returns:
     bool: True si el monitor está activo, False en caso contrario.
 
-#### `get_current_stats(self, interface: Optional[str] = None) -> Dict`
+#### `get_current_stats()`
+
+```python
+get_current_stats(self, interface: Optional[str] = None) -> Dict
+```
 
 Obtiene estadísticas actuales de red de una interfaz específica o mediante auto-detección.
 
@@ -126,7 +143,11 @@ Returns:
 Raises:
     None
 
-#### `update_history(self, stats: Dict) -> None`
+#### `update_history()`
+
+```python
+update_history(self, stats: Dict) -> None
+```
 
 Actualiza el historial de velocidades de descarga y subida con los estadísticos proporcionados.
 
@@ -139,7 +160,11 @@ Returns:
 Raises:
     None
 
-#### `adaptive_scale(self, current_max: float, recent_data: list) -> float`
+#### `adaptive_scale()`
+
+```python
+adaptive_scale(self, current_max: float, recent_data: list) -> float
+```
 
 Ajusta la escala gráfica de manera adaptativa según los picos recientes de datos.
 
@@ -153,7 +178,11 @@ Returns:
 Raises:
     None
 
-#### `update_dynamic_scale(self) -> None`
+#### `update_dynamic_scale()`
+
+```python
+update_dynamic_scale(self) -> None
+```
 
 Recalcula el máximo dinámico de escala en función del historial combinado de descarga y subida.
 
@@ -166,7 +195,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `get_history(self) -> Dict`
+#### `get_history()`
+
+```python
+get_history(self) -> Dict
+```
 
 Obtiene el historial de uso de red.
 
@@ -179,7 +212,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `run_speedtest(self) -> None`
+#### `run_speedtest()`
+
+```python
+run_speedtest(self) -> None
+```
 
 Ejecuta una prueba de velocidad de red utilizando la herramienta speedtest CLI de Ookla en un hilo separado.
 
@@ -189,7 +226,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `get_speedtest_result(self) -> Dict`
+#### `get_speedtest_result()`
+
+```python
+get_speedtest_result(self) -> Dict
+```
 
 Obtiene el resultado del speedtest.
 
@@ -202,7 +243,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `reset_speedtest(self) -> None`
+#### `reset_speedtest()`
+
+```python
+reset_speedtest(self) -> None
+```
 
 Restablece el estado del test de velocidad a su condición inicial.
 
@@ -215,7 +260,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `net_color(value: float) -> str`
+#### `net_color()`
+
+```python
+net_color(value: float) -> str
+```
 
 Determina el color según el tráfico de red en función de un valor de velocidad.
 
@@ -228,10 +277,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de red con historiales y configuraciones por defecto.
 
@@ -243,5 +295,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

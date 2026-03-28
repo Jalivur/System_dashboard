@@ -11,13 +11,13 @@ Sistema de temas personalizados
 ## Tabla de contenidos
 
 **Funciones**
-- [`get_theme()`](#funcion-get_theme)
-- [`get_available_themes()`](#funcion-get_available_themes)
-- [`get_theme_colors()`](#funcion-get_theme_colors)
-- [`get_theme_preview()`](#funcion-get_theme_preview)
-- [`create_custom_theme()`](#funcion-create_custom_theme)
-- [`save_selected_theme()`](#funcion-save_selected_theme)
-- [`load_selected_theme()`](#funcion-load_selected_theme)
+- [`get_theme()`](#get_theme)
+- [`get_available_themes()`](#get_available_themes)
+- [`get_theme_colors()`](#get_theme_colors)
+- [`get_theme_preview()`](#get_theme_preview)
+- [`create_custom_theme()`](#create_custom_theme)
+- [`save_selected_theme()`](#save_selected_theme)
+- [`load_selected_theme()`](#load_selected_theme)
 
 ---
 
@@ -39,7 +39,11 @@ from pathlib import Path
 
 ## Funciones
 
-### `get_theme(theme_name: str) -> dict`
+### `get_theme()`
+
+```python
+get_theme(theme_name: str) -> dict
+```
 
 Recuperación de un tema mediante su nombre.
 
@@ -52,14 +56,22 @@ Returns:
 Raises:
     KeyError: Si el tema por defecto no está configurado.
 
-### `get_available_themes() -> list`
+### `get_available_themes()`
+
+```python
+get_available_themes() -> list
+```
 
 Obtiene una lista de temas disponibles.
 
 Returns:
     list: Lista de tuplas que contienen el identificador y el nombre descriptivo de cada tema.
 
-### `get_theme_colors(theme_name: str) -> dict`
+### `get_theme_colors()`
+
+```python
+get_theme_colors(theme_name: str) -> dict
+```
 
 Recupera los colores asociados a un tema específico.
 
@@ -72,7 +84,11 @@ Returns:
 Raises:
     Exception: Si el tema no existe o no tiene colores definidos.
 
-### `get_theme_preview() -> str`
+### `get_theme_preview()`
+
+```python
+get_theme_preview() -> str
+```
 
 Obtiene una vista previa en texto de todos los temas disponibles.
 
@@ -82,7 +98,11 @@ Returns:
 Raises:
     None
 
-### `create_custom_theme(name: str, colors: dict) -> dict`
+### `create_custom_theme()`
+
+```python
+create_custom_theme(name: str, colors: dict) -> dict
+```
 
 Crea un tema personalizado con un nombre descriptivo y colores específicos.
 
@@ -96,7 +116,11 @@ Returns:
 Raises:
     ValueError: Si falta algún color requerido en el tema personalizado.
 
-### `save_selected_theme(theme_name: str)`
+### `save_selected_theme()`
+
+```python
+save_selected_theme(theme_name: str)
+```
 
 Guarda el tema seleccionado en un archivo de configuración.
 
@@ -109,7 +133,11 @@ Returns:
 Raises:
     None
 
-### `load_selected_theme() -> str`
+### `load_selected_theme()`
+
+```python
+load_selected_theme() -> str
+```
 
 Carga el tema seleccionado desde archivo de configuración.
 

@@ -25,6 +25,18 @@ Autor: Sistema Dashboard Develop.
 ## Tabla de contenidos
 
 **Clase [`LedWindow`](#clase-ledwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_content()`](#_build_content) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_set_mode()`](#_set_mode) _(privado)_
+  - [`_on_color_change()`](#_on_color_change) _(privado)_
+  - [`_apply_color()`](#_apply_color) _(privado)_
+  - [`_quick_color()`](#_quick_color) _(privado)_
+  - [`_update_preview()`](#_update_preview) _(privado)_
+  - [`_highlight_mode_btn()`](#_highlight_mode_btn) _(privado)_
+  - [`_update_status()`](#_update_status) _(privado)_
+  - [`_load_current_state()`](#_load_current_state) _(privado)_
 
 ---
 
@@ -78,10 +90,13 @@ Raises:
 | `_banner_shown` | `False` |
 | `_inner` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, led_service)`
+#### `__init__()`
+
+```python
+__init__(self, parent, led_service)
+```
 
 Inicializa la ventana de control LED como Toplevel flotante.
 
@@ -91,7 +106,11 @@ Args:
     parent: Ventana principal (CTk).
     led_service: Instancia del servicio LED para control y estado.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario principal de la ventana LED.
 
@@ -104,7 +123,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_content(self, inner)`
+#### `_build_content()`
+
+```python
+_build_content(self, inner)
+```
 
 Construye el contenido real de la ventana de LEDs.
 
@@ -114,7 +137,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza periódicamente el estado de la ventana LED, monitoreando el servicio LED.
 
@@ -127,7 +154,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_set_mode(self, mode: str)`
+#### `_set_mode()`
+
+```python
+_set_mode(self, mode: str)
+```
 
 Cambia el modo de operación de los LEDs y aplica el color RGB actual.
 
@@ -139,7 +170,11 @@ Raises:
 Returns:
     None
 
-#### `_on_color_change(self)`
+#### `_on_color_change()`
+
+```python
+_on_color_change(self)
+```
 
 Actualiza el previsualizador de color en tiempo real cuando se modifican los valores de los deslizadores RGB.
 
@@ -152,7 +187,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_apply_color(self)`
+#### `_apply_color()`
+
+```python
+_apply_color(self)
+```
 
 Aplica el color RGB actual del preview al servicio LED, ajustando modo a 'static' si necesario.
 
@@ -165,7 +204,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_quick_color(self, r: int, g: int, b: int)`
+#### `_quick_color()`
+
+```python
+_quick_color(self, r: int, g: int, b: int)
+```
 
 Establece un color RGB predefinido en los sliders, actualiza el preview y aplica inmediatamente al servicio LED.
 
@@ -174,7 +217,11 @@ Args:
     g (int): Valor verde (0-255).
     b (int): Valor azul (0-255).
 
-#### `_update_preview(self)`
+#### `_update_preview()`
+
+```python
+_update_preview(self)
+```
 
 Actualiza el canvas de preview con el color RGB actual de los sliders y refresca las etiquetas numéricas de valores R/G/B.
 
@@ -187,7 +234,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_highlight_mode_btn(self, active_mode: str)`
+#### `_highlight_mode_btn()`
+
+```python
+_highlight_mode_btn(self, active_mode: str)
+```
 
 Resalta visualmente el botón del modo LED activo y desactiva los demás.
 
@@ -200,7 +251,11 @@ Returns:
 Raises:
     None
 
-#### `_update_status(self)`
+#### `_update_status()`
+
+```python
+_update_status(self)
+```
 
 Actualiza el label de estado con el modo LED actual y valores RGB si aplica.
 
@@ -213,7 +268,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_load_current_state(self)`
+#### `_load_current_state()`
+
+```python
+_load_current_state(self)
+```
 
 Carga el estado actual del servicio LED y actualiza la interfaz gráfica reflejando el modo y los valores RGB.
 
@@ -225,5 +284,3 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>

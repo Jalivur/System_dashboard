@@ -11,14 +11,16 @@ Widgets para gráficas y visualización
 ## Tabla de contenidos
 
 **Funciones**
-- [`update_graph_lines()`](#funcion-update_graph_lines)
-- [`recolor_lines()`](#funcion-recolor_lines)
+- [`update_graph_lines()`](#update_graph_lines)
+- [`recolor_lines()`](#recolor_lines)
 
 **Clase [`GraphWidget`](#clase-graphwidget)**
-  - [`update()`](#updateself-data-listfloat-max_val-float-color-str-00ffff-none)
-  - [`recolor()`](#recolorself-color-str-none)
-  - [`pack()`](#packself-kwargs)
-  - [`grid()`](#gridself-kwargs)
+  - [`update()`](#update)
+  - [`recolor()`](#recolor)
+  - [`pack()`](#pack)
+  - [`grid()`](#grid)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_lines()`](#_create_lines) _(privado)_
 
 ---
 
@@ -36,7 +38,11 @@ from config.settings import GRAPH_WIDTH, GRAPH_HEIGHT
 
 ## Funciones
 
-### `update_graph_lines(canvas, lines: List, data: List[float], max_val: float) -> None`
+### `update_graph_lines()`
+
+```python
+update_graph_lines(canvas, lines: List, data: List[float], max_val: float) -> None
+```
 
 Actualiza las líneas de una gráfica en un canvas de tkinter con nuevos datos.
 
@@ -52,7 +58,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `recolor_lines(canvas, lines: List, color: str) -> None`
+### `recolor_lines()`
+
+```python
+recolor_lines(canvas, lines: List, color: str) -> None
+```
 
 Cambia el color de las líneas especificadas en un canvas de tkinter.
 
@@ -89,7 +99,11 @@ Nota: Utiliza valores por defecto de ancho y alto si no se proporcionan.
 
 ### Métodos públicos
 
-#### `update(self, data: List[float], max_val: float, color: str = '#00ffff') -> None`
+#### `update()`
+
+```python
+update(self, data: List[float], max_val: float, color: str = '#00ffff') -> None
+```
 
 Actualiza la gráfica con nuevos datos.
 
@@ -104,7 +118,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `recolor(self, color: str) -> None`
+#### `recolor()`
+
+```python
+recolor(self, color: str) -> None
+```
 
 Cambia el color de todas las líneas del gráfico.
 
@@ -117,7 +135,11 @@ Returns:
 Raises:
     None
 
-#### `pack(self, **kwargs)`
+#### `pack()`
+
+```python
+pack(self, **kwargs)
+```
 
 Coloca el canvas en la ventana y ajusta su tamaño según sea necesario.
 
@@ -130,7 +152,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `grid(self, **kwargs)`
+#### `grid()`
+
+```python
+grid(self, **kwargs)
+```
 
 Configura la rejilla del lienzo del widget gráfico.
 
@@ -143,10 +169,13 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, width: int = None, height: int = None)`
+#### `__init__()`
+
+```python
+__init__(self, parent, width: int = None, height: int = None)
+```
 
 Inicializa el widget de gráfica con un lienzo personalizable.
 
@@ -161,7 +190,11 @@ Returns:
 Raises:
     None
 
-#### `_create_lines(self) -> None`
+#### `_create_lines()`
+
+```python
+_create_lines(self) -> None
+```
 
 Crea las líneas en el canvas.
 
@@ -173,5 +206,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

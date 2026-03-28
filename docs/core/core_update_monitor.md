@@ -13,10 +13,11 @@ Ejecuta 'sudo apt update' solo cuando necesario (force o timeout caché).
 ## Tabla de contenidos
 
 **Clase [`UpdateMonitor`](#clase-updatemonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`check_updates()`](#check_updatesself-force-false-dict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`check_updates()`](#check_updates)
+  - [`__init__()`](#__init__) _(privado)_
 
 ---
 
@@ -60,7 +61,11 @@ de 12 horas. No inicia hilos automáticos; requiere llamada explícita a start()
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el servicio de monitoreo de actualizaciones.
 
@@ -73,7 +78,11 @@ Returns:
 Raises: 
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de monitoreo de actualizaciones.
 
@@ -86,7 +95,11 @@ Returns:
 Raises: 
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de actualización está actualmente en ejecución.
 
@@ -99,7 +112,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `check_updates(self, force = False) -> Dict`
+#### `check_updates()`
+
+```python
+check_updates(self, force = False) -> Dict
+```
 
 Verifica actualizaciones pendientes del sistema con un mecanismo de caché.
 
@@ -112,15 +129,16 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de actualizaciones.
 
 Configura el estado de ejecución, bloqueo de acceso, caché inicial de resultado desconocido,
 timestamp actual y un intervalo de comprobación de 12 horas. No inicia hilos automáticos,
 requiere llamada explícita a start() para comenzar la monitorización.
-
-</details>

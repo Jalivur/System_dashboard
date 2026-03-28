@@ -21,10 +21,12 @@ Uso en MainWindow:
 ## Tabla de contenidos
 
 **Clase [`BadgeManager`](#clase-badgemanager)**
-  - [`create()`](#createself-btn-key-str-offset_index-int-0-none)
-  - [`update()`](#updateself-key-str-value-int-color-str-none-none)
-  - [`update_temp()`](#update_tempself-key-str-temp-int-color-str-none)
-  - [`hide()`](#hideself-key-str-none)
+  - [`create()`](#create)
+  - [`update()`](#update)
+  - [`update_temp()`](#update_temp)
+  - [`hide()`](#hide)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`__contains__()`](#__contains__) _(privado)_
 
 ---
 
@@ -57,7 +59,11 @@ Nota: Utiliza este diccionario para obtener el widget padre y recrear los badges
 
 ### Métodos públicos
 
-#### `create(self, btn, key: str, offset_index: int = 0) -> None`
+#### `create()`
+
+```python
+create(self, btn, key: str, offset_index: int = 0) -> None
+```
 
 Crea un badge sobre un botón y lo registra bajo una clave específica.
 
@@ -72,7 +78,11 @@ Returns:
 Raises:
     None
 
-#### `update(self, key: str, value: int, color: str = None) -> None`
+#### `update()`
+
+```python
+update(self, key: str, value: int, color: str = None) -> None
+```
 
 Actualiza la visualización de un badge según su valor.
 
@@ -87,7 +97,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `update_temp(self, key: str, temp: int, color: str) -> None`
+#### `update_temp()`
+
+```python
+update_temp(self, key: str, temp: int, color: str) -> None
+```
 
 Actualiza el valor de temperatura de un badge existente.
 
@@ -102,7 +116,11 @@ Returns:
 Raises:
     None
 
-#### `hide(self, key: str) -> None`
+#### `hide()`
+
+```python
+hide(self, key: str) -> None
+```
 
 Oculta el badge asociado a la clave dada sin modificar su valor.
 
@@ -115,17 +133,24 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, menu_btns: dict)`
+#### `__init__()`
+
+```python
+__init__(self, menu_btns: dict)
+```
 
 Inicializa el administrador de insignias con una referencia a los botones del menú.
 
 Args:
     menu_btns (dict): Diccionario de botones del menú donde cada clave es una etiqueta y cada valor es un CTkButton.
 
-#### `__contains__(self, key: str) -> bool`
+#### `__contains__()`
+
+```python
+__contains__(self, key: str) -> bool
+```
 
 Determina si existe un badge con la clave dada.
 
@@ -134,5 +159,3 @@ Args:
 
 Returns:
     bool: True si existe el badge, False en caso contrario
-
-</details>

@@ -11,14 +11,15 @@ Controlador de ventiladores
 ## Tabla de contenidos
 
 **Clase [`FanController`](#clase-fancontroller)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`compute_pwm_from_curve()`](#compute_pwm_from_curveself-temp-float-int)
-  - [`get_pwm_for_mode()`](#get_pwm_for_modeself-mode-str-temp-float-manual_pwm-int-128-int)
-  - [`update_fan_state()`](#update_fan_stateself-mode-str-temp-float-current_target-int-none-manual_pwm-int-128-dict)
-  - [`add_curve_point()`](#add_curve_pointself-temp-int-pwm-int-listdict)
-  - [`remove_curve_point()`](#remove_curve_pointself-temp-int-listdict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`compute_pwm_from_curve()`](#compute_pwm_from_curve)
+  - [`get_pwm_for_mode()`](#get_pwm_for_mode)
+  - [`update_fan_state()`](#update_fan_state)
+  - [`add_curve_point()`](#add_curve_point)
+  - [`remove_curve_point()`](#remove_curve_point)
+  - [`__init__()`](#__init__) _(privado)_
 
 ---
 
@@ -60,7 +61,11 @@ Raises: Ninguno
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Activa el controlador del ventilador.
 
@@ -73,7 +78,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el controlador del ventilador.
 
@@ -86,7 +95,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Verifica si el servicio de control de ventiladores está en ejecución.
 
@@ -99,7 +112,11 @@ Returns:
 Raises:
     None
 
-#### `compute_pwm_from_curve(self, temp: float) -> int`
+#### `compute_pwm_from_curve()`
+
+```python
+compute_pwm_from_curve(self, temp: float) -> int
+```
 
 Calcula el valor PWM interpolando la temperatura en la curva cargada.
 
@@ -112,7 +129,11 @@ Returns:
 Raises:
     ValueError: Si la curva tiene menos de dos puntos.
 
-#### `get_pwm_for_mode(self, mode: str, temp: float, manual_pwm: int = 128) -> int`
+#### `get_pwm_for_mode()`
+
+```python
+get_pwm_for_mode(self, mode: str, temp: float, manual_pwm: int = 128) -> int
+```
 
 Obtiene el valor PWM según el modo de operación y la temperatura actual.
 
@@ -127,7 +148,11 @@ Returns:
 Raises:
     Ninguna excepción específica, se registra un warning en caso de modo desconocido.
 
-#### `update_fan_state(self, mode: str, temp: float, current_target: int = None, manual_pwm: int = 128) -> Dict`
+#### `update_fan_state()`
+
+```python
+update_fan_state(self, mode: str, temp: float, current_target: int = None, manual_pwm: int = 128) -> Dict
+```
 
 Actualiza el estado del ventilador según el modo y la temperatura actuales.
 
@@ -143,7 +168,11 @@ Returns:
 Raises:
     ValueError: Si el modo no es válido.
 
-#### `add_curve_point(self, temp: int, pwm: int) -> List[Dict]`
+#### `add_curve_point()`
+
+```python
+add_curve_point(self, temp: int, pwm: int) -> List[Dict]
+```
 
 Añade o actualiza un punto en la curva temperatura-PWM.
 
@@ -157,7 +186,11 @@ Returns:
 Raises:
     None
 
-#### `remove_curve_point(self, temp: int) -> List[Dict]`
+#### `remove_curve_point()`
+
+```python
+remove_curve_point(self, temp: int) -> List[Dict]
+```
 
 Elimina el punto de la curva que coincide con la temperatura indicada.
 
@@ -172,10 +205,13 @@ Raises:
 
 Nota: Si la curva queda vacía, se añade automáticamente un punto por defecto.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el controlador del ventilador sin estado interno.
 
@@ -187,5 +223,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

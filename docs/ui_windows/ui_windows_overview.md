@@ -13,7 +13,15 @@ Pensada para usarse como pantalla de reposo en la DSI.
 ## Tabla de contenidos
 
 **Clase [`OverviewWindow`](#clase-overviewwindow)**
-  - [`destroy()`](#destroyself)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_color_for()`](#_color_for) _(privado)_
+  - [`_refresh_system()`](#_refresh_system) _(privado)_
+  - [`_refresh_services()`](#_refresh_services) _(privado)_
+  - [`_refresh_net()`](#_refresh_net) _(privado)_
+  - [`_refresh_pihole()`](#_refresh_pihole) _(privado)_
 
 ---
 
@@ -70,7 +78,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `destroy(self)`
+#### `destroy()`
+
+```python
+destroy(self)
+```
 
 Detiene de forma segura la ventana de descripción general.
 
@@ -83,10 +95,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, system_monitor, service_monitor, pihole_monitor, network_monitor, disk_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, system_monitor, service_monitor, pihole_monitor, network_monitor, disk_monitor)
+```
 
 Inicializa la ventana de resumen del sistema.
 
@@ -101,7 +116,11 @@ Args:
     network_monitor: Monitor de red.
     disk_monitor: Monitor de disco.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Construye la interfaz completa del dashboard de resumen.
 
@@ -116,7 +135,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza automáticamente todas las secciones del dashboard a intervalos regulares.
 
@@ -129,7 +152,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_color_for(self, value, warn, crit)`
+#### `_color_for()`
+
+```python
+_color_for(self, value, warn, crit)
+```
 
 Asigna un color basado en umbrales configurables para representar estados de una métrica.
 
@@ -144,7 +171,11 @@ Returns:
 Raises:
     None
 
-#### `_refresh_system(self)`
+#### `_refresh_system()`
+
+```python
+_refresh_system(self)
+```
 
 Actualiza las tarjetas de sistema con datos de los monitores correspondientes.
 
@@ -157,7 +188,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_refresh_services(self)`
+#### `_refresh_services()`
+
+```python
+_refresh_services(self)
+```
 
 Actualiza la tarjeta de servicios con el estado actual de servicios fallidos y totales.
 
@@ -170,7 +205,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh_net(self)`
+#### `_refresh_net()`
+
+```python
+_refresh_net(self)
+```
 
 Actualiza la información de velocidad de red en la ventana de resumen.
 
@@ -185,7 +224,11 @@ Raises:
 
 Nota: Actualiza el texto con formato ↓X.X ↑Y.Y en azul primary si el monitor de red está activo, '--' si no, o '-- (parado)' si el monitor está detenido.
 
-#### `_refresh_pihole(self)`
+#### `_refresh_pihole()`
+
+```python
+_refresh_pihole(self)
+```
 
 Actualiza las métricas de Pi-hole: bloqueadas hoy, porcentaje de bloqueo, total de consultas y estado.
 
@@ -196,5 +239,3 @@ Returns: Ninguno
 Raises: Exception si ocurre un error al obtener las estadísticas de Pi-hole.
 
 Nota: Actualiza los widgets correspondientes con formato de separadores de miles y maneja casos sin datos o errores.
-
-</details>

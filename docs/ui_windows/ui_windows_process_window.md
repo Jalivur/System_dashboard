@@ -11,6 +11,20 @@ Ventana de monitor de procesos
 ## Tabla de contenidos
 
 **Clase [`ProcessWindow`](#clase-processwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_controls()`](#_create_controls) _(privado)_
+  - [`_create_column_headers()`](#_create_column_headers) _(privado)_
+  - [`_on_sort_change()`](#_on_sort_change) _(privado)_
+  - [`_on_filter_change()`](#_on_filter_change) _(privado)_
+  - [`_on_search_change()`](#_on_search_change) _(privado)_
+  - [`_do_search()`](#_do_search) _(privado)_
+  - [`_resume_updates()`](#_resume_updates) _(privado)_
+  - [`_render_processes()`](#_render_processes) _(privado)_
+  - [`_update_now()`](#_update_now) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_create_process_row()`](#_create_process_row) _(privado)_
+  - [`_kill_process()`](#_kill_process) _(privado)_
 
 ---
 
@@ -63,10 +77,13 @@ Returns:
 | `_update_paused` | `False` |
 | `_update_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, process_monitor: ProcessMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, process_monitor: ProcessMonitor)
+```
 
 Inicializa la ventana de monitor de procesos.
 
@@ -80,7 +97,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario de la ventana de proceso.
 
@@ -93,7 +114,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_controls(self, parent)`
+#### `_create_controls()`
+
+```python
+_create_controls(self, parent)
+```
 
 Crea los controles de búsqueda y filtros en la ventana.
 
@@ -106,7 +131,11 @@ Returns:
 Raises:
     None
 
-#### `_create_column_headers(self, parent)`
+#### `_create_column_headers()`
+
+```python
+_create_column_headers(self, parent)
+```
 
 Crea los encabezados de columnas ordenables para la ventana de procesos.
 
@@ -119,14 +148,22 @@ Returns:
 Raises:
     None
 
-#### `_on_sort_change(self, column: str)`
+#### `_on_sort_change()`
+
+```python
+_on_sort_change(self, column: str)
+```
 
 Reordenar los procesos en la ventana según la columna especificada.
 
 Args:
     column (str): La columna por la que ordenar los procesos.
 
-#### `_on_filter_change(self)`
+#### `_on_filter_change()`
+
+```python
+_on_filter_change(self)
+```
 
 Actualiza el filtro de procesos cuando éste cambia.
 
@@ -139,7 +176,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_search_change(self)`
+#### `_on_search_change()`
+
+```python
+_on_search_change(self)
+```
 
 Establece un retardo para actualizar la búsqueda cuando el usuario ha dejado de escribir.
 
@@ -152,7 +193,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_do_search(self)`
+#### `_do_search()`
+
+```python
+_do_search(self)
+```
 
 Ejecuta la búsqueda y pausa temporalmente las actualizaciones.
 
@@ -165,7 +210,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_resume_updates(self)`
+#### `_resume_updates()`
+
+```python
+_resume_updates(self)
+```
 
 Reanuda las actualizaciones automáticas de la ventana de proceso.
 
@@ -175,7 +224,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_render_processes(self)`
+#### `_render_processes()`
+
+```python
+_render_processes(self)
+```
 
 Actualiza estadísticas y renderiza la lista de procesos.
 
@@ -188,7 +241,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_now(self)`
+#### `_update_now()`
+
+```python
+_update_now(self)
+```
 
 Actualiza inmediatamente la ventana de procesos sin programar la siguiente actualización.
 
@@ -201,7 +258,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza automáticamente la ventana de proceso.
 
@@ -214,7 +275,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_process_row(self, proc: dict, row: int)`
+#### `_create_process_row()`
+
+```python
+_create_process_row(self, proc: dict, row: int)
+```
 
 Crea una fila para mostrar información de un proceso en la ventana.
 
@@ -228,7 +293,11 @@ Returns:
 Raises:
     None
 
-#### `_kill_process(self, proc: dict)`
+#### `_kill_process()`
+
+```python
+_kill_process(self, proc: dict)
+```
 
 Mata un proceso después de confirmar con el usuario.
 
@@ -240,5 +309,3 @@ Raises:
 
 Returns:
     None
-
-</details>

@@ -11,6 +11,25 @@ Ventana de monitor de servicios systemd
 ## Tabla de contenidos
 
 **Clase [`ServiceWindow`](#clase-servicewindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_controls()`](#_create_controls) _(privado)_
+  - [`_create_column_headers()`](#_create_column_headers) _(privado)_
+  - [`_on_sort_change()`](#_on_sort_change) _(privado)_
+  - [`_on_filter_change()`](#_on_filter_change) _(privado)_
+  - [`_on_search_change()`](#_on_search_change) _(privado)_
+  - [`_do_search()`](#_do_search) _(privado)_
+  - [`_resume_updates()`](#_resume_updates) _(privado)_
+  - [`_force_update()`](#_force_update) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_update_now()`](#_update_now) _(privado)_
+  - [`_create_service_row()`](#_create_service_row) _(privado)_
+  - [`_start_service()`](#_start_service) _(privado)_
+  - [`_stop_service()`](#_stop_service) _(privado)_
+  - [`_restart_service()`](#_restart_service) _(privado)_
+  - [`_view_logs()`](#_view_logs) _(privado)_
+  - [`_enable_service()`](#_enable_service) _(privado)_
+  - [`_disable_service()`](#_disable_service) _(privado)_
 
 ---
 
@@ -59,10 +78,13 @@ Configura la ventana y crea la interfaz de usuario para mostrar información de 
 | `_update_paused` | `False` |
 | `_update_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, service_monitor: ServiceMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, service_monitor: ServiceMonitor)
+```
 
 Inicializa la ventana principal del monitor de servicios systemd.
 
@@ -76,7 +98,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los componentes de la interfaz de usuario de la ventana.
 
@@ -89,7 +115,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_controls(self, parent)`
+#### `_create_controls()`
+
+```python
+_create_controls(self, parent)
+```
 
 Crea los controles de búsqueda y filtrado en la parte superior.
 
@@ -102,7 +132,11 @@ Returns:
 Raises:
     None
 
-#### `_create_column_headers(self, parent)`
+#### `_create_column_headers()`
+
+```python
+_create_column_headers(self, parent)
+```
 
 Crea la fila de encabezados de columnas de la tabla de servicios.
 
@@ -115,7 +149,11 @@ Returns:
 Raises:
     None
 
-#### `_on_sort_change(self, column: str)`
+#### `_on_sort_change()`
+
+```python
+_on_sort_change(self, column: str)
+```
 
 Maneja el cambio de ordenación por columna.
 
@@ -128,7 +166,11 @@ Raises:
 Returns:
     None
 
-#### `_on_filter_change(self)`
+#### `_on_filter_change()`
+
+```python
+_on_filter_change(self)
+```
 
 Aplica el nuevo filtro de estado seleccionado y refresca la vista filtrada.
 
@@ -141,7 +183,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_search_change(self)`
+#### `_on_search_change()`
+
+```python
+_on_search_change(self)
+```
 
 Maneja los cambios en la entrada de búsqueda del usuario.
 
@@ -151,7 +197,11 @@ Returns: None
 
 Raises: None
 
-#### `_do_search(self)`
+#### `_do_search()`
+
+```python
+_do_search(self)
+```
 
 Ejecuta la búsqueda real tras el período de debounce.
 
@@ -166,7 +216,11 @@ Returns:
 Raises:
     None
 
-#### `_resume_updates(self)`
+#### `_resume_updates()`
+
+```python
+_resume_updates(self)
+```
 
 Reanuda las actualizaciones automáticas periódicas.
 
@@ -181,7 +235,11 @@ Returns:
 Raises:
     None
 
-#### `_force_update(self)`
+#### `_force_update()`
+
+```python
+_force_update(self)
+```
 
 Forza una actualización inmediata de todos los datos y la interfaz de usuario.
 
@@ -191,7 +249,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza el estado de la ventana de servicio en intervalos regulares.
 
@@ -204,7 +266,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_now(self)`
+#### `_update_now()`
+
+```python
+_update_now(self)
+```
 
 Refresco inmediato y completo de la interfaz con datos actuales.
 
@@ -217,7 +283,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_service_row(self, service: dict, row: int)`
+#### `_create_service_row()`
+
+```python
+_create_service_row(self, service: dict, row: int)
+```
 
 Crea una fila completa en la tabla para un servicio específico.
 
@@ -231,7 +301,11 @@ Returns:
 Raises:
     None
 
-#### `_start_service(self, service: dict)`
+#### `_start_service()`
+
+```python
+_start_service(self, service: dict)
+```
 
 Inicia un servicio inactivo solicitando confirmación al usuario.
 
@@ -244,7 +318,11 @@ Raises:
 Returns:
     Ningún valor de retorno específico.
 
-#### `_stop_service(self, service: dict)`
+#### `_stop_service()`
+
+```python
+_stop_service(self, service: dict)
+```
 
 Detiene un servicio activo después de confirmar con el usuario.
 
@@ -257,7 +335,11 @@ Raises:
 Returns:
     None
 
-#### `_restart_service(self, service: dict)`
+#### `_restart_service()`
+
+```python
+_restart_service(self, service: dict)
+```
 
 Reinicia un servicio con confirmación previa.
 
@@ -270,7 +352,11 @@ Raises:
 Returns:
     None
 
-#### `_view_logs(self, service: dict)`
+#### `_view_logs()`
+
+```python
+_view_logs(self, service: dict)
+```
 
 Abre una ventana modal con los últimos 30 logs del servicio.
 
@@ -283,7 +369,11 @@ Returns:
 Raises:
     None
 
-#### `_enable_service(self, service: dict)`
+#### `_enable_service()`
+
+```python
+_enable_service(self, service: dict)
+```
 
 Habilita el autostart del servicio al boot con confirmación detallada.
 
@@ -296,7 +386,11 @@ Raises:
 Returns:
     None
 
-#### `_disable_service(self, service: dict)`
+#### `_disable_service()`
+
+```python
+_disable_service(self, service: dict)
+```
 
 Deshabilita el autostart de un servicio al boot con confirmación previa.
 
@@ -308,5 +402,3 @@ Raises:
 
 Returns:
     None
-
-</details>

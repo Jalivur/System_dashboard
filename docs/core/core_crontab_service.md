@@ -12,12 +12,12 @@ Encapsula la lectura, escritura y parseo del crontab del sistema.
 ## Tabla de contenidos
 
 **Funciones**
-- [`describe_cron()`](#funcion-describe_cron)
-- [`read_crontab()`](#funcion-read_crontab)
-- [`write_crontab()`](#funcion-write_crontab)
-- [`parse_line()`](#funcion-parse_line)
-- [`parse_crontab()`](#funcion-parse_crontab)
-- [`build_line()`](#funcion-build_line)
+- [`describe_cron()`](#describe_cron)
+- [`read_crontab()`](#read_crontab)
+- [`write_crontab()`](#write_crontab)
+- [`parse_line()`](#parse_line)
+- [`parse_crontab()`](#parse_crontab)
+- [`build_line()`](#build_line)
 
 ---
 
@@ -42,7 +42,11 @@ from utils.logger import get_logger
 
 ## Funciones
 
-### `describe_cron(minute: str, hour: str, day: str, month: str, weekday: str) -> str`
+### `describe_cron()`
+
+```python
+describe_cron(minute: str, hour: str, day: str, month: str, weekday: str) -> str
+```
 
 Convierte una expresión cron a texto legible en español.
 
@@ -59,7 +63,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-### `read_crontab(user: str) -> list[str]`
+### `read_crontab()`
+
+```python
+read_crontab(user: str) -> list[str]
+```
 
 Lee las líneas del crontab del usuario indicado.
 
@@ -72,7 +80,11 @@ Returns:
 Raises:
     Exception: si ocurre un error al leer el crontab.
 
-### `write_crontab(user: str, lines: list[str]) -> tuple[bool, str]`
+### `write_crontab()`
+
+```python
+write_crontab(user: str, lines: list[str]) -> tuple[bool, str]
+```
 
 Escribe las líneas dadas como el nuevo crontab del usuario especificado.
 
@@ -86,7 +98,11 @@ Returns:
 Raises:
     Excepción en caso de error al escribir el crontab
 
-### `parse_line(line: str) -> dict | None`
+### `parse_line()`
+
+```python
+parse_line(line: str) -> dict | None
+```
 
 Parsea una línea de crontab a un diccionario.
 
@@ -99,7 +115,11 @@ Returns:
 Raises:
     No se lanzan excepciones explícitas, pero puede retornar None si la línea es vacía, comentario o malformada.
 
-### `parse_crontab(lines: list[str]) -> list[dict]`
+### `parse_crontab()`
+
+```python
+parse_crontab(lines: list[str]) -> list[dict]
+```
 
 Parsea una lista de líneas crontab y devuelve las entradas válidas.
 
@@ -112,7 +132,11 @@ Returns:
 Raises:
     None
 
-### `build_line(minute: str, hour: str, day: str, month: str, weekday: str, command: str) -> str`
+### `build_line()`
+
+```python
+build_line(minute: str, hour: str, day: str, month: str, weekday: str, command: str) -> str
+```
 
 Construye una línea de crontab a partir de sus campos.
 

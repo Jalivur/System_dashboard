@@ -13,13 +13,18 @@ Sin dependencias nuevas — usa subprocess con comandos estándar.
 ## Tabla de contenidos
 
 **Clase [`VpnMonitor`](#clase-vpnmonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_status()`](#get_statusself-dict)
-  - [`is_connected()`](#is_connectedself-bool)
-  - [`get_offline_count()`](#get_offline_countself-int)
-  - [`force_poll()`](#force_pollself-none)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_status()`](#get_status)
+  - [`is_connected()`](#is_connected)
+  - [`get_offline_count()`](#get_offline_count)
+  - [`force_poll()`](#force_poll)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_poll()`](#_poll) _(privado)_
+  - [`_check_interface()`](#_check_interface) _(privado)_
+  - [`_check_interface_ifconfig()`](#_check_interface_ifconfig) _(privado)_
 
 ---
 
@@ -79,7 +84,11 @@ Atributos:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el sondeo de VPN en segundo plano.
 
@@ -92,7 +101,11 @@ Returns:
 Raises: 
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de monitoreo de VPN de manera limpia.
 
@@ -105,7 +118,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de monitoreo de VPN está actualmente en ejecución.
 
@@ -118,7 +135,11 @@ Returns:
 Raises:
     None
 
-#### `get_status(self) -> dict`
+#### `get_status()`
+
+```python
+get_status(self) -> dict
+```
 
 Obtiene el estado actual de la VPN desde caché de manera segura para hilos.
 
@@ -132,7 +153,11 @@ Returns:
 Raises:
     None
 
-#### `is_connected(self) -> bool`
+#### `is_connected()`
+
+```python
+is_connected(self) -> bool
+```
 
 Indica si la conexión VPN está actualmente activa.
 
@@ -145,7 +170,11 @@ Returns:
 Raises:
     None
 
-#### `get_offline_count(self) -> int`
+#### `get_offline_count()`
+
+```python
+get_offline_count(self) -> int
+```
 
 Obtiene el estado de conexión de la VPN para mostrar en la interfaz de usuario.
 
@@ -158,7 +187,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `force_poll(self) -> None`
+#### `force_poll()`
+
+```python
+force_poll(self) -> None
+```
 
 Fuerza una comprobación inmediata del estado de la VPN en un hilo separado.
 
@@ -173,10 +206,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, interface: str = VPN_INTERFACE)`
+#### `__init__()`
+
+```python
+__init__(self, interface: str = VPN_INTERFACE)
+```
 
 Inicializa el monitor VPN.
 
@@ -185,7 +221,11 @@ Args:
 
 Configura el bloqueo, el estado inicial desconectado y el evento de parada.
 
-#### `_loop(self) -> None`
+#### `_loop()`
+
+```python
+_loop(self) -> None
+```
 
 Ejecuta el bucle principal del thread de sondeo.
 
@@ -202,7 +242,11 @@ Nota:
     Llama a _poll() y wait(CHECK_INTERVAL) en un ciclo, manejando excepciones.
     Se detiene cuando self._running es False o self._stop_evt está seteado.
 
-#### `_poll(self) -> None`
+#### `_poll()`
+
+```python
+_poll(self) -> None
+```
 
 Actualiza el estado de la conexión VPN.
 
@@ -217,7 +261,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_check_interface(self, iface: str)`
+#### `_check_interface()`
+
+```python
+_check_interface(self, iface: str)
+```
 
 Comprueba si una interfaz de red está activa y obtiene su dirección IP.
 
@@ -230,7 +278,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la comprobación de la interfaz, se registra el error y se devuelve False junto con una cadena vacía.
 
-#### `_check_interface_ifconfig(self, iface: str)`
+#### `_check_interface_ifconfig()`
+
+```python
+_check_interface_ifconfig(self, iface: str)
+```
 
 Verifica el estado de una interfaz de red y su dirección IP mediante ifconfig.
 
@@ -242,5 +294,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante la ejecución de ifconfig.
-
-</details>

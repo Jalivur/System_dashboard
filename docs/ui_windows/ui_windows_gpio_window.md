@@ -33,10 +33,34 @@ Arquitectura:
 ## Tabla de contenidos
 
 **Clase [`GPIOWindow`](#clase-gpiowindow)**
-  - [`destroy()`](#destroyself)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_toggle_op_mode()`](#_toggle_op_mode) _(privado)_
+  - [`_on_op_mode_changed()`](#_on_op_mode_changed) _(privado)_
+  - [`_update_op_bar()`](#_update_op_bar) _(privado)_
+  - [`_op_text()`](#_op_text) _(privado)_
+  - [`_op_color()`](#_op_color) _(privado)_
+  - [`_op_btn_text()`](#_op_btn_text) _(privado)_
+  - [`_build_rows()`](#_build_rows) _(privado)_
+  - [`_create_pin_row()`](#_create_pin_row) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_toggle_output()`](#_toggle_output) _(privado)_
+  - [`_on_pwm_slide()`](#_on_pwm_slide) _(privado)_
+  - [`_status_text()`](#_status_text) _(privado)_
+  - [`_open_config()`](#_open_config) _(privado)_
+  - [`_on_config_closed()`](#_on_config_closed) _(privado)_
 
 **Clase [`_GPIOConfigDialog`](#clase-_gpioconfigdialog)**
-  - [`destroy()`](#destroyself-none)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_list()`](#_build_list) _(privado)_
+  - [`_create_list_row()`](#_create_list_row) _(privado)_
+  - [`_add_pin()`](#_add_pin) _(privado)_
+  - [`_remove_pin()`](#_remove_pin) _(privado)_
+  - [`_change_mode()`](#_change_mode) _(privado)_
+  - [`_save_label()`](#_save_label) _(privado)_
 
 ---
 
@@ -88,7 +112,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `destroy(self)`
+#### `destroy()`
+
+```python
+destroy(self)
+```
 
 Destruye la ventana limpiamente y registra el evento de cierre.
 
@@ -101,10 +129,13 @@ Returns:
 Raises: 
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, gpio_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, gpio_monitor)
+```
 
 Inicializa la ventana principal de monitorización y control de pines GPIO.
 
@@ -114,7 +145,11 @@ Args:
 
 Configura la geometría para pantalla DSI y crea la interfaz de usuario completa.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la estructura y widgets de la interfaz de usuario.
 
@@ -124,7 +159,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_toggle_op_mode(self)`
+#### `_toggle_op_mode()`
+
+```python
+_toggle_op_mode(self)
+```
 
 Alterna el modo de operación entre LIBRE y CONTROLANDO.
 
@@ -137,7 +176,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_op_mode_changed(self)`
+#### `_on_op_mode_changed()`
+
+```python
+_on_op_mode_changed(self)
+```
 
 Callback ejecutado tras cambio de modo de operación.
 
@@ -152,7 +195,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_op_bar(self)`
+#### `_update_op_bar()`
+
+```python
+_update_op_bar(self)
+```
 
 Actualiza visualmente la barra de modo de operación.
 
@@ -167,28 +214,44 @@ Returns:
 Raises:
     Ninguno
 
-#### `_op_text(self) -> str`
+#### `_op_text()`
+
+```python
+_op_text(self) -> str
+```
 
 Genera el texto descriptivo del modo de operación actual.
 
 Returns:
     str: Texto con icono y descripción del estado (LIBRE o CONTROLANDO).
 
-#### `_op_color(self) -> str`
+#### `_op_color()`
+
+```python
+_op_color(self) -> str
+```
 
 Determina el color del texto según el modo de operación.
 
 Returns:
     str: Color hexadecimal (_C_LIBRE o _C_CONTROLANDO).
 
-#### `_op_btn_text(self) -> str`
+#### `_op_btn_text()`
+
+```python
+_op_btn_text(self) -> str
+```
 
 Genera el texto para el botón de toggle de modo de operación.
 
 Returns:
     str: Texto con icono apropiado ('Tomar control' o 'Liberar GPIO').
 
-#### `_build_rows(self)`
+#### `_build_rows()`
+
+```python
+_build_rows(self)
+```
 
 Reconstruye todas las filas de pines en el canvas interno según el estado actual del monitor.
 
@@ -201,7 +264,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_create_pin_row(self, pin: int, data: dict, is_libre: bool)`
+#### `_create_pin_row()`
+
+```python
+_create_pin_row(self, pin: int, data: dict, is_libre: bool)
+```
 
 Crea una fila completa para un pin específico en el canvas.
 
@@ -216,7 +283,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza el estado de la ventana en tiempo real.
 
@@ -229,7 +300,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_toggle_output(self, pin: int)`
+#### `_toggle_output()`
+
+```python
+_toggle_output(self, pin: int)
+```
 
 Alterna el estado HIGH/LOW de un pin en modo OUTPUT.
 
@@ -244,7 +319,11 @@ Returns:
 
 Nota: Lanza el comando en thread daemon, actualiza UI reactivamente.
 
-#### `_on_pwm_slide(self, pin: int, val: float)`
+#### `_on_pwm_slide()`
+
+```python
+_on_pwm_slide(self, pin: int, val: float)
+```
 
 Manejador de evento para actualizar el ciclo de trabajo de un pin PWM mediante un deslizador.
 
@@ -258,7 +337,11 @@ Returns:
 Raises:
     None
 
-#### `_status_text(self, state: dict) -> str`
+#### `_status_text()`
+
+```python
+_status_text(self, state: dict) -> str
+```
 
 Genera texto resumido del estado para el footer.
 
@@ -271,7 +354,11 @@ Returns:
 Raises:
     None
 
-#### `_open_config(self)`
+#### `_open_config()`
+
+```python
+_open_config(self)
+```
 
 Abre el diálogo de configuración de pines.
 
@@ -284,7 +371,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_config_closed(self)`
+#### `_on_config_closed()`
+
+```python
+_on_config_closed(self)
+```
 
 Callback ejecutado al cerrar el diálogo de configuración.
 
@@ -298,8 +389,6 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>
 
 ## Clase `_GPIOConfigDialog(ctk.CTkToplevel)`
 
@@ -325,7 +414,11 @@ Returns:
 
 ### Métodos públicos
 
-#### `destroy(self) -> None`
+#### `destroy()`
+
+```python
+destroy(self) -> None
+```
 
 Cierra el diálogo de configuración GPIO y ejecuta el callback de cierre si existe.
 
@@ -338,10 +431,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, gpio_monitor, on_close = None)`
+#### `__init__()`
+
+```python
+__init__(self, parent, gpio_monitor, on_close = None)
+```
 
 Inicializa el diálogo de configuración de pines.
 
@@ -350,7 +446,11 @@ Args:
     gpio_monitor: Instancia del monitor de pines GPIO.
     on_close (callable, optional): Función de llamada de vuelta al cerrar el diálogo.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz del diálogo de configuración de pines GPIO.
 
@@ -363,7 +463,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_list(self)`
+#### `_build_list()`
+
+```python
+_build_list(self)
+```
 
 Reconstruye la lista de pines configurados en el diálogo.
 
@@ -376,7 +480,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_list_row(self, pin: int, data: dict)`
+#### `_create_list_row()`
+
+```python
+_create_list_row(self, pin: int, data: dict)
+```
 
 Crea una fila editable para un pin específico en la lista de configuración.
 
@@ -390,7 +498,11 @@ Returns:
 Raises:
     None
 
-#### `_add_pin(self)`
+#### `_add_pin()`
+
+```python
+_add_pin(self)
+```
 
 Añade un nuevo pin con modo y etiqueta especificados.
 
@@ -403,7 +515,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_remove_pin(self, pin: int)`
+#### `_remove_pin()`
+
+```python
+_remove_pin(self, pin: int)
+```
 
 Elimina un pin de la configuración del diálogo.
 
@@ -416,7 +532,11 @@ Returns:
 Raises:
     None
 
-#### `_change_mode(self, pin: int, mode: str, feedback_label: ctk.CTkLabel)`
+#### `_change_mode()`
+
+```python
+_change_mode(self, pin: int, mode: str, feedback_label: ctk.CTkLabel)
+```
 
 Cambia el modo de un pin y muestra feedback visual.
 
@@ -431,7 +551,11 @@ Returns:
 Raises:
     None
 
-#### `_save_label(self, pin: int, entry: ctk.CTkEntry, feedback_label: ctk.CTkLabel)`
+#### `_save_label()`
+
+```python
+_save_label(self, pin: int, entry: ctk.CTkEntry, feedback_label: ctk.CTkLabel)
+```
 
 Guarda una nueva etiqueta para un pin específico y proporciona retroalimentación visual.
 
@@ -445,5 +569,3 @@ Returns:
 
 Raises:
     None
-
-</details>

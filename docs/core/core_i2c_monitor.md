@@ -20,11 +20,14 @@ Arquitectura:
 ## Tabla de contenidos
 
 **Clase [`I2CMonitor`](#clase-i2cmonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`scan_now()`](#scan_nowself-none)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_stats()`](#get_stats)
+  - [`scan_now()`](#scan_now)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_scan()`](#_scan) _(privado)_
 
 ---
 
@@ -74,7 +77,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el hilo daemon de escaneo periódico de monitoreo I2C.
 
@@ -87,7 +94,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el monitor de I2C y limpia la caché de estadísticas.
 
@@ -100,14 +111,22 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor de I2C está actualmente en ejecución.
 
 Returns:
     bool: True si el monitor está escaneando, False en caso contrario.
 
-#### `get_stats(self) -> dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> dict
+```
 
 Retorna estadísticas thread-safe del último escaneo.
 
@@ -120,7 +139,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `scan_now(self) -> None`
+#### `scan_now()`
+
+```python
+scan_now(self) -> None
+```
 
 Fuerza un escaneo inmediato del bus I2C en un hilo daemon separado.
 
@@ -133,10 +156,13 @@ Returns:
 Raises: 
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor I2C con mecanismos de bloqueo y estado vacío.
 
@@ -149,7 +175,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_loop(self) -> None`
+#### `_loop()`
+
+```python
+_loop(self) -> None
+```
 
 Ejecuta un bucle en un hilo daemon que realiza un escaneo inicial y luego 
 se repite a intervalos regulares hasta ser detenido.
@@ -163,7 +193,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_scan(self) -> None`
+#### `_scan()`
+
+```python
+_scan(self) -> None
+```
 
 Realiza un escaneo interno de buses I2C disponibles y cachea los resultados de manera thread-safe.
 
@@ -177,5 +211,3 @@ Raises:
     Ninguno
 
 Nota: En caso de error, se actualiza el estado con un mensaje de error y una lista vacía de buses.
-
-</details>

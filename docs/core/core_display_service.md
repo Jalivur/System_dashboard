@@ -17,19 +17,33 @@ Hardware: Freenove FNK0100K (4.3" IPS DSI) — Raspberry Pi 5.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_find_backlight()`](#_find_backlight) _(privada)_
+- [`_detect_method()`](#_detect_method) _(privada)_
+
 **Clase [`DisplayService`](#clase-displayservice)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`is_available()`](#is_availableself-bool)
-  - [`get_method()`](#get_methodself-str)
-  - [`get_brightness()`](#get_brightnessself-int)
-  - [`set_brightness()`](#set_brightnessself-pct-int-bool)
-  - [`screen_off()`](#screen_offself-bool)
-  - [`screen_on()`](#screen_onself-bool)
-  - [`notify_activity()`](#notify_activityself)
-  - [`enable_dim_on_idle()`](#enable_dim_on_idleself)
-  - [`disable_dim_on_idle()`](#disable_dim_on_idleself)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`is_available()`](#is_available)
+  - [`get_method()`](#get_method)
+  - [`get_brightness()`](#get_brightness)
+  - [`set_brightness()`](#set_brightness)
+  - [`screen_off()`](#screen_off)
+  - [`screen_on()`](#screen_on)
+  - [`notify_activity()`](#notify_activity)
+  - [`enable_dim_on_idle()`](#enable_dim_on_idle)
+  - [`disable_dim_on_idle()`](#disable_dim_on_idle)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_set_sysfs()`](#_set_sysfs) _(privado)_
+  - [`_set_wlr()`](#_set_wlr) _(privado)_
+  - [`_set_xrandr()`](#_set_xrandr) _(privado)_
+  - [`_start_dim_timer()`](#_start_dim_timer) _(privado)_
+  - [`_cancel_dim_timer()`](#_cancel_dim_timer) _(privado)_
+  - [`_on_dim()`](#_on_dim) _(privado)_
+  - [`_on_off()`](#_on_off) _(privado)_
+  - [`_save_state()`](#_save_state) _(privado)_
+  - [`_load_state()`](#_load_state) _(privado)_
 
 ---
 
@@ -60,10 +74,13 @@ from utils.logger import get_logger
 | `DIM_TIMEOUT_S` | `120` |
 | `OFF_TIMEOUT_S` | `2400000` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_find_backlight() -> Optional[Path]`
+### `_find_backlight()`
+
+```python
+_find_backlight() -> Optional[Path]
+```
 
 Busca la primera ruta válida de ajuste de brillo en la lista de candidatos.
 
@@ -76,7 +93,11 @@ Returns:
 Raises:
     Ninguno.
 
-### `_detect_method() -> str`
+### `_detect_method()`
+
+```python
+_detect_method() -> str
+```
 
 Detecta el método disponible para controlar el brillo.
 
@@ -88,8 +109,6 @@ Returns:
 
 Raises:
     None
-
-</details>
 
 ## Clase `DisplayService`
 
@@ -113,7 +132,11 @@ Raises: None
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Activa el servicio de visualización.
 
@@ -126,7 +149,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de visualización y cancela los temporizadores de atenuación.
 
@@ -139,7 +166,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de pantalla está actualmente en ejecución.
 
@@ -152,7 +183,11 @@ Returns:
 Raises:
     None
 
-#### `is_available(self) -> bool`
+#### `is_available()`
+
+```python
+is_available(self) -> bool
+```
 
 Indica si hay algún método de control de brillo disponible.
 
@@ -165,14 +200,22 @@ Returns:
 Raises:
     None
 
-#### `get_method(self) -> str`
+#### `get_method()`
+
+```python
+get_method(self) -> str
+```
 
 Devuelve el método activo de visualización.
 
 Returns:
     El método activo como cadena, puede ser 'sysfs', 'wlr-randr', 'xrandr' o 'none'.
 
-#### `get_brightness(self) -> int`
+#### `get_brightness()`
+
+```python
+get_brightness(self) -> int
+```
 
 Devuelve el brillo actual en porcentaje.
 
@@ -185,7 +228,11 @@ Returns:
 Raises:
     None
 
-#### `set_brightness(self, pct: int) -> bool`
+#### `set_brightness()`
+
+```python
+set_brightness(self, pct: int) -> bool
+```
 
 Establece el brillo de la pantalla en un porcentaje específico.
 Args:
@@ -195,7 +242,11 @@ Returns:
 Raises:
     None
 
-#### `screen_off(self) -> bool`
+#### `screen_off()`
+
+```python
+screen_off(self) -> bool
+```
 
 Apaga la pantalla estableciendo el brillo en su nivel mínimo.
 
@@ -208,7 +259,11 @@ Returns:
 Raises:
     No se lanzan excepciones explícitas.
 
-#### `screen_on(self) -> bool`
+#### `screen_on()`
+
+```python
+screen_on(self) -> bool
+```
 
 Enciende la pantalla al último nivel de brillo guardado.
 
@@ -221,7 +276,11 @@ Returns:
 Raises:
     None
 
-#### `notify_activity(self)`
+#### `notify_activity()`
+
+```python
+notify_activity(self)
+```
 
 Notifica una interacción del usuario para actualizar el estado de la pantalla.
 
@@ -234,7 +293,11 @@ Returns:
 Raises:
     None
 
-#### `enable_dim_on_idle(self)`
+#### `enable_dim_on_idle()`
+
+```python
+enable_dim_on_idle(self)
+```
 
 Activa el modo de reducción de brillo por inactividad.
 
@@ -247,17 +310,24 @@ Returns:
 Raises:
     None
 
-#### `disable_dim_on_idle(self)`
+#### `disable_dim_on_idle()`
+
+```python
+disable_dim_on_idle(self)
+```
 
 Desactiva el ahorro de energía por inactividad cancelando los temporizadores correspondientes.
 Args: 
 Returns: 
 Raises:
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el servicio de visualización detectando el método de ajuste de brillo disponible.
 
@@ -267,7 +337,11 @@ Returns: None
 
 Raises: None
 
-#### `_set_sysfs(self, pct: int) -> bool`
+#### `_set_sysfs()`
+
+```python
+_set_sysfs(self, pct: int) -> bool
+```
 
 Establece el brillo del sistema mediante sysfs.
 
@@ -280,7 +354,11 @@ Returns:
 Raises:
     PermissionError: Si no se tienen permisos para acceder a sysfs.
 
-#### `_set_wlr(self, pct: int) -> bool`
+#### `_set_wlr()`
+
+```python
+_set_wlr(self, pct: int) -> bool
+```
 
 Establece el brillo de la pantalla utilizando wlr-randr.
 
@@ -293,7 +371,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al ejecutar el comando wlr-randr.
 
-#### `_set_xrandr(self, pct: int) -> bool`
+#### `_set_xrandr()`
+
+```python
+_set_xrandr(self, pct: int) -> bool
+```
 
 Configura el brillo de la pantalla utilizando xrandr.
 
@@ -306,7 +388,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución del comando xrandr.
 
-#### `_start_dim_timer(self)`
+#### `_start_dim_timer()`
+
+```python
+_start_dim_timer(self)
+```
 
 Inicia o reinicia el temporizador para disminuir la intensidad por inactividad.
 
@@ -319,7 +405,11 @@ Returns:
 Raises:
     None
 
-#### `_cancel_dim_timer(self)`
+#### `_cancel_dim_timer()`
+
+```python
+_cancel_dim_timer(self)
+```
 
 Cancela el temporizador activo de reducción de brillo si existe.
 
@@ -332,7 +422,11 @@ Returns:
 Raises:
     None
 
-#### `_on_dim(self)`
+#### `_on_dim()`
+
+```python
+_on_dim(self)
+```
 
 Disminuye la intensidad de la pantalla al 20% y programa el apagado después de un período de inactividad.
 
@@ -342,7 +436,11 @@ Returns: None
 
 Raises: None
 
-#### `_on_off(self)`
+#### `_on_off()`
+
+```python
+_on_off(self)
+```
 
 Apaga la pantalla cuando se produce un evento de inactividad.
 
@@ -355,7 +453,11 @@ Returns:
 Raises:
     None
 
-#### `_save_state(self)`
+#### `_save_state()`
+
+```python
+_save_state(self)
+```
 
 Persiste el estado actual en un archivo de configuración.
 
@@ -368,7 +470,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al guardar el estado.
 
-#### `_load_state(self)`
+#### `_load_state()`
+
+```python
+_load_state(self)
+```
 
 Carga y restaura el estado de brillo persistido si es válido.
 
@@ -380,5 +486,3 @@ Returns:
 
 Raises: 
     Exception si no se puede cargar el estado.
-
-</details>

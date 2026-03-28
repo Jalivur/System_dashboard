@@ -11,6 +11,16 @@ Ventana de monitoreo de red
 ## Tabla de contenidos
 
 **Clase [`NetworkWindow`](#clase-networkwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_content()`](#_build_content) _(privado)_
+  - [`_create_traffic_cell()`](#_create_traffic_cell) _(privado)_
+  - [`_create_interfaces_cell()`](#_create_interfaces_cell) _(privado)_
+  - [`_create_speedtest_cell()`](#_create_speedtest_cell) _(privado)_
+  - [`_update_interfaces()`](#_update_interfaces) _(privado)_
+  - [`_run_speedtest()`](#_run_speedtest) _(privado)_
+  - [`_update_speedtest()`](#_update_speedtest) _(privado)_
+  - [`_update()`](#_update) _(privado)_
 
 ---
 
@@ -63,10 +73,13 @@ Returns:
 | `_interface_update_counter` | `0` |
 | `_banner_shown` | `False` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, network_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, network_monitor)
+```
 
 Inicializa la ventana de monitoreo de red.
 
@@ -80,7 +93,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la estructura principal de la interfaz de usuario de la ventana de red.
 
@@ -93,7 +110,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_content(self, inner)`
+#### `_build_content()`
+
+```python
+_build_content(self, inner)
+```
 
 Construye el contenido scrollable de la ventana de red.
 
@@ -106,7 +127,11 @@ Returns:
 Raises:
     None
 
-#### `_create_traffic_cell(self, parent, row, col, title, key)`
+#### `_create_traffic_cell()`
+
+```python
+_create_traffic_cell(self, parent, row, col, title, key)
+```
 
 Crea una celda de tráfico de red con gráfica para mostrar datos de descarga o subida.
 
@@ -123,7 +148,11 @@ Returns:
 Raises:
     None
 
-#### `_create_interfaces_cell(self, parent, row, col)`
+#### `_create_interfaces_cell()`
+
+```python
+_create_interfaces_cell(self, parent, row, col)
+```
 
 Crea la celda que muestra interfaces de red activas e IPs.
 
@@ -138,7 +167,11 @@ Returns:
 Raises:
     None
 
-#### `_create_speedtest_cell(self, parent, row, col)`
+#### `_create_speedtest_cell()`
+
+```python
+_create_speedtest_cell(self, parent, row, col)
+```
 
 Crea la celda para ejecutar y mostrar resultados de speedtest.
 
@@ -153,7 +186,11 @@ Returns:
 Raises:
     None
 
-#### `_update_interfaces(self)`
+#### `_update_interfaces()`
+
+```python
+_update_interfaces(self)
+```
 
 Actualiza la lista de interfaces de red con sus direcciones IP.
 
@@ -166,7 +203,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_run_speedtest(self)`
+#### `_run_speedtest()`
+
+```python
+_run_speedtest(self)
+```
 
 Inicia la ejecución de un test de velocidad de red.
 
@@ -179,7 +220,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_speedtest(self)`
+#### `_update_speedtest()`
+
+```python
+_update_speedtest(self)
+```
 
 Actualiza la visualización del resultado del speedtest según su estado.
 
@@ -192,7 +237,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza la interfaz de usuario de la ventana de red con datos del monitor de red.
 
@@ -204,5 +253,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

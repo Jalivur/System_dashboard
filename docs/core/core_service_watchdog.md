@@ -20,14 +20,20 @@ Uso:
 ## Tabla de contenidos
 
 **Clase [`ServiceWatchdog`](#clase-servicewatchdog)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`set_critical_services()`](#set_critical_servicesself-services-liststr)
-  - [`set_threshold()`](#set_thresholdself-thresh-int)
-  - [`set_interval()`](#set_intervalself-interval-int)
-  - [`add_critical_service()`](#add_critical_serviceself-name-str-bool)
-  - [`get_stats()`](#get_statsself-dict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`set_critical_services()`](#set_critical_services)
+  - [`set_threshold()`](#set_threshold)
+  - [`set_interval()`](#set_interval)
+  - [`add_critical_service()`](#add_critical_service)
+  - [`get_stats()`](#get_stats)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_watch_loop()`](#_watch_loop) _(privado)_
+  - [`_check_services()`](#_check_services) _(privado)_
+  - [`_auto_restart()`](#_auto_restart) _(privado)_
+  - [`_persist_state()`](#_persist_state) _(privado)_
+  - [`_load_state()`](#_load_state) _(privado)_
 
 ---
 
@@ -87,7 +93,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el hilo de monitoreo del watchdog en background.
 
@@ -100,7 +110,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el watchdog limpiamente y persiste estado.
 
@@ -113,7 +127,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Verifica si el watchdog está activo.
 
@@ -126,7 +144,11 @@ Returns:
 Raises:
     None
 
-#### `set_critical_services(self, services: List[str])`
+#### `set_critical_services()`
+
+```python
+set_critical_services(self, services: List[str])
+```
 
 Establece la lista de servicios críticos que serán monitoreados por el watchdog.
 
@@ -139,7 +161,11 @@ Returns:
 Raises:
     None
 
-#### `set_threshold(self, thresh: int)`
+#### `set_threshold()`
+
+```python
+set_threshold(self, thresh: int)
+```
 
 Establece el umbral de fallos consecutivos para auto-restart.
 
@@ -151,7 +177,11 @@ Raises:
 Returns:
     None
 
-#### `set_interval(self, interval: int)`
+#### `set_interval()`
+
+```python
+set_interval(self, interval: int)
+```
 
 Establece el intervalo de tiempo en segundos entre chequeos del servicio.
 
@@ -164,7 +194,11 @@ Raises:
 Returns:
     Ninguno
 
-#### `add_critical_service(self, name: str) -> bool`
+#### `add_critical_service()`
+
+```python
+add_critical_service(self, name: str) -> bool
+```
 
 Añade un servicio crítico si no existe ya.
 
@@ -174,7 +208,11 @@ Args:
 Returns:
     bool: True si el servicio fue añadido, False si ya estaba registrado.
 
-#### `get_stats(self) -> Dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> Dict
+```
 
 Obtiene estadísticas del watchdog para UI.
 
@@ -187,10 +225,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, service_monitor: ServiceMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, service_monitor: ServiceMonitor)
+```
 
 Inicializa el ServiceWatchdog con la instancia de ServiceMonitor proporcionada.
 
@@ -199,7 +240,11 @@ Args:
 
 Inicializa contadores de reinicios y fallos, carga estado persistido y configura parámetros.
 
-#### `_watch_loop(self)`
+#### `_watch_loop()`
+
+```python
+_watch_loop(self)
+```
 
 Bucle principal privado del watchdog que monitorea servicios a intervalos regulares.
 
@@ -212,7 +257,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_check_services(self)`
+#### `_check_services()`
+
+```python
+_check_services(self)
+```
 
 Verifica el estado de los servicios críticos y actualiza los contadores de fallos.
 
@@ -225,7 +274,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_auto_restart(self, name: str)`
+#### `_auto_restart()`
+
+```python
+_auto_restart(self, name: str)
+```
 
 Reinicia automáticamente un servicio crítico mediante el service_monitor y actualiza los contadores de reinicios.
 
@@ -238,7 +291,11 @@ Raises:
 Returns:
     None
 
-#### `_persist_state(self)`
+#### `_persist_state()`
+
+```python
+_persist_state(self)
+```
 
 Guarda el estado actual del watchdog en un archivo persistente.
 
@@ -251,7 +308,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_load_state(self)`
+#### `_load_state()`
+
+```python
+_load_state(self)
+```
 
 Carga los contadores del día desde el archivo JSON persistido y resetea automáticamente si es un nuevo día.
 
@@ -260,5 +321,3 @@ Args: Ninguno
 Returns: Ninguno
 
 Raises: Ninguno
-
-</details>

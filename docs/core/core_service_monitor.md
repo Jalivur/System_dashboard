@@ -11,23 +11,30 @@ Monitor de servicios systemd
 ## Tabla de contenidos
 
 **Clase [`ServiceMonitor`](#clase-servicemonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`toggle_sort()`](#toggle_sortself-column-str-none)
-  - [`refresh_now()`](#refresh_nowself-none)
-  - [`get_services()`](#get_servicesself-listdict)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`search_services()`](#search_servicesself-query-str-listdict)
-  - [`start_service()`](#start_serviceself-name-str-tuple)
-  - [`stop_service()`](#stop_serviceself-name-str-tuple)
-  - [`restart_service()`](#restart_serviceself-name-str-tuple)
-  - [`enable_service()`](#enable_serviceself-name-str-tuple)
-  - [`disable_service()`](#disable_serviceself-name-str-tuple)
-  - [`get_logs()`](#get_logsself-name-str-lines-int-50-str)
-  - [`set_sort()`](#set_sortself-column-str-reverse-bool-false-none)
-  - [`set_filter()`](#set_filterself-filter_type-str-none)
-  - [`get_state_color()`](#get_state_colorstate-str-str)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`toggle_sort()`](#toggle_sort)
+  - [`refresh_now()`](#refresh_now)
+  - [`get_services()`](#get_services)
+  - [`get_stats()`](#get_stats)
+  - [`search_services()`](#search_services)
+  - [`start_service()`](#start_service)
+  - [`stop_service()`](#stop_service)
+  - [`restart_service()`](#restart_service)
+  - [`enable_service()`](#enable_service)
+  - [`disable_service()`](#disable_service)
+  - [`get_logs()`](#get_logs)
+  - [`set_sort()`](#set_sort)
+  - [`set_filter()`](#set_filter)
+  - [`get_state_color()`](#get_state_color)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_poll_loop()`](#_poll_loop) _(privado)_
+  - [`_do_poll()`](#_do_poll) _(privado)_
+  - [`_fetch_services()`](#_fetch_services) _(privado)_
+  - [`_fetch_enabled_batch()`](#_fetch_enabled_batch) _(privado)_
+  - [`_compute_stats()`](#_compute_stats) _(privado)_
+  - [`_run_systemctl()`](#_run_systemctl) _(privado)_
 
 ---
 
@@ -83,7 +90,11 @@ Nota: Configuración inicial:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el servicio de monitorización en segundo plano.
 
@@ -96,7 +107,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el sondeo de servicios limpiamente.
 
@@ -109,14 +124,22 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Verifica si el monitor de servicios está corriendo activamente.
 
 Returns:
     bool: True si el monitor está activo
 
-#### `toggle_sort(self, column: str) -> None`
+#### `toggle_sort()`
+
+```python
+toggle_sort(self, column: str) -> None
+```
 
 Alterna el criterio de ordenación o invierte el orden actual de la columna especificada.
 
@@ -129,7 +152,11 @@ Returns:
 Raises:
     None
 
-#### `refresh_now(self) -> None`
+#### `refresh_now()`
+
+```python
+refresh_now(self) -> None
+```
 
 Fuerza un refresco inmediato de la lista de servicios en background.
 
@@ -142,7 +169,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `get_services(self) -> List[Dict]`
+#### `get_services()`
+
+```python
+get_services(self) -> List[Dict]
+```
 
 Recupera la lista de servicios filtrados del caché.
 
@@ -155,7 +186,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_stats(self) -> Dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> Dict
+```
 
 Devuelve las estadísticas actuales del servicio de monitorización.
 
@@ -168,7 +203,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `search_services(self, query: str) -> List[Dict]`
+#### `search_services()`
+
+```python
+search_services(self, query: str) -> List[Dict]
+```
 
 Busca servicios por nombre o descripción en el caché.
 
@@ -181,7 +220,11 @@ Returns:
 Raises:
     None
 
-#### `start_service(self, name: str) -> tuple`
+#### `start_service()`
+
+```python
+start_service(self, name: str) -> tuple
+```
 
 Inicia un servicio systemd y actualiza el estado del monitor si es exitoso.
 
@@ -194,7 +237,11 @@ Returns:
 Raises:
     None
 
-#### `stop_service(self, name: str) -> tuple`
+#### `stop_service()`
+
+```python
+stop_service(self, name: str) -> tuple
+```
 
 Detiene un servicio systemd y actualiza el estado del monitor si es exitoso.
 
@@ -207,7 +254,11 @@ Returns:
 Raises:
     None
 
-#### `restart_service(self, name: str) -> tuple`
+#### `restart_service()`
+
+```python
+restart_service(self, name: str) -> tuple
+```
 
 Reinicia un servicio systemd y actualiza el estado del monitor si es exitoso.
 
@@ -220,7 +271,11 @@ Returns:
 Raises:
     None
 
-#### `enable_service(self, name: str) -> tuple`
+#### `enable_service()`
+
+```python
+enable_service(self, name: str) -> tuple
+```
 
 Habilita un servicio systemd para inicio automático.
 
@@ -230,7 +285,11 @@ Args:
 Returns:
     tuple: (éxito, mensaje)
 
-#### `disable_service(self, name: str) -> tuple`
+#### `disable_service()`
+
+```python
+disable_service(self, name: str) -> tuple
+```
 
 Deshabilita un servicio systemd para evitar su inicio automático.
 
@@ -243,7 +302,11 @@ Returns:
 Raises:
     None
 
-#### `get_logs(self, name: str, lines: int = 50) -> str`
+#### `get_logs()`
+
+```python
+get_logs(self, name: str, lines: int = 50) -> str
+```
 
 Obtiene los logs de un servicio específico vía journalctl.
 
@@ -257,7 +320,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución de journalctl.
 
-#### `set_sort(self, column: str, reverse: bool = False) -> None`
+#### `set_sort()`
+
+```python
+set_sort(self, column: str, reverse: bool = False) -> None
+```
 
 Establece el criterio de ordenación de la lista de servicios.
 
@@ -271,7 +338,11 @@ Returns:
 Raises:
     None
 
-#### `set_filter(self, filter_type: str) -> None`
+#### `set_filter()`
+
+```python
+set_filter(self, filter_type: str) -> None
+```
 
 Establece el filtro de visualización de servicios.
 
@@ -284,7 +355,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `get_state_color(state: str) -> str`
+#### `get_state_color()`
+
+```python
+get_state_color(state: str) -> str
+```
 
 Obtiene el color CSS según el estado del servicio.
 
@@ -297,10 +372,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de servicios con configuración por defecto.
 
@@ -315,7 +393,11 @@ Nota: Configuración inicial:
     - sort_reverse: False
     - filter_type: 'all' (all | active | inactive | failed)
 
-#### `_poll_loop(self) -> None`
+#### `_poll_loop()`
+
+```python
+_poll_loop(self) -> None
+```
 
 Ejecuta el bucle principal de sondeo en segundo plano.
 
@@ -328,7 +410,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_do_poll(self) -> None`
+#### `_do_poll()`
+
+```python
+_do_poll(self) -> None
+```
 
 Realiza un sondeo único de servicios y actualiza los cachés internos.
 
@@ -341,7 +427,11 @@ Returns:
 Raises: 
     Exception: Si ocurre un error durante el sondeo o el cálculo de estadísticas.
 
-#### `_fetch_services(self) -> List[Dict]`
+#### `_fetch_services()`
+
+```python
+_fetch_services(self) -> List[Dict]
+```
 
 Obtiene la lista de servicios del sistema mediante una llamada a systemctl.
 
@@ -354,7 +444,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `_fetch_enabled_batch(self, units: List[str]) -> set`
+#### `_fetch_enabled_batch()`
+
+```python
+_fetch_enabled_batch(self, units: List[str]) -> set
+```
 
 Obtiene el conjunto de servicios habilitados a partir de una lista de unidades.
 
@@ -367,7 +461,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al ejecutar el comando systemctl.
 
-#### `_compute_stats(self, services: List[Dict]) -> Dict`
+#### `_compute_stats()`
+
+```python
+_compute_stats(self, services: List[Dict]) -> Dict
+```
 
 Calcula estadísticas resumidas a partir de la lista de servicios.
 
@@ -380,7 +478,11 @@ Returns:
 Raises:
     Ninguna excepción explícita.
 
-#### `_run_systemctl(self, action: str, name: str, sudo: bool = True) -> tuple`
+#### `_run_systemctl()`
+
+```python
+_run_systemctl(self, action: str, name: str, sudo: bool = True) -> tuple
+```
 
 Ejecuta un comando systemctl y devuelve el resultado.
 
@@ -394,5 +496,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante la ejecución del comando.
-
-</details>

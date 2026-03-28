@@ -11,9 +11,9 @@ Diálogos y ventanas modales personalizadas
 ## Tabla de contenidos
 
 **Funciones**
-- [`custom_msgbox()`](#funcion-custom_msgbox)
-- [`confirm_dialog()`](#funcion-confirm_dialog)
-- [`terminal_dialog()`](#funcion-terminal_dialog)
+- [`custom_msgbox()`](#custom_msgbox)
+- [`confirm_dialog()`](#confirm_dialog)
+- [`terminal_dialog()`](#terminal_dialog)
 
 ---
 
@@ -36,7 +36,11 @@ from core.event_bus import get_event_bus
 
 ## Funciones
 
-### `custom_msgbox(parent, text: str, title: str = 'Info') -> None`
+### `custom_msgbox()`
+
+```python
+custom_msgbox(parent, text: str, title: str = 'Info') -> None
+```
 
 Muestra un cuadro de mensaje personalizado con título y texto.
 
@@ -51,7 +55,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `confirm_dialog(parent, text: str, title: str = 'Confirmar', on_confirm = None, on_cancel = None) -> None`
+### `confirm_dialog()`
+
+```python
+confirm_dialog(parent, text: str, title: str = 'Confirmar', on_confirm = None, on_cancel = None) -> None
+```
 
 Muestra un diálogo de confirmación con un mensaje y botones para confirmar o cancelar.
 
@@ -68,7 +76,11 @@ Returns:
 Raises:
     None
 
-### `terminal_dialog(parent, script_path, title = 'Consola de Sistema', on_close = None)`
+### `terminal_dialog()`
+
+```python
+terminal_dialog(parent, script_path, title = 'Consola de Sistema', on_close = None)
+```
 
 Muestra un diálogo de terminal/consola para ejecutar scripts del sistema.
 

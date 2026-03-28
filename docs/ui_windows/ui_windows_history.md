@@ -11,6 +11,28 @@ Ventana de histórico de datos
 ## Tabla de contenidos
 
 **Clase [`HistoryWindow`](#clase-historywindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_period_controls()`](#_create_period_controls) _(privado)_
+  - [`_create_range_panel()`](#_create_range_panel) _(privado)_
+  - [`_create_graphs_area()`](#_create_graphs_area) _(privado)_
+  - [`_create_stats_area()`](#_create_stats_area) _(privado)_
+  - [`_create_buttons()`](#_create_buttons) _(privado)_
+  - [`_toggle_range_panel()`](#_toggle_range_panel) _(privado)_
+  - [`_entry_focus_in()`](#_entry_focus_in) _(privado)_
+  - [`_entry_focus_out()`](#_entry_focus_out) _(privado)_
+  - [`_on_period_radio()`](#_on_period_radio) _(privado)_
+  - [`_apply_custom_range()`](#_apply_custom_range) _(privado)_
+  - [`_update_data()`](#_update_data) _(privado)_
+  - [`_update_graphs()`](#_update_graphs) _(privado)_
+  - [`_update_graphs_between()`](#_update_graphs_between) _(privado)_
+  - [`_draw_metric()`](#_draw_metric) _(privado)_
+  - [`_export_csv()`](#_export_csv) _(privado)_
+  - [`_clean_old_data()`](#_clean_old_data) _(privado)_
+  - [`_export_figure_image()`](#_export_figure_image) _(privado)_
+  - [`_on_click()`](#_on_click) _(privado)_
+  - [`_on_release()`](#_on_release) _(privado)_
+  - [`_on_motion()`](#_on_motion) _(privado)_
 
 ---
 
@@ -73,10 +95,13 @@ Raises:
 | `_period_end` | `ctk.StringVar(master=self, value='YYYY-MM-DD HH:MM')` |
 | `_using_custom_range` | `False` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, cleanup_service: CleanupService)`
+#### `__init__()`
+
+```python
+__init__(self, parent, cleanup_service: CleanupService)
+```
 
 Inicializa la ventana de histórico de datos del sistema.
 
@@ -90,7 +115,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario completa de la ventana de historial.
 
@@ -103,7 +132,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_period_controls(self, parent)`
+#### `_create_period_controls()`
+
+```python
+_create_period_controls(self, parent)
+```
 
 Crea los controles de periodo en la ventana de historial.
 
@@ -116,7 +149,11 @@ Returns:
 Raises:
     None
 
-#### `_create_range_panel(self, parent)`
+#### `_create_range_panel()`
+
+```python
+_create_range_panel(self, parent)
+```
 
 Crea un panel para seleccionar un rango de fechas con campos para inicio y fin.
 
@@ -129,7 +166,11 @@ Returns:
 Raises:
     None
 
-#### `_create_graphs_area(self, parent)`
+#### `_create_graphs_area()`
+
+```python
+_create_graphs_area(self, parent)
+```
 
 Crea el área de gráficas utilizando matplotlib integrado en Tkinter con canvas y toolbar.
 
@@ -142,7 +183,11 @@ Returns:
 Raises:
     None
 
-#### `_create_stats_area(self, parent)`
+#### `_create_stats_area()`
+
+```python
+_create_stats_area(self, parent)
+```
 
 Crea el área de estadísticas en la ventana de historial.
 
@@ -155,7 +200,11 @@ Returns:
 Raises:
     None
 
-#### `_create_buttons(self, parent)`
+#### `_create_buttons()`
+
+```python
+_create_buttons(self, parent)
+```
 
 Crea los botones de acción en la ventana de historial.
 
@@ -168,7 +217,11 @@ Returns:
 Raises:
     None
 
-#### `_toggle_range_panel(self)`
+#### `_toggle_range_panel()`
+
+```python
+_toggle_range_panel(self)
+```
 
 Muestra u oculta la fila de OptionMenus de rango personalizado.
 
@@ -178,7 +231,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_entry_focus_in(self, entry: ctk.CTkEntry, var: ctk.StringVar)`
+#### `_entry_focus_in()`
+
+```python
+_entry_focus_in(self, entry: ctk.CTkEntry, var: ctk.StringVar)
+```
 
 Establece el comportamiento al enfocar un campo de entrada de texto.
 
@@ -186,7 +243,11 @@ Args:
     entry (ctk.CTkEntry): El campo de entrada de texto que ha obtenido el foco.
     var (ctk.StringVar): La variable asociada al campo de entrada de texto.
 
-#### `_entry_focus_out(self, entry: ctk.CTkEntry, var: ctk.StringVar)`
+#### `_entry_focus_out()`
+
+```python
+_entry_focus_out(self, entry: ctk.CTkEntry, var: ctk.StringVar)
+```
 
 Restaura el texto de ejemplo en gris cuando un campo de entrada pierde el foco y queda vacío.
 
@@ -200,7 +261,11 @@ Returns:
 Raises:
     None
 
-#### `_on_period_radio(self)`
+#### `_on_period_radio()`
+
+```python
+_on_period_radio(self)
+```
 
 Desactiva el modo de rango personalizado y actualiza la ventana de historial al seleccionar un período fijo.
 
@@ -210,7 +275,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_apply_custom_range(self)`
+#### `_apply_custom_range()`
+
+```python
+_apply_custom_range(self)
+```
 
 Aplica un rango de fechas personalizado sin necesidad de interacción con el teclado.
 
@@ -223,7 +292,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_data(self)`
+#### `_update_data()`
+
+```python
+_update_data(self)
+```
 
 Actualiza estadísticas y gráficas según el modo activo.
 
@@ -236,7 +309,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_graphs(self, hours: int)`
+#### `_update_graphs()`
+
+```python
+_update_graphs(self, hours: int)
+```
 
 Actualiza todas las gráficas de métricas para un período fijo en horas.
 
@@ -249,7 +326,11 @@ Returns:
 Raises:
     None
 
-#### `_update_graphs_between(self, start: datetime, end: datetime)`
+#### `_update_graphs_between()`
+
+```python
+_update_graphs_between(self, start: datetime, end: datetime)
+```
 
 Actualiza todas las gráficas de métricas para un rango de fechas personalizado.
 
@@ -263,7 +344,11 @@ Returns:
 Raises:
     None
 
-#### `_draw_metric(self, ax, timestamps, values, ylabel: str, color: str)`
+#### `_draw_metric()`
+
+```python
+_draw_metric(self, ax, timestamps, values, ylabel: str, color: str)
+```
 
 Dibuja una métrica específica en su eje subplot con estilo configurado.
 
@@ -280,7 +365,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `_export_csv(self)`
+#### `_export_csv()`
+
+```python
+_export_csv(self)
+```
 
 Exporta los datos del período actual a archivo CSV en el directorio de exports.
 
@@ -293,7 +382,11 @@ Returns:
 Raises: 
     Exception: Si ocurre un error durante la exportación.
 
-#### `_clean_old_data(self)`
+#### `_clean_old_data()`
+
+```python
+_clean_old_data(self)
+```
 
 Fuerza un ciclo de limpieza completo de datos antiguos a través del servicio de limpieza.
 
@@ -303,7 +396,11 @@ Returns: Ninguno
 
 Raises: Exception si ocurre un error durante la limpieza.
 
-#### `_export_figure_image(self)`
+#### `_export_figure_image()`
+
+```python
+_export_figure_image(self)
+```
 
 Exporta la figura actual de gráficas como imagen PNG al directorio de screenshots.
 
@@ -316,7 +413,11 @@ Returns:
 Raises: 
     Exception: Si ocurre un error al guardar la imagen.
 
-#### `_on_click(self, event)`
+#### `_on_click()`
+
+```python
+_on_click(self, event)
+```
 
 Maneja el evento de clic del mouse en el canvas de las gráficas.
 
@@ -329,7 +430,11 @@ Raises:
 Returns:
     None
 
-#### `_on_release(self, event)`
+#### `_on_release()`
+
+```python
+_on_release(self, event)
+```
 
 Maneja el evento de liberación del botón del mouse en el canvas.
 
@@ -342,7 +447,11 @@ Returns:
 Raises:
     None
 
-#### `_on_motion(self, event)`
+#### `_on_motion()`
+
+```python
+_on_motion(self, event)
+```
 
 Maneja el evento de movimiento del mouse sobre el canvas de gráficas.
 
@@ -354,5 +463,3 @@ Returns:
 
 Raises:
     None
-
-</details>

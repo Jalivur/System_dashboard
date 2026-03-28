@@ -22,8 +22,8 @@ Uso en MainWindow:
 ## Tabla de contenidos
 
 **Funciones**
-- [`exit_application()`](#funcion-exit_application)
-- [`restart_application()`](#funcion-restart_application)
+- [`exit_application()`](#exit_application)
+- [`restart_application()`](#restart_application)
 
 ---
 
@@ -54,7 +54,11 @@ from utils.logger import get_logger
 
 ## Funciones
 
-### `exit_application(root, update_loop = None) -> None`
+### `exit_application()`
+
+```python
+exit_application(root, update_loop = None) -> None
+```
 
 Muestra un diálogo de opciones de salida para la aplicación.
 
@@ -68,7 +72,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-### `restart_application(root, update_loop = None) -> None`
+### `restart_application()`
+
+```python
+restart_application(root, update_loop = None) -> None
+```
 
 Reinicia el proceso del dashboard después de mostrar una ventana de confirmación.
 

@@ -11,14 +11,17 @@ Monitor de disco
 ## Tabla de contenidos
 
 **Clase [`DiskMonitor`](#clase-diskmonitor)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_current_stats()`](#get_current_statsself-dict)
-  - [`update_history()`](#update_historyself-stats-dict-none)
-  - [`get_history()`](#get_historyself-dict)
-  - [`get_nvme_smart()`](#get_nvme_smartself-dict)
-  - [`level_color()`](#level_colorvalue-float-warn-float-crit-float-str)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_current_stats()`](#get_current_stats)
+  - [`update_history()`](#update_history)
+  - [`get_history()`](#get_history)
+  - [`get_nvme_smart()`](#get_nvme_smart)
+  - [`level_color()`](#level_color)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_poll_loop()`](#_poll_loop) _(privado)_
+  - [`_do_poll()`](#_do_poll) _(privado)_
 
 ---
 
@@ -77,7 +80,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el monitoreo del disco en segundo plano.
 
@@ -90,7 +97,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el monitoreo del disco y libera recursos asociados.
 
@@ -103,7 +114,11 @@ Returns:
 Raises: 
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de monitoreo de disco está en ejecución.
 
@@ -116,7 +131,11 @@ Returns:
 Raises:
     None
 
-#### `get_current_stats(self) -> Dict`
+#### `get_current_stats()`
+
+```python
+get_current_stats(self) -> Dict
+```
 
 Retorna las estadísticas actuales del disco, incluyendo uso del disco, temperatura NVMe y velocidad de lectura/escritura.
 
@@ -129,7 +148,11 @@ Returns:
 Raises:
     None
 
-#### `update_history(self, stats: Dict) -> None`
+#### `update_history()`
+
+```python
+update_history(self, stats: Dict) -> None
+```
 
 Actualiza los historiales de estadísticas del disco con los datos proporcionados.
 
@@ -143,7 +166,11 @@ Returns:
 Raises:
     KeyError: Si el diccionario stats no contiene alguna clave esperada.
 
-#### `get_history(self) -> Dict`
+#### `get_history()`
+
+```python
+get_history(self) -> Dict
+```
 
 Obtiene todos los historiales de uso y rendimiento del disco.
 
@@ -156,7 +183,11 @@ Returns:
 Raises:
     No lanza excepciones.
 
-#### `get_nvme_smart(self) -> dict`
+#### `get_nvme_smart()`
+
+```python
+get_nvme_smart(self) -> dict
+```
 
 Recupera las métricas SMART extendidas del dispositivo NVMe mediante smartctl.
 
@@ -169,7 +200,11 @@ Returns:
 Raises:
     No se lanzan excepciones explícitas, pero puede fallar si no hay dispositivo NVMe disponible o si smartctl no está instalado.
 
-#### `level_color(value: float, warn: float, crit: float) -> str`
+#### `level_color()`
+
+```python
+level_color(value: float, warn: float, crit: float) -> str
+```
 
 Determina el color según el nivel de un valor en relación con umbrales de advertencia y crítico.
 
@@ -184,10 +219,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de disco con historiales y caché.
 
@@ -197,7 +235,11 @@ Returns: None
 
 Raises: None
 
-#### `_poll_loop(self) -> None`
+#### `_poll_loop()`
+
+```python
+_poll_loop(self) -> None
+```
 
 Ejecuta el bucle principal de monitoreo de disco de forma continua.
 
@@ -210,7 +252,11 @@ Returns:
 Raises:
     None
 
-#### `_do_poll(self)`
+#### `_do_poll()`
+
+```python
+_do_poll(self)
+```
 
 Realiza un sondeo del uso del disco y actualiza la caché e historial.
 
@@ -222,5 +268,3 @@ Returns:
 
 Raises:
     Exception: si ocurre un error durante el sondeo o actualización.
-
-</details>
