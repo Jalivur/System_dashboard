@@ -7,6 +7,7 @@ API key: variable de entorno GROQ_API_KEY o argumento --api-key
 """
 
 import ast
+import re
 import sys
 import os
 import json
@@ -36,14 +37,14 @@ LAYERS = [
 
 # Modelos disponibles en el free tier de Groq (cupo independiente por modelo)
 # Límites reales del free tier (verificados en console.groq.com/settings/limits)
+# Ordenado por calidad estimada para generación de docstrings en Python
 GROQ_MODELS = {
-    "1": ("llama-3.3-70b-versatile",                   "Llama 3.3 70B      — mejor calidad   100K/día  [recomendado]"),
-    "2": ("meta-llama/llama-4-scout-17b-16e-instruct", "Llama 4 Scout 17B  — más moderno     500K/día"),
-    "3": ("moonshotai/kimi-k2-instruct",               "Kimi K2             — potente         300K/día"),
-    "4": ("qwen/qwen3-32b",                            "Qwen3 32B           — bueno en código 500K/día"),
-    "5": ("openai/gpt-oss-120b",                       "GPT-OSS 120B        — alternativa GPT 200K/día"),
-    "6": ("openai/gpt-oss-20b",                        "GPT-OSS 20B         — más ligero      200K/día"),
-    "7": ("llama-3.1-8b-instant",                      "Llama 3.1 8B        — más rápido      500K/día"),
+    "1": ("llama-3.3-70b-versatile",                   "Llama 3.3 70B  — mejor calidad   100K/día  [recomendado]"),
+    "2": ("moonshotai/kimi-k2-instruct",               "Kimi K2         — muy capaz       300K/día"),
+    "3": ("openai/gpt-oss-120b",                       "GPT-OSS 120B    — alternativa GPT 200K/día"),
+    "4": ("meta-llama/llama-4-scout-17b-16e-instruct", "Llama 4 Scout   — 17B, moderno    500K/día"),
+    "5": ("openai/gpt-oss-20b",                        "GPT-OSS 20B     — más ligero      200K/día"),
+    "6": ("llama-3.1-8b-instant",                      "Llama 3.1 8B    — más rápido      500K/día"),
 }
 GROQ_MODEL_DEFAULT = "1"
 
@@ -81,8 +82,9 @@ def build_prompt(kind: str, name: str, signature: str, source_code: str, class_n
         f"Nombre: `{name}`\n"
         f"Firma: `{signature}`\n\n"
         f"Código:\n```python\n{source_code}\n```\n\n"
-        f"Responde ÚNICAMENTE con el docstring, empezando con \\\"\\\"\\\". "
-        f"Sin código adicional, sin bloques de código Markdown."
+        f"Responde ÚNICAMENTE con el docstring EN ESPAÑOL, empezando con \\\"\\\"\\\". "
+        f"Sin código adicional, sin bloques de código Markdown. "
+        f"Puedes razonar internamente en cualquier idioma, pero el docstring final debe estar completamente en español."
     )
 
 # ── AST helpers ───────────────────────────────────────────────────────────────
@@ -195,6 +197,9 @@ def generate_docstring(client: Groq, prompt: str) -> str | None:
             temperature=0.2,
         )
         text = response.choices[0].message.content.strip()
+
+        # Eliminar bloque <think>...</think> de modelos con razonamiento (ej: Qwen3)
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
         # Limpiar bloques Markdown si el modelo los añade igualmente
         if text.startswith("```"):
@@ -406,17 +411,27 @@ def main():
     parser.add_argument("--file", help="Procesar solo este archivo .py (ruta relativa al proyecto)")
     parser.add_argument("--layer", help="Procesar solo una capa: core, ui, ui/windows, config, utils")
     parser.add_argument("--model", metavar="N", choices=list(GROQ_MODELS.keys()),
-                        help="Modelo sin preguntar: 1=llama-3.3-70b, 2=llama-3.1-70b, "
-                             "3=llama-4-scout, 4=mixtral, 5=gemma2, 6=llama-3.1-8b, 7=deepseek-r1")
+                        help="Modelo sin preguntar: 1=llama-3.3-70b, 2=kimi-k2, "
+                             "3=gpt-oss-120b, 4=llama-4-scout, 5=gpt-oss-20b, 6=llama-3.1-8b")
     parser.add_argument("--from", dest="from_file", metavar="ARCHIVO",
                         help="Continuar desde este archivo (ruta relativa al proyecto, inclusive)")
     parser.add_argument("--skip-existing", action="store_true", help="No regenerar docstrings ya existentes — solo añadir donde faltan")
     parser.add_argument("--dry-run", action="store_true", help="Simular sin escribir cambios")
     args = parser.parse_args()
 
+    # Cargar .env del proyecto si existe (antes de leer os.environ)
+    project_root_early = Path(args.project_root).resolve()
+    env_file = project_root_early / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip())
+
     api_key = args.api_key or os.environ.get("GROQ_API_KEY")
     if not api_key:
-        print("❌ Falta la API key. Usa --api-key o exporta GROQ_API_KEY=gsk_...")
+        print("❌ Falta la API key. Añade GROQ_API_KEY=gsk_... al .env del proyecto o usa --api-key")
         sys.exit(1)
 
     project_root = Path(args.project_root).resolve()
