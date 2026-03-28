@@ -15,19 +15,27 @@ los badges del menú actualizados sin necesidad de abrir la ventana.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_load_env()`](#_load_env) _(privada)_
+
 **Clase [`HomebridgeMonitor`](#clase-homebridgemonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_accessories()`](#get_accessoriesself-listdict)
-  - [`get_accessories_cached()`](#get_accessories_cachedself-listdict)
-  - [`toggle()`](#toggleself-unique_id-str-turn_on-bool-bool)
-  - [`is_reachable()`](#is_reachableself-bool)
-  - [`get_offline_count()`](#get_offline_countself-int)
-  - [`get_on_count()`](#get_on_countself-int)
-  - [`get_fault_count()`](#get_fault_countself-int)
-  - [`set_brightness()`](#set_brightnessself-unique_id-str-brightness-int-bool)
-  - [`set_target_temp()`](#set_target_tempself-unique_id-str-temp-float-bool)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_accessories()`](#get_accessories)
+  - [`get_accessories_cached()`](#get_accessories_cached)
+  - [`toggle()`](#toggle)
+  - [`is_reachable()`](#is_reachable)
+  - [`get_offline_count()`](#get_offline_count)
+  - [`get_on_count()`](#get_on_count)
+  - [`get_fault_count()`](#get_fault_count)
+  - [`set_brightness()`](#set_brightness)
+  - [`set_target_temp()`](#set_target_temp)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_poll_loop()`](#_poll_loop) _(privado)_
+  - [`_authenticate()`](#_authenticate) _(privado)_
+  - [`_get_token()`](#_get_token) _(privado)_
+  - [`_request()`](#_request) _(privado)_
 
 ---
 
@@ -62,10 +70,13 @@ from dotenv import load_dotenv
 | `REQUEST_TIMEOUT` | `5` |
 | `POLL_INTERVAL_S` | `30` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
 ### `_load_env()`
+
+```python
+_load_env()
+```
 
 Carga variables de entorno desde un archivo .env sin utilizar dependencias externas.
 
@@ -77,8 +88,6 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>
 
 ## Clase `HomebridgeMonitor`
 
@@ -105,7 +114,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el sondeo de Homebridge en segundo plano.
 
@@ -118,7 +131,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el sondeo limpiamente.
 
@@ -131,7 +148,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de monitorización de Homebridge está en ejecución.
 
@@ -144,7 +165,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_accessories(self) -> List[Dict]`
+#### `get_accessories()`
+
+```python
+get_accessories(self) -> List[Dict]
+```
 
 Recupera la lista de accesorios disponibles en Homebridge.
 
@@ -160,7 +185,11 @@ Raises:
 Nota: Si el monitor no está en ejecución o no se puede conectar a Homebridge, 
       se devuelve una lista vacía y se actualiza el estado de alcanzabilidad.
 
-#### `get_accessories_cached(self) -> List[Dict]`
+#### `get_accessories_cached()`
+
+```python
+get_accessories_cached(self) -> List[Dict]
+```
 
 Devuelve la lista de accesorios en memoria sin realizar peticiones HTTP adicionales.
 
@@ -173,7 +202,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `toggle(self, unique_id: str, turn_on: bool) -> bool`
+#### `toggle()`
+
+```python
+toggle(self, unique_id: str, turn_on: bool) -> bool
+```
 
 Cambia el estado On/Off de un accesorio identificado por su ID único.
 
@@ -187,7 +220,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `is_reachable(self) -> bool`
+#### `is_reachable()`
+
+```python
+is_reachable(self) -> bool
+```
 
 Indica si el dispositivo está alcanzable según la última consulta.
 
@@ -200,7 +237,11 @@ Returns:
 Raises:
     None
 
-#### `get_offline_count(self) -> int`
+#### `get_offline_count()`
+
+```python
+get_offline_count(self) -> int
+```
 
 Obtiene el número de servicios de Homebridge que se encuentran desconectados.
 
@@ -213,7 +254,11 @@ Returns:
 Raises:
     None
 
-#### `get_on_count(self) -> int`
+#### `get_on_count()`
+
+```python
+get_on_count(self) -> int
+```
 
 Obtiene el número de enchufes encendidos.
 
@@ -226,7 +271,11 @@ Returns:
 Raises:
     None
 
-#### `get_fault_count(self) -> int`
+#### `get_fault_count()`
+
+```python
+get_fault_count(self) -> int
+```
 
 Obtiene el número de dispositivos con estado de falla.
 
@@ -239,7 +288,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `set_brightness(self, unique_id: str, brightness: int) -> bool`
+#### `set_brightness()`
+
+```python
+set_brightness(self, unique_id: str, brightness: int) -> bool
+```
 
 Establece el brillo de una luz Homebridge.
 
@@ -253,7 +306,11 @@ Returns:
 Raises:
     None
 
-#### `set_target_temp(self, unique_id: str, temp: float) -> bool`
+#### `set_target_temp()`
+
+```python
+set_target_temp(self, unique_id: str, temp: float) -> bool
+```
 
 Establece la temperatura objetivo de un termostato.
 
@@ -267,10 +324,13 @@ Returns:
 Raises:
     Ninguna excepción explícita, pero puede fallar debido a errores de red o servicio detenido.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de Homebridge.
 
@@ -283,7 +343,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_poll_loop(self) -> None`
+#### `_poll_loop()`
+
+```python
+_poll_loop(self) -> None
+```
 
 Ejecuta un bucle de sondeo en segundo plano para obtener información de los accesorios de Homebridge.
 
@@ -298,7 +362,11 @@ Raises:
 
 Nota: El bucle se ejecuta hasta que se detenga explícitamente.
 
-#### `_authenticate(self) -> bool`
+#### `_authenticate()`
+
+```python
+_authenticate(self) -> bool
+```
 
 Autentica con el servidor Homebridge para obtener un token JWT.
 
@@ -311,7 +379,11 @@ Returns:
 Raises:
     Ninguna excepción específica, pero registra errores en el logger.
 
-#### `_get_token(self) -> Optional[str]`
+#### `_get_token()`
+
+```python
+_get_token(self) -> Optional[str]
+```
 
 Obtiene el token de autenticación actual, intentando autenticar si no existe.
 
@@ -324,7 +396,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_request(self, method: str, path: str, body: Optional[Dict] = None) -> Optional[Dict]`
+#### `_request()`
+
+```python
+_request(self, method: str, path: str, body: Optional[Dict] = None) -> Optional[Dict]
+```
 
 Realiza una petición autenticada a la API de Homebridge, renovando el token de acceso si caduca.
 
@@ -338,5 +414,3 @@ Returns:
 
 Raises:
     Exception: Si la petición falla después de renovar el token.
-
-</details>

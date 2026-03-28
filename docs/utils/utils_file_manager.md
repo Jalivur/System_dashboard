@@ -11,10 +11,10 @@ Gestión de archivos JSON para estado y configuración
 ## Tabla de contenidos
 
 **Clase [`FileManager`](#clase-filemanager)**
-  - [`write_state()`](#write_statedata-dictstr-any-none)
-  - [`load_state()`](#load_state-dictstr-any)
-  - [`load_curve()`](#load_curve-listdictstr-int)
-  - [`save_curve()`](#save_curvepoints-listdictstr-int-none)
+  - [`write_state()`](#write_state)
+  - [`load_state()`](#load_state)
+  - [`load_curve()`](#load_curve)
+  - [`save_curve()`](#save_curve)
 
 ---
 
@@ -47,7 +47,11 @@ Provee métodos estáticos para leer y escribir estados en formato JSON de maner
 
 ### Métodos públicos
 
-#### `write_state(data: Dict[str, Any]) -> None`
+#### `write_state()`
+
+```python
+write_state(data: Dict[str, Any]) -> None
+```
 
 Escribe el estado de forma atómica usando un archivo temporal.
 
@@ -60,7 +64,11 @@ Raises:
 Returns:
     None
 
-#### `load_state() -> Dict[str, Any]`
+#### `load_state()`
+
+```python
+load_state() -> Dict[str, Any]
+```
 
 Carga el estado guardado desde un archivo.
 
@@ -73,7 +81,11 @@ Returns:
 Raises:
     Ninguna excepción relevante, se manejan internamente.
 
-#### `load_curve() -> List[Dict[str, int]]`
+#### `load_curve()`
+
+```python
+load_curve() -> List[Dict[str, int]]
+```
 
 Carga la curva de ventiladores desde un archivo y devuelve una lista de puntos ordenados por temperatura.
 
@@ -86,7 +98,11 @@ Returns:
 Raises:
     Ninguna excepción específica, aunque puede registrar warnings si el archivo está malformado.
 
-#### `save_curve(points: List[Dict[str, int]]) -> None`
+#### `save_curve()`
+
+```python
+save_curve(points: List[Dict[str, int]]) -> None
+```
 
 Guarda la curva de ventiladores en un archivo.
 

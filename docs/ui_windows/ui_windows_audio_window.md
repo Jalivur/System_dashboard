@@ -17,6 +17,24 @@ Interfaz responsive para DSI
 ## Tabla de contenidos
 
 **Clase [`AudioWindow`](#clase-audiowindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_vu_segments()`](#_build_vu_segments) _(privado)_
+  - [`_vu_tick()`](#_vu_tick) _(privado)_
+  - [`_draw_vu()`](#_draw_vu) _(privado)_
+  - [`_set_vu_from_vol()`](#_set_vu_from_vol) _(privado)_
+  - [`_run_async()`](#_run_async) _(privado)_
+  - [`_load_state()`](#_load_state) _(privado)_
+  - [`_apply_state()`](#_apply_state) _(privado)_
+  - [`_on_slider()`](#_on_slider) _(privado)_
+  - [`_set_quick()`](#_set_quick) _(privado)_
+  - [`_unlock()`](#_unlock) _(privado)_
+  - [`_on_control_change()`](#_on_control_change) _(privado)_
+  - [`_toggle_mute()`](#_toggle_mute) _(privado)_
+  - [`_apply_mute()`](#_apply_mute) _(privado)_
+  - [`_play_test()`](#_play_test) _(privado)_
+  - [`_update_mute_ui()`](#_update_mute_ui) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -72,10 +90,13 @@ Returns:
 | `_vu_current` | `0.0` |
 | `_vu_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, audio_service: AudioService)`
+#### `__init__()`
+
+```python
+__init__(self, parent, audio_service: AudioService)
+```
 
 Inicializa la ventana de control de audio.
 
@@ -89,7 +110,11 @@ Raises:
 Returns:
     Ninguno
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los elementos de la interfaz de usuario para el control de audio.
 
@@ -102,7 +127,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_vu_segments(self)`
+#### `_build_vu_segments()`
+
+```python
+_build_vu_segments(self)
+```
 
 Crea los segmentos iniciales del medidor VU, todos apagados.
 
@@ -115,7 +144,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_vu_tick(self)`
+#### `_vu_tick()`
+
+```python
+_vu_tick(self)
+```
 
 Actualiza la animación del medidor de volumen (VU meter) suavizando y dibujando el nivel actual.
 
@@ -128,7 +161,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_draw_vu(self, level: float)`
+#### `_draw_vu()`
+
+```python
+_draw_vu(self, level: float)
+```
 
 Actualiza la visualización del medidor de nivel de audio (VU meter) según el nivel de audio proporcionado.
 
@@ -138,7 +175,11 @@ Args:
 Raises:
     Ninguna excepción es lanzada explícitamente en este método.
 
-#### `_set_vu_from_vol(self, vol: int)`
+#### `_set_vu_from_vol()`
+
+```python
+_set_vu_from_vol(self, vol: int)
+```
 
 Establece el objetivo del medidor de volumen (VU) en función del volumen dado.
 
@@ -151,7 +192,11 @@ Returns:
 Raises:
     None
 
-#### `_run_async(self, fn, *args, on_done = None)`
+#### `_run_async()`
+
+```python
+_run_async(self, fn, *args, on_done = None)
+```
 
 Ejecuta una función de manera asíncrona en un hilo daemon.
 
@@ -165,7 +210,11 @@ Raises:
 Returns:
     None
 
-#### `_load_state(self)`
+#### `_load_state()`
+
+```python
+_load_state(self)
+```
 
 Carga asincrónicamente el estado actual del volumen y mute.
 
@@ -178,7 +227,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_apply_state(self, vol: int, muted: bool)`
+#### `_apply_state()`
+
+```python
+_apply_state(self, vol: int, muted: bool)
+```
 
 Aplica el estado de volumen y mute a la interfaz de usuario.
 
@@ -192,7 +245,11 @@ Returns:
 Raises:
     None
 
-#### `_on_slider(self, value)`
+#### `_on_slider()`
+
+```python
+_on_slider(self, value)
+```
 
 Actualiza el estado de la ventana de audio en respuesta a un cambio en el slider de volumen.
 
@@ -205,7 +262,11 @@ Returns:
 Raises:
     None
 
-#### `_set_quick(self, pct: int)`
+#### `_set_quick()`
+
+```python
+_set_quick(self, pct: int)
+```
 
 Establece el volumen con botones rápidos.
 
@@ -218,7 +279,11 @@ Raises:
 Returns:
     Ninguno
 
-#### `_unlock(self)`
+#### `_unlock()`
+
+```python
+_unlock(self)
+```
 
 Desbloquea la interfaz de usuario después de una operación rápida.
 
@@ -231,14 +296,22 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_control_change(self, _value)`
+#### `_on_control_change()`
+
+```python
+_on_control_change(self, _value)
+```
 
 Recarga el estado interno al detectar un cambio en el canal de control.
 
 Args:
     _value: Nuevo valor del canal de control.
 
-#### `_toggle_mute(self)`
+#### `_toggle_mute()`
+
+```python
+_toggle_mute(self)
+```
 
 Alterna el estado de mute del audio.
 
@@ -251,7 +324,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_apply_mute(self, muted: bool)`
+#### `_apply_mute()`
+
+```python
+_apply_mute(self, muted: bool)
+```
 
 Aplica el estado mute a la interfaz de usuario.
 
@@ -264,7 +341,11 @@ Returns:
 Raises:
     None
 
-#### `_play_test(self)`
+#### `_play_test()`
+
+```python
+_play_test(self)
+```
 
 Inicia una reproducción de prueba de audio en un hilo independiente.
 
@@ -279,7 +360,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_mute_ui(self)`
+#### `_update_mute_ui()`
+
+```python
+_update_mute_ui(self)
+```
 
 Actualiza la interfaz de usuario según el estado de silencio del audio.
 
@@ -292,7 +377,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Maneja el cierre de la ventana de audio.
 
@@ -304,5 +393,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

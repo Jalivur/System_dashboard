@@ -18,6 +18,29 @@ Requisitos:
 ## Tabla de contenidos
 
 **Clase [`CameraWindow`](#clase-camerawindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_scrollable_tab()`](#_build_scrollable_tab) _(privado)_
+  - [`_switch_tab()`](#_switch_tab) _(privado)_
+  - [`_build_photo_content()`](#_build_photo_content) _(privado)_
+  - [`_build_scan_content()`](#_build_scan_content) _(privado)_
+  - [`_build_inner_scroll()`](#_build_inner_scroll) _(privado)_
+  - [`_capture_photo()`](#_capture_photo) _(privado)_
+  - [`_capture_done()`](#_capture_done) _(privado)_
+  - [`_scan_document()`](#_scan_document) _(privado)_
+  - [`_scan_done()`](#_scan_done) _(privado)_
+  - [`_set_textbox()`](#_set_textbox) _(privado)_
+  - [`_clear_textbox()`](#_clear_textbox) _(privado)_
+  - [`_copy_text()`](#_copy_text) _(privado)_
+  - [`_refresh_photo_list()`](#_refresh_photo_list) _(privado)_
+  - [`_refresh_scan_list()`](#_refresh_scan_list) _(privado)_
+  - [`_list_row()`](#_list_row) _(privado)_
+  - [`_scan_row()`](#_scan_row) _(privado)_
+  - [`_load_scan()`](#_load_scan) _(privado)_
+  - [`_delete_one_scan()`](#_delete_one_scan) _(privado)_
+  - [`_delete_one_photo()`](#_delete_one_photo) _(privado)_
+  - [`_delete_all_photos()`](#_delete_all_photos) _(privado)_
+  - [`_delete_all_scans()`](#_delete_all_scans) _(privado)_
 
 ---
 
@@ -68,10 +91,13 @@ Raises:
 | `_canvases` | `{}` |
 | `_inners` | `{}` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana de cámara principal.
 
@@ -84,7 +110,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario principal con tabs y controles.
 
@@ -97,7 +127,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_build_scrollable_tab(self, parent) -> ctk.CTkFrame`
+#### `_build_scrollable_tab()`
+
+```python
+_build_scrollable_tab(self, parent) -> ctk.CTkFrame
+```
 
 Crea un frame con canvas scrollable para tabs.
 
@@ -107,7 +141,11 @@ Args:
 Returns:
     Frame scrollable (CTkFrame).
 
-#### `_switch_tab(self, tab: str)`
+#### `_switch_tab()`
+
+```python
+_switch_tab(self, tab: str)
+```
 
 Cambia entre tabs de foto y escáner, actualizando la interfaz de usuario.
 
@@ -120,7 +158,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `_build_photo_content(self, inner: ctk.CTkFrame)`
+#### `_build_photo_content()`
+
+```python
+_build_photo_content(self, inner: ctk.CTkFrame)
+```
 
 Construye controles y lista para el contenido de fotos.
 
@@ -133,7 +175,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_build_scan_content(self, inner: ctk.CTkFrame)`
+#### `_build_scan_content()`
+
+```python
+_build_scan_content(self, inner: ctk.CTkFrame)
+```
 
 Construye controles, textbox y lista para tab de escáner.
 
@@ -146,7 +192,11 @@ Returns:
 Raises:
     None
 
-#### `_build_inner_scroll(self, parent: ctk.CTkFrame, height: int) -> ctk.CTkFrame`
+#### `_build_inner_scroll()`
+
+```python
+_build_inner_scroll(self, parent: ctk.CTkFrame, height: int) -> ctk.CTkFrame
+```
 
 Crea un frame interno scrollable dentro de un contenedor padre.
 
@@ -160,7 +210,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_capture_photo(self)`
+#### `_capture_photo()`
+
+```python
+_capture_photo(self)
+```
 
 Captura una foto usando el servicio de cámara en un hilo separado.
 
@@ -173,7 +227,11 @@ Returns:
 Raises:
     None
 
-#### `_capture_done(self, ok: bool, msg: str, _path)`
+#### `_capture_done()`
+
+```python
+_capture_done(self, ok: bool, msg: str, _path)
+```
 
 Finaliza la captura de una foto, actualizando el estado y la lista de fotos.
 
@@ -188,7 +246,11 @@ Returns:
 Raises:
     None
 
-#### `_scan_document(self)`
+#### `_scan_document()`
+
+```python
+_scan_document(self)
+```
 
 Inicia el escaneo OCR en un hilo en segundo plano.
 
@@ -203,7 +265,11 @@ Raises:
 
 Nota: Desactiva el botón de escaneo y actualiza el estado de la ventana.
 
-#### `_scan_done(self, text, msg: str)`
+#### `_scan_done()`
+
+```python
+_scan_done(self, text, msg: str)
+```
 
 Finaliza el escaneo OCR, actualizando el cuadro de texto y la lista de escaneos.
 
@@ -217,7 +283,11 @@ Returns:
 Raises:
     None
 
-#### `_set_textbox(self, text: str)`
+#### `_set_textbox()`
+
+```python
+_set_textbox(self, text: str)
+```
 
 Establece el texto en el textbox y lo habilita para copia.
 
@@ -227,7 +297,11 @@ Args:
 Returns:
     None
 
-#### `_clear_textbox(self)`
+#### `_clear_textbox()`
+
+```python
+_clear_textbox(self)
+```
 
 Limpia el contenido del cuadro de texto y deshabilita el botón de copia.
 
@@ -240,7 +314,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_copy_text(self)`
+#### `_copy_text()`
+
+```python
+_copy_text(self)
+```
 
 Copia el texto seleccionado en el cuadro de texto al portapapeles.
 
@@ -253,7 +331,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_refresh_photo_list(self)`
+#### `_refresh_photo_list()`
+
+```python
+_refresh_photo_list(self)
+```
 
 Actualiza la lista de fotos guardadas en el tab.
 
@@ -266,7 +348,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_refresh_scan_list(self)`
+#### `_refresh_scan_list()`
+
+```python
+_refresh_scan_list(self)
+```
 
 Actualiza la lista de escaneos guardados en el tab.
 
@@ -279,7 +365,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `_list_row(self, parent, label: str, size_kb: int, on_delete)`
+#### `_list_row()`
+
+```python
+_list_row(self, parent, label: str, size_kb: int, on_delete)
+```
 
 Crea una fila de interfaz de usuario para representar una foto en una lista.
 
@@ -292,7 +382,11 @@ Args:
 Returns:
     None
 
-#### `_scan_row(self, parent, txt, md)`
+#### `_scan_row()`
+
+```python
+_scan_row(self, parent, txt, md)
+```
 
 Crea una fila de interfaz de usuario para un escaneo compuesto por archivos .txt y .md.
 
@@ -307,7 +401,11 @@ Returns:
 Raises:
     None
 
-#### `_load_scan(self, txt_path)`
+#### `_load_scan()`
+
+```python
+_load_scan(self, txt_path)
+```
 
 Carga texto de escaneo en textbox y cambia a tab scan.
 
@@ -320,7 +418,11 @@ Returns:
 Raises:
     None
 
-#### `_delete_one_scan(self, txt, md)`
+#### `_delete_one_scan()`
+
+```python
+_delete_one_scan(self, txt, md)
+```
 
 Elimina un escaneo específico y actualiza la lista de escaneos.
 
@@ -334,7 +436,11 @@ Returns:
 Raises:
     None
 
-#### `_delete_one_photo(self, p)`
+#### `_delete_one_photo()`
+
+```python
+_delete_one_photo(self, p)
+```
 
 Elimina una foto específica y actualiza la lista de fotos.
 
@@ -347,7 +453,11 @@ Returns:
 Raises:
     None
 
-#### `_delete_all_photos(self)`
+#### `_delete_all_photos()`
+
+```python
+_delete_all_photos(self)
+```
 
 Elimina todas las fotos de la cámara y actualiza la lista de fotos.
 
@@ -360,7 +470,11 @@ Returns:
 Raises:
     Ninguna excepción.
 
-#### `_delete_all_scans(self)`
+#### `_delete_all_scans()`
+
+```python
+_delete_all_scans(self)
+```
 
 Elimina todos los escaneos existentes y actualiza la lista y el área de texto.
 
@@ -372,5 +486,3 @@ Returns:
 
 Raises:
     Ninguno.
-
-</details>

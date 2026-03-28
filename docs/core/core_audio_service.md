@@ -12,13 +12,14 @@ Operaciones síncronas, sin threads. Compatible Raspberry Pi OS.
 ## Tabla de contenidos
 
 **Clase [`AudioService`](#clase-audioservice)**
-  - [`get_volume()`](#get_volumeself-control-str-default_control-int)
-  - [`set_volume()`](#set_volumeself-value-int-control-str-default_control-bool)
-  - [`is_muted()`](#is_mutedself-control-str-default_control-bool)
-  - [`set_mute()`](#set_muteself-muted-bool-control-str-default_control-bool)
-  - [`toggle_mute()`](#toggle_muteself-control-str-default_control-bool)
-  - [`play_test()`](#play_testself-wav_path-str-none-none-none)
-  - [`get_controls()`](#get_controlsself-liststr)
+  - [`get_volume()`](#get_volume)
+  - [`set_volume()`](#set_volume)
+  - [`is_muted()`](#is_muted)
+  - [`set_mute()`](#set_mute)
+  - [`toggle_mute()`](#toggle_mute)
+  - [`play_test()`](#play_test)
+  - [`get_controls()`](#get_controls)
+  - [`__init__()`](#__init__) _(privado)_
 
 ---
 
@@ -55,7 +56,11 @@ Servicio de control de audio que interactúa con amixer y aplay para gestionar e
 
 ### Métodos públicos
 
-#### `get_volume(self, control: str = DEFAULT_CONTROL) -> int`
+#### `get_volume()`
+
+```python
+get_volume(self, control: str = DEFAULT_CONTROL) -> int
+```
 
 Devuelve el volumen actual como porcentaje.
 
@@ -68,7 +73,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al obtener el volumen.
 
-#### `set_volume(self, value: int, control: str = DEFAULT_CONTROL) -> bool`
+#### `set_volume()`
+
+```python
+set_volume(self, value: int, control: str = DEFAULT_CONTROL) -> bool
+```
 
 Establece el volumen de audio en un valor específico entre 0 y 100.
 
@@ -82,7 +91,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al intentar establecer el volumen.
 
-#### `is_muted(self, control: str = DEFAULT_CONTROL) -> bool`
+#### `is_muted()`
+
+```python
+is_muted(self, control: str = DEFAULT_CONTROL) -> bool
+```
 
 Determina si el canal de audio especificado está muteado.
 
@@ -95,7 +108,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al intentar obtener el estado del volumen.
 
-#### `set_mute(self, muted: bool, control: str = DEFAULT_CONTROL) -> bool`
+#### `set_mute()`
+
+```python
+set_mute(self, muted: bool, control: str = DEFAULT_CONTROL) -> bool
+```
 
 Establece el estado de silencio del canal de audio.
 
@@ -109,7 +126,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución de la operación.
 
-#### `toggle_mute(self, control: str = DEFAULT_CONTROL) -> bool`
+#### `toggle_mute()`
+
+```python
+toggle_mute(self, control: str = DEFAULT_CONTROL) -> bool
+```
 
 Invierte el estado de mute del control de audio especificado.
 
@@ -122,7 +143,11 @@ Returns:
 Raises:
     None
 
-#### `play_test(self, wav_path: str | None = None) -> None`
+#### `play_test()`
+
+```python
+play_test(self, wav_path: str | None = None) -> None
+```
 
 Reproduce un archivo de audio de prueba en segundo plano.
 
@@ -135,7 +160,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la reproducción del archivo de audio.
 
-#### `get_controls(self) -> list[str]`
+#### `get_controls()`
+
+```python
+get_controls(self) -> list[str]
+```
 
 Recupera una lista de controles amixer disponibles.
 
@@ -148,10 +177,13 @@ Returns:
 Raises:
     Excepción general en caso de error, retornando un control predeterminado.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el servicio de audio.
 
@@ -163,5 +195,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

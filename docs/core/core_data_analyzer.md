@@ -10,16 +10,24 @@ Análisis de datos históricos
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_fmt()`](#_fmt) _(privada)_
+
 **Clase [`DataAnalyzer`](#clase-dataanalyzer)**
-  - [`get_data_range()`](#get_data_rangeself-hours-int-24-listdict)
-  - [`get_stats()`](#get_statsself-hours-int-24-dict)
-  - [`get_graph_data()`](#get_graph_dataself-metric-str-hours-int-24-tuplelist-list)
-  - [`export_to_csv()`](#export_to_csvself-output_path-str-hours-int-24)
-  - [`get_data_range_between()`](#get_data_range_betweenself-start-datetime-end-datetime-listdict)
-  - [`get_stats_between()`](#get_stats_betweenself-start-datetime-end-datetime-dict)
-  - [`get_graph_data_between()`](#get_graph_data_betweenself-metric-str-start-datetime-end-datetime-tuplelist-list)
-  - [`export_to_csv_between()`](#export_to_csv_betweenself-output_path-str-start-datetime-end-datetime)
-  - [`detect_anomalies()`](#detect_anomaliesself-hours-int-24-listdict)
+  - [`get_data_range()`](#get_data_range)
+  - [`get_stats()`](#get_stats)
+  - [`get_graph_data()`](#get_graph_data)
+  - [`export_to_csv()`](#export_to_csv)
+  - [`get_data_range_between()`](#get_data_range_between)
+  - [`get_stats_between()`](#get_stats_between)
+  - [`get_graph_data_between()`](#get_graph_data_between)
+  - [`export_to_csv_between()`](#export_to_csv_between)
+  - [`detect_anomalies()`](#detect_anomalies)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_get_stats_between()`](#_get_stats_between) _(privado)_
+  - [`_extract_metric()`](#_extract_metric) _(privado)_
+  - [`_write_csv()`](#_write_csv) _(privado)_
+  - [`_format_uptime()`](#_format_uptime) _(privado)_
 
 ---
 
@@ -45,18 +53,19 @@ from utils.logger import get_logger
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_fmt(dt: datetime) -> str`
+### `_fmt()`
+
+```python
+_fmt(dt: datetime) -> str
+```
 
 Convierte un objeto datetime a una cadena de caracteres sin microsegundos.
 Args:
     dt (datetime): Fecha y hora a convertir.
 Returns:
     str: Representación en cadena de la fecha y hora en el formato utilizado por la base de datos.
-
-</details>
 
 ## Clase `DataAnalyzer`
 
@@ -79,7 +88,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `get_data_range(self, hours: int = 24) -> List[Dict]`
+#### `get_data_range()`
+
+```python
+get_data_range(self, hours: int = 24) -> List[Dict]
+```
 
 Obtiene datos de las últimas X horas.
 
@@ -93,7 +106,11 @@ Raises:
     sqlite3.OperationalError: Error en la operación con la base de datos.
     Exception: Error inesperado.
 
-#### `get_stats(self, hours: int = 24) -> Dict`
+#### `get_stats()`
+
+```python
+get_stats(self, hours: int = 24) -> Dict
+```
 
 Obtiene estadísticas de las últimas horas especificadas.
 
@@ -103,7 +120,11 @@ Args:
 Returns:
     Dict: Diccionario con las estadísticas calculadas.
 
-#### `get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]`
+#### `get_graph_data()`
+
+```python
+get_graph_data(self, metric: str, hours: int = 24) -> Tuple[List, List]
+```
 
 Obtiene datos para gráficas en un rango de tiempo determinado.
 
@@ -117,7 +138,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la extracción de datos.
 
-#### `export_to_csv(self, output_path: str, hours: int = 24)`
+#### `export_to_csv()`
+
+```python
+export_to_csv(self, output_path: str, hours: int = 24)
+```
 
 Exporta datos a un archivo CSV para un rango de horas especificado.
 
@@ -131,7 +156,11 @@ Returns:
 Raises:
     FileNotFoundError: Si la ruta de salida no es válida.
 
-#### `get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]`
+#### `get_data_range_between()`
+
+```python
+get_data_range_between(self, start: datetime, end: datetime) -> List[Dict]
+```
 
 Obtiene datos de métricas entre dos fechas exactas.
 
@@ -146,7 +175,11 @@ Raises:
     sqlite3.OperationalError: Error de operación en la base de datos.
     Exception: Error inesperado.
 
-#### `get_stats_between(self, start: datetime, end: datetime) -> Dict`
+#### `get_stats_between()`
+
+```python
+get_stats_between(self, start: datetime, end: datetime) -> Dict
+```
 
 Obtiene estadísticas de los datos analizados dentro de un rango de fechas específico.
 
@@ -160,7 +193,11 @@ Returns:
 Raises:
     ValueError: Si la fecha de inicio es posterior a la fecha de fin.
 
-#### `get_graph_data_between(self, metric: str, start: datetime, end: datetime) -> Tuple[List, List]`
+#### `get_graph_data_between()`
+
+```python
+get_graph_data_between(self, metric: str, start: datetime, end: datetime) -> Tuple[List, List]
+```
 
 Obtiene datos para gráficas de una métrica específica entre dos fechas exactas.
 
@@ -175,7 +212,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al obtener los datos.
 
-#### `export_to_csv_between(self, output_path: str, start: datetime, end: datetime)`
+#### `export_to_csv_between()`
+
+```python
+export_to_csv_between(self, output_path: str, start: datetime, end: datetime)
+```
 
 Exporta datos a un archivo CSV dentro de un rango de fechas específico.
 
@@ -190,7 +231,11 @@ Returns:
 Raises:
     FileNotFoundError: Si la ruta de salida no es válida.
 
-#### `detect_anomalies(self, hours: int = 24) -> List[Dict]`
+#### `detect_anomalies()`
+
+```python
+detect_anomalies(self, hours: int = 24) -> List[Dict]
+```
 
 Detecta anomalías en los datos de los últimos horas especificadas.
 
@@ -203,17 +248,24 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, db_path: str = f'{DATA_DIR}/history.db')`
+#### `__init__()`
+
+```python
+__init__(self, db_path: str = f'{DATA_DIR}/history.db')
+```
 
 Inicializa el analizador de datos con una ruta a la base de datos.
 
 Args:
     db_path (str): Ruta a la BD de métricas (por defecto, DATA_DIR/history.db).
 
-#### `_get_stats_between(self, start: datetime, end: datetime) -> Dict`
+#### `_get_stats_between()`
+
+```python
+_get_stats_between(self, start: datetime, end: datetime) -> Dict
+```
 
 Obtiene estadísticas de métricas entre dos fechas específicas.
 
@@ -227,7 +279,11 @@ Returns:
 Raises:
     sqlite3.Error: Si ocurre un error en la conexión a la base de datos.
 
-#### `_extract_metric(self, data: List[Dict], metric: str) -> Tuple[List, List]`
+#### `_extract_metric()`
+
+```python
+_extract_metric(self, data: List[Dict], metric: str) -> Tuple[List, List]
+```
 
 Extrae timestamps y valores de una métrica de una lista de datos.
 
@@ -241,7 +297,11 @@ Returns:
 Raises:
     ValueError: Si el formato de timestamp es inválido.
 
-#### `_write_csv(self, output_path: str, data: List[Dict])`
+#### `_write_csv()`
+
+```python
+_write_csv(self, output_path: str, data: List[Dict])
+```
 
 Escribe una lista de registros a un archivo CSV.
 
@@ -255,7 +315,11 @@ Returns:
 Raises:
     OSError: Si ocurre un error al escribir el archivo.
 
-#### `_format_uptime(self, seconds: float) -> str`
+#### `_format_uptime()`
+
+```python
+_format_uptime(self, seconds: float) -> str
+```
 
 Convierte tiempo en segundos a un formato legible D:HH:MM.
 
@@ -267,5 +331,3 @@ Returns:
 
 Raises:
     None
-
-</details>

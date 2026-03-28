@@ -12,6 +12,20 @@ Muestra enchufes e interruptores y permite encenderlos / apagarlos
 ## Tabla de contenidos
 
 **Clase [`HomebridgeWindow`](#clase-homebridgewindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_schedule_update()`](#_schedule_update) _(privado)_
+  - [`_force_refresh()`](#_force_refresh) _(privado)_
+  - [`_fetch_and_render()`](#_fetch_and_render) _(privado)_
+  - [`_render()`](#_render) _(privado)_
+  - [`_create_device_card()`](#_create_device_card) _(privado)_
+  - [`_card_switch()`](#_card_switch) _(privado)_
+  - [`_card_thermostat()`](#_card_thermostat) _(privado)_
+  - [`_card_sensor()`](#_card_sensor) _(privado)_
+  - [`_card_blind()`](#_card_blind) _(privado)_
+  - [`_toggle()`](#_toggle) _(privado)_
+  - [`_set_status()`](#_set_status) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -65,10 +79,13 @@ Returns:
 | `_update_job` | `None` |
 | `_busy` | `False` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, homebridge_monitor: HomebridgeMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, homebridge_monitor: HomebridgeMonitor)
+```
 
 Inicializa la ventana de Homebridge con un monitor y configuración básica.
 
@@ -82,7 +99,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los elementos de la interfaz de usuario de la ventana.
 
@@ -95,7 +116,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_schedule_update(self)`
+#### `_schedule_update()`
+
+```python
+_schedule_update(self)
+```
 
 Programa la actualización periódica de los dispositivos.
 
@@ -108,7 +133,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_force_refresh(self)`
+#### `_force_refresh()`
+
+```python
+_force_refresh(self)
+```
 
 Fuerza una actualización inmediata de los dispositivos Homebridge.
 
@@ -121,7 +150,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_fetch_and_render(self)`
+#### `_fetch_and_render()`
+
+```python
+_fetch_and_render(self)
+```
 
 Obtiene los accesorios de Homebridge y los renderiza en la UI de forma asíncrona.
 
@@ -131,7 +164,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_render(self, accessories)`
+#### `_render()`
+
+```python
+_render(self, accessories)
+```
 
 Renderiza la lista de accesorios en tarjetas de dispositivos en la interfaz.
 
@@ -144,7 +181,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al configurar la etiqueta de estado.
 
-#### `_create_device_card(self, acc: dict, grid_row: int, grid_col: int)`
+#### `_create_device_card()`
+
+```python
+_create_device_card(self, acc: dict, grid_row: int, grid_col: int)
+```
 
 Crea y posiciona una tarjeta para un dispositivo Homebridge específico en la interfaz gráfica.
 
@@ -156,7 +197,11 @@ Args:
 Returns:
     None
 
-#### `_card_switch(self, card, acc, disabled)`
+#### `_card_switch()`
+
+```python
+_card_switch(self, card, acc, disabled)
+```
 
 Crea un interruptor de encendido/apagado para un accesorio Homebridge.
 
@@ -171,7 +216,11 @@ Returns:
 Raises:
     None
 
-#### `_card_thermostat(self, card, acc, disabled)`
+#### `_card_thermostat()`
+
+```python
+_card_thermostat(self, card, acc, disabled)
+```
 
 Crea la interfaz de un termostato con temperatura actual y controles de objetivo.
 
@@ -186,7 +235,11 @@ Returns:
 Raises:
     None
 
-#### `_card_sensor(self, card, acc)`
+#### `_card_sensor()`
+
+```python
+_card_sensor(self, card, acc)
+```
 
 Crea la interfaz de un sensor de temperatura y humedad en la tarjeta proporcionada.
 
@@ -200,7 +253,11 @@ Returns:
 Raises:
     None
 
-#### `_card_blind(self, card, acc, disabled)`
+#### `_card_blind()`
+
+```python
+_card_blind(self, card, acc, disabled)
+```
 
 Crea la interfaz de una persiana/estor con barra de progreso de posición.
 
@@ -215,7 +272,11 @@ Returns:
 Raises:
     None
 
-#### `_toggle(self, unique_id: str, turn_on: bool)`
+#### `_toggle()`
+
+```python
+_toggle(self, unique_id: str, turn_on: bool)
+```
 
 Envía comando ON/OFF a un dispositivo Homebridge en segundo plano de forma asíncrona.
 
@@ -226,7 +287,11 @@ Args:
 Raises:
     Ninguna excepción es propagada, se maneja internamente mostrando un mensaje de error si corresponde.
 
-#### `_set_status(self, text: str)`
+#### `_set_status()`
+
+```python
+_set_status(self, text: str)
+```
 
 Actualiza el texto de estado en la barra inferior de la ventana.
 
@@ -236,7 +301,11 @@ Args:
 Raises:
     Exception: Si ocurre un error al actualizar el texto de estado.
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Maneja el cierre de la ventana, cancelando trabajos pendientes y liberando recursos.
 
@@ -248,5 +317,3 @@ Returns:
 
 Raises: 
     None
-
-</details>

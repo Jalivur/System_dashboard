@@ -13,17 +13,29 @@ Fallback ip/iwconfig/ifconfig.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_run()`](#_run) _(privada)_
+- [`_parse_iwconfig()`](#_parse_iwconfig) _(privada)_
+- [`_parse_iw_link()`](#_parse_iw_link) _(privada)_
+
 **Clase [`WiFiMonitor`](#clase-wifimonitor)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_signal_history()`](#get_signal_historyself-list)
-  - [`set_interface()`](#set_interfaceself-iface-str-none)
-  - [`get_available_interfaces()`](#get_available_interfaces-list)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`interface()`](#interfaceself-str)
-  - [`signal_color()`](#signal_colordbm-optionalint-colors-dict-str)
-  - [`signal_quality_pct()`](#signal_quality_pctdbm-optionalint-int)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_signal_history()`](#get_signal_history)
+  - [`set_interface()`](#set_interface)
+  - [`get_available_interfaces()`](#get_available_interfaces)
+  - [`get_stats()`](#get_stats)
+  - [`interface()`](#interface)
+  - [`signal_color()`](#signal_color)
+  - [`signal_quality_pct()`](#signal_quality_pct)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_load_saved_interface()`](#_load_saved_interface) _(privado)_
+  - [`_persist_interface()`](#_persist_interface) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_poll()`](#_poll) _(privado)_
+  - [`_read_proc_net_dev()`](#_read_proc_net_dev) _(privado)_
+  - [`_calc_speed()`](#_calc_speed) _(privado)_
 
 ---
 
@@ -56,10 +68,13 @@ from config.local_settings_io import update_params
 | `WIFI_SIGNAL_GOOD` | `-60` |
 | `WIFI_SIGNAL_WARN` | `-75` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_run(cmd: list) -> str`
+### `_run()`
+
+```python
+_run(cmd: list) -> str
+```
 
 Ejecuta un comando shell y retorna la salida estándar limpia.
 
@@ -72,7 +87,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución del comando.
 
-### `_parse_iwconfig(raw: str) -> dict`
+### `_parse_iwconfig()`
+
+```python
+_parse_iwconfig(raw: str) -> dict
+```
 
 Extrae información WiFi de la salida cruda de iwconfig.
 
@@ -85,7 +104,11 @@ Returns:
 Raises:
     None
 
-### `_parse_iw_link(raw: str) -> dict`
+### `_parse_iw_link()`
+
+```python
+_parse_iw_link(raw: str) -> dict
+```
 
 Extrae información de conexión inalámbrica de la salida del comando `iw dev <iface> link`.
 
@@ -97,8 +120,6 @@ Returns:
 
 Raises:
     None
-
-</details>
 
 ## Clase `WiFiMonitor`
 
@@ -125,7 +146,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el monitoreo de WiFi en segundo plano.
 
@@ -138,7 +163,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de monitoreo de WiFi.
 
@@ -151,7 +180,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor de WiFi está en ejecución.
 
@@ -164,7 +197,11 @@ Returns:
 Raises:
     None
 
-#### `get_signal_history(self) -> list`
+#### `get_signal_history()`
+
+```python
+get_signal_history(self) -> list
+```
 
 Obtiene el histórico de señal de WiFi en dBm de los últimos puntos registrados.
 
@@ -174,7 +211,11 @@ Args:
 Returns:
     list: Lista de valores de señal de WiFi en dBm.
 
-#### `set_interface(self, iface: str) -> None`
+#### `set_interface()`
+
+```python
+set_interface(self, iface: str) -> None
+```
 
 Cambia la interfaz de red en tiempo de ejecución.
 
@@ -187,7 +228,11 @@ Returns:
 Raises:
     None
 
-#### `get_available_interfaces() -> list`
+#### `get_available_interfaces()`
+
+```python
+get_available_interfaces() -> list
+```
 
 Obtiene la lista de interfaces de red inalámbrica disponibles.
 
@@ -199,7 +244,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al leer la lista de interfaces.
 
-#### `get_stats(self) -> dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> dict
+```
 
 Obtiene un snapshot completo de las estadísticas de WiFi de manera thread-safe y no bloqueante.
 
@@ -212,7 +261,11 @@ Returns:
 Raises:
     No aplica.
 
-#### `interface(self) -> str`
+#### `interface()`
+
+```python
+interface(self) -> str
+```
 
 Obtiene la interfaz de red actual.
 
@@ -222,7 +275,11 @@ Args:
 Returns:
     str: La interfaz de red actual, por ejemplo "wlan0".
 
-#### `signal_color(dbm: Optional[int], colors: dict) -> str`
+#### `signal_color()`
+
+```python
+signal_color(dbm: Optional[int], colors: dict) -> str
+```
 
 Determina el color semáforo según el nivel de señal de WiFi en dBm.
 
@@ -236,7 +293,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `signal_quality_pct(dbm: Optional[int]) -> int`
+#### `signal_quality_pct()`
+
+```python
+signal_quality_pct(dbm: Optional[int]) -> int
+```
 
 Convierte un nivel de señal en dBm a porcentaje de calidad de señal de WiFi.
 
@@ -249,17 +310,24 @@ Returns:
 Raises:
     Ninguna excepción explícita, devuelve 0 si dbm es None.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, interface: Optional[str] = None)`
+#### `__init__()`
+
+```python
+__init__(self, interface: Optional[str] = None)
+```
 
 Inicializa el monitor de WiFi con una interfaz específica.
 
 Args:
     interface (str, optional): Interfaz de red inalámbrica, como wlan0 o wlan1.
 
-#### `_load_saved_interface() -> Optional[str]`
+#### `_load_saved_interface()`
+
+```python
+_load_saved_interface() -> Optional[str]
+```
 
 Carga la interfaz de red WiFi guardada desde la configuración local.
 
@@ -272,7 +340,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al cargar la configuración.
 
-#### `_persist_interface(iface: str) -> None`
+#### `_persist_interface()`
+
+```python
+_persist_interface(iface: str) -> None
+```
 
 Persiste la interfaz de red WiFi en la configuración local.
 
@@ -282,7 +354,11 @@ Args:
 Raises:
     Exception: Si ocurre un error al persistir la interfaz.
 
-#### `_loop(self)`
+#### `_loop()`
+
+```python
+_loop(self)
+```
 
 Ejecuta el bucle de polling del monitor de WiFi.
 
@@ -295,7 +371,11 @@ Returns:
 Raises:
     None
 
-#### `_poll(self)`
+#### `_poll()`
+
+```python
+_poll(self)
+```
 
 Realiza un ciclo de polling para actualizar la información de la interfaz de red inalámbrica.
 
@@ -308,7 +388,11 @@ Returns:
 Raises:
     None
 
-#### `_read_proc_net_dev(self, iface: str) -> tuple`
+#### `_read_proc_net_dev()`
+
+```python
+_read_proc_net_dev(self, iface: str) -> tuple
+```
 
 Lee bytes RX/TX desde /proc/net/dev para una interfaz de red específica.
 
@@ -321,7 +405,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al leer el archivo /proc/net/dev.
 
-#### `_calc_speed(self, rx: int, tx: int) -> tuple`
+#### `_calc_speed()`
+
+```python
+_calc_speed(self, rx: int, tx: int) -> tuple
+```
 
 Calcula la velocidad de transferencia de datos en Mbps.
 
@@ -334,5 +422,3 @@ Returns:
 
 Raises:
     None
-
-</details>

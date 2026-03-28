@@ -14,15 +14,25 @@ Sin dependencias nuevas — usa urllib de la stdlib.
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_load_env()`](#_load_env) _(privada)_
+
 **Clase [`PiholeMonitor`](#clase-piholemonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`fetch_now()`](#fetch_nowself-none)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`is_reachable()`](#is_reachableself-bool)
-  - [`is_enabled()`](#is_enabledself-bool)
-  - [`get_offline_count()`](#get_offline_countself-int)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`fetch_now()`](#fetch_now)
+  - [`get_stats()`](#get_stats)
+  - [`is_reachable()`](#is_reachable)
+  - [`is_enabled()`](#is_enabled)
+  - [`get_offline_count()`](#get_offline_count)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_poll_loop()`](#_poll_loop) _(privado)_
+  - [`_authenticate()`](#_authenticate) _(privado)_
+  - [`_sid_valid()`](#_sid_valid) _(privado)_
+  - [`_get_sid()`](#_get_sid) _(privado)_
+  - [`_logout()`](#_logout) _(privado)_
+  - [`_fetch()`](#_fetch) _(privado)_
 
 ---
 
@@ -57,10 +67,13 @@ from dotenv import load_dotenv
 | `REQUEST_TIMEOUT` | `5` |
 | `SESSION_VALIDITY` | `1800` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
 ### `_load_env()`
+
+```python
+_load_env()
+```
 
 Carga las variables de entorno desde el archivo .env del proyecto.
 
@@ -72,8 +85,6 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>
 
 ## Clase `PiholeMonitor`
 
@@ -100,7 +111,11 @@ Raises: Ninguno
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el monitor de Pi-hole en un thread daemon.
 
@@ -113,7 +128,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el monitor de Pi-hole de forma ordenada.
 
@@ -126,7 +145,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor de Pi-hole está en ejecución.
 
@@ -136,7 +159,11 @@ Args:
 Returns:
     bool: True si el monitor está activo, False en caso contrario.
 
-#### `fetch_now(self) -> None`
+#### `fetch_now()`
+
+```python
+fetch_now(self) -> None
+```
 
 Fuerza un sondeo inmediato de Pi-hole en un hilo separado sin bloquear la llamada.
 
@@ -148,7 +175,11 @@ Raises: Ninguna excepción
 
 Nota: Si el monitor no está en ejecución, esta llamada no tiene efecto.
 
-#### `get_stats(self) -> Dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> Dict
+```
 
 Devuelve las estadísticas de Pi-hole almacenadas en caché.
 
@@ -163,7 +194,11 @@ Returns:
 Raises:
     None
 
-#### `is_reachable(self) -> bool`
+#### `is_reachable()`
+
+```python
+is_reachable(self) -> bool
+```
 
 Indica si Pi-hole está alcanzable en la red.
 
@@ -176,7 +211,11 @@ Returns:
 Raises:
     None
 
-#### `is_enabled(self) -> bool`
+#### `is_enabled()`
+
+```python
+is_enabled(self) -> bool
+```
 
 Verifica si el bloqueo de Pi-hole está activado.
 
@@ -189,7 +228,11 @@ Returns:
 Raises:
     Ninguna excepción relevante.
 
-#### `get_offline_count(self) -> int`
+#### `get_offline_count()`
+
+```python
+get_offline_count(self) -> int
+```
 
 Obtiene el número de instancias de Pi-hole que se encuentran fuera de línea.
 
@@ -202,10 +245,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor de Pi-hole con sus configuraciones y locks.
 
@@ -218,7 +264,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_poll_loop(self) -> None`
+#### `_poll_loop()`
+
+```python
+_poll_loop(self) -> None
+```
 
 Ejecuta el bucle principal del hilo daemon de sondeo periódico.
 
@@ -231,7 +281,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_authenticate(self) -> bool`
+#### `_authenticate()`
+
+```python
+_authenticate(self) -> bool
+```
 
 Establece una sesión autenticada con el servidor Pi-hole obteniendo un sid.
 
@@ -244,7 +298,11 @@ Returns:
 Raises:
     Ninguna excepción específica, pero registra errores en el logger.
 
-#### `_sid_valid(self) -> bool`
+#### `_sid_valid()`
+
+```python
+_sid_valid(self) -> bool
+```
 
 Verifica si el token de sesión sigue siendo válido.
 
@@ -257,7 +315,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_get_sid(self) -> Optional[str]`
+#### `_get_sid()`
+
+```python
+_get_sid(self) -> Optional[str]
+```
 
 Obtiene un sid válido, realizando autenticación si es necesario.
 
@@ -267,7 +329,11 @@ Returns: El sid válido o None si no se pudo obtener.
 
 Raises: Ninguna excepción específica
 
-#### `_logout(self) -> None`
+#### `_logout()`
+
+```python
+_logout(self) -> None
+```
 
 Cierra la sesión en Pi-hole invalidando el token de sesión actual.
 
@@ -280,7 +346,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_fetch(self) -> None`
+#### `_fetch()`
+
+```python
+_fetch(self) -> None
+```
 
 Llama a la API v6 de Pi-hole y actualiza la caché de estadísticas.
 
@@ -292,5 +362,3 @@ Returns:
 
 Raises: 
     Excepciones relacionadas con urllib.request y json.loads si la solicitud o el parseo falla.
-
-</details>

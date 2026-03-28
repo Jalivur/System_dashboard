@@ -24,14 +24,16 @@ Uso en main.py:
 ## Tabla de contenidos
 
 **Clase [`ServiceRegistry`](#clase-serviceregistry)**
-  - [`save_config()`](#save_configself)
-  - [`set_service_enabled()`](#set_service_enabledself-key-str-enabled-bool-none)
-  - [`register()`](#registerself-key-str-instance-none)
-  - [`apply_config()`](#apply_configself-none)
-  - [`get()`](#getself-key-str)
-  - [`get_all()`](#get_allself-dict)
-  - [`service_enabled()`](#service_enabledself-key-str-bool)
-  - [`ui_enabled()`](#ui_enabledself-key-str-bool)
+  - [`save_config()`](#save_config)
+  - [`set_service_enabled()`](#set_service_enabled)
+  - [`register()`](#register)
+  - [`apply_config()`](#apply_config)
+  - [`get()`](#get)
+  - [`get_all()`](#get_all)
+  - [`service_enabled()`](#service_enabled)
+  - [`ui_enabled()`](#ui_enabled)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_load_config()`](#_load_config) _(privado)_
 
 ---
 
@@ -75,7 +77,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `save_config(self)`
+#### `save_config()`
+
+```python
+save_config(self)
+```
 
 Persiste la configuración actual al archivo JSON.
 
@@ -91,7 +97,11 @@ Raises:
 Nota: No lee el estado live de los servicios, guarda lo que se haya establecido 
       explícitamente.
 
-#### `set_service_enabled(self, key: str, enabled: bool) -> None`
+#### `set_service_enabled()`
+
+```python
+set_service_enabled(self, key: str, enabled: bool) -> None
+```
 
 Establece si un servicio está habilitado o deshabilitado en la configuración.
 
@@ -105,7 +115,11 @@ Returns:
 Raises:
     None
 
-#### `register(self, key: str, instance) -> None`
+#### `register()`
+
+```python
+register(self, key: str, instance) -> None
+```
 
 Registra un servicio en el registro de servicios.
 
@@ -119,7 +133,11 @@ Returns:
 Raises:
     None
 
-#### `apply_config(self) -> None`
+#### `apply_config()`
+
+```python
+apply_config(self) -> None
+```
 
 Aplica la configuración de servicios, deteniendo aquellos que estén configurados como deshabilitados en services.json.
 
@@ -132,7 +150,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al detener un servicio.
 
-#### `get(self, key: str)`
+#### `get()`
+
+```python
+get(self, key: str)
+```
 
 Recuperar la instancia de un servicio registrada por su clave.
 
@@ -142,7 +164,11 @@ Args:
 Returns:
     La instancia del servicio asociada a la clave, o None si no existe.
 
-#### `get_all(self) -> dict`
+#### `get_all()`
+
+```python
+get_all(self) -> dict
+```
 
 Devuelve un diccionario con todos los servicios registrados.
 
@@ -155,7 +181,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `service_enabled(self, key: str) -> bool`
+#### `service_enabled()`
+
+```python
+service_enabled(self, key: str) -> bool
+```
 
 Determina si un servicio específico está configurado para arrancar.
 
@@ -165,7 +195,11 @@ Args:
 Returns:
     bool: True si el servicio está configurado para arrancar, False en caso contrario.
 
-#### `ui_enabled(self, key: str) -> bool`
+#### `ui_enabled()`
+
+```python
+ui_enabled(self, key: str) -> bool
+```
 
 Determina si un elemento de la interfaz de usuario está habilitado según la configuración.
 
@@ -175,17 +209,24 @@ Args:
 Returns:
     bool: True si el elemento de la interfaz de usuario está habilitado, False en caso contrario.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, config_path: str = None)`
+#### `__init__()`
+
+```python
+__init__(self, config_path: str = None)
+```
 
 Inicializa el registro de servicios.
 
 Args:
     config_path (str): Ruta opcional al archivo de configuración services.json.
 
-#### `_load_config(self)`
+#### `_load_config()`
+
+```python
+_load_config(self)
+```
 
 Carga la configuración desde services.json y la inicializa con valores por defecto si no existe.
 
@@ -194,5 +235,3 @@ Args: Ninguno
 Returns: Ninguno
 
 Raises: Ninguno
-
-</details>

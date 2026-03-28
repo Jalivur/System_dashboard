@@ -14,14 +14,18 @@ Ejecuta arp-scan en un thread de background para no bloquear la UI.
 ## Tabla de contenidos
 
 **Clase [`NetworkScanner`](#clase-networkscanner)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`scan()`](#scanself-none)
-  - [`get_devices()`](#get_devicesself-listdict)
-  - [`get_status()`](#get_statusself-str)
-  - [`get_error()`](#get_errorself-str)
-  - [`get_last_scan_age()`](#get_last_scan_ageself-optionalfloat)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`scan()`](#scan)
+  - [`get_devices()`](#get_devices)
+  - [`get_status()`](#get_status)
+  - [`get_error()`](#get_error)
+  - [`get_last_scan_age()`](#get_last_scan_age)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_do_scan()`](#_do_scan) _(privado)_
+  - [`_parse_output()`](#_parse_output) _(privado)_
+  - [`_resolve_hostname()`](#_resolve_hostname) _(privado)_
 
 ---
 
@@ -72,7 +76,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el escaneo de red.
 
@@ -85,7 +93,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el escaneo de red y limpia la caché de dispositivos y estados.
 
@@ -98,7 +110,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de escaneo de red está actualmente en ejecución.
 
@@ -111,7 +127,11 @@ Returns:
 Raises:
     None
 
-#### `scan(self) -> None`
+#### `scan()`
+
+```python
+scan(self) -> None
+```
 
 Inicia el escaneo de la red en segundo plano si no hay uno en curso.
 
@@ -121,7 +141,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `get_devices(self) -> List[Dict]`
+#### `get_devices()`
+
+```python
+get_devices(self) -> List[Dict]
+```
 
 Devuelve la lista de dispositivos del último escaneo almacenada en caché.
 
@@ -134,7 +158,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_status(self) -> str`
+#### `get_status()`
+
+```python
+get_status(self) -> str
+```
 
 Obtiene el estado actual del escaneo de red.
 
@@ -147,7 +175,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_error(self) -> str`
+#### `get_error()`
+
+```python
+get_error(self) -> str
+```
 
 Obtiene el mensaje de error registrado en el escáner de red.
 
@@ -160,7 +192,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_last_scan_age(self) -> Optional[float]`
+#### `get_last_scan_age()`
+
+```python
+get_last_scan_age(self) -> Optional[float]
+```
 
 Devuelve la edad del último escaneo completado en segundos.
 
@@ -174,10 +210,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el NetworkScanner con listas de dispositivos y estado.
 
@@ -187,7 +226,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_do_scan(self) -> None`
+#### `_do_scan()`
+
+```python
+_do_scan(self) -> None
+```
 
 Ejecuta arp-scan para detectar dispositivos en la red local y parsea el resultado.
 
@@ -200,7 +243,11 @@ Raises:
 - subprocess.TimeoutExpired: Si arp-scan excede el tiempo límite establecido.
 - FileNotFoundError: Si no se encuentran archivos necesarios para arp-scan.
 
-#### `_parse_output(self, output: str) -> list`
+#### `_parse_output()`
+
+```python
+_parse_output(self, output: str) -> list
+```
 
 Parsea la salida de arp-scan para extraer información de dispositivos en la red.
 
@@ -214,7 +261,11 @@ Returns:
 Raises:
     None
 
-#### `_resolve_hostname(ip: str) -> str`
+#### `_resolve_hostname()`
+
+```python
+_resolve_hostname(ip: str) -> str
+```
 
 Resuelve el hostname asociado a una dirección IP.
 
@@ -226,5 +277,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante la resolución.
-
-</details>

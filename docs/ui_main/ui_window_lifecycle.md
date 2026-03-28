@@ -32,10 +32,12 @@ Uso en MainWindow:
 ## Tabla de contenidos
 
 **Clase [`WindowLifecycleManager`](#clase-windowlifecyclemanager)**
-  - [`register()`](#registerself-key-str-label-str-factory-badge_keys-none-none)
-  - [`open()`](#openself-key-str-none)
-  - [`get()`](#getself-key-str)
-  - [`is_open()`](#is_openself-key-str-bool)
+  - [`register()`](#register)
+  - [`open()`](#open)
+  - [`get()`](#get)
+  - [`is_open()`](#is_open)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -79,7 +81,11 @@ Returns:
 
 ### Métodos públicos
 
-#### `register(self, key: str, label: str, factory, badge_keys = None) -> None`
+#### `register()`
+
+```python
+register(self, key: str, label: str, factory, badge_keys = None) -> None
+```
 
 Registra una ventana hija con su información asociada.
 
@@ -95,7 +101,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `open(self, key: str) -> None`
+#### `open()`
+
+```python
+open(self, key: str) -> None
+```
 
 Abre la ventana registrada bajo la clave proporcionada.
 
@@ -108,7 +118,11 @@ Returns:
 Raises:
     None
 
-#### `get(self, key: str)`
+#### `get()`
+
+```python
+get(self, key: str)
+```
 
 Recupera la instancia activa de una ventana registrada.
 
@@ -118,7 +132,11 @@ Args:
 Returns:
     La instancia activa de la ventana, o None si no existe o no está activa.
 
-#### `is_open(self, key: str) -> bool`
+#### `is_open()`
+
+```python
+is_open(self, key: str) -> bool
+```
 
 Indica si una ventana específica está actualmente abierta.
 
@@ -128,10 +146,13 @@ Args:
 Returns:
     bool: True si la ventana está abierta, False en caso contrario.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, on_btn_active, on_btn_idle)`
+#### `__init__()`
+
+```python
+__init__(self, on_btn_active, on_btn_idle)
+```
 
 Inicializa el administrador del ciclo de vida de la ventana.
 
@@ -139,7 +160,11 @@ Args:
     on_btn_active (callable): Función que se llama cuando un botón está activo, recibe una etiqueta como parámetro.
     on_btn_idle (callable): Función que se llama cuando un botón está inactivo, recibe una etiqueta como parámetro.
 
-#### `_on_close(self, key: str, label: str) -> None`
+#### `_on_close()`
+
+```python
+_on_close(self, key: str, label: str) -> None
+```
 
 Limpia la instancia y el botón asociado cuando una ventana es cerrada.
 
@@ -152,5 +177,3 @@ Returns:
 
 Raises:
     None
-
-</details>

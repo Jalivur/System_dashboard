@@ -12,6 +12,13 @@ Muestra los dispositivos encontrados por arp-scan con IP, MAC, fabricante y host
 ## Tabla de contenidos
 
 **Clase [`NetworkLocalWindow`](#clase-networklocalwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_start_scan()`](#_start_scan) _(privado)_
+  - [`_poll_result()`](#_poll_result) _(privado)_
+  - [`_render()`](#_render) _(privado)_
+  - [`_create_device_row()`](#_create_device_row) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -59,10 +66,13 @@ Returns:
 | `_auto_job` | `None` |
 | `_poll_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, network_scanner)`
+#### `__init__()`
+
+```python
+__init__(self, parent, network_scanner)
+```
 
 Inicializa y configura la ventana emergente del panel de red local.
 
@@ -73,7 +83,11 @@ Args:
     parent: Ventana principal (CTkToplevel) padre de esta ventana.
     network_scanner: Instancia del escáner de red externa para obtener dispositivos.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Construye toda la interfaz de usuario de la ventana.
 
@@ -90,7 +104,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_start_scan(self)`
+#### `_start_scan()`
+
+```python
+_start_scan(self)
+```
 
 Inicia el proceso de escaneo de la red y activa la verificación periódica de resultados.
 
@@ -103,7 +121,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_poll_result(self)`
+#### `_poll_result()`
+
+```python
+_poll_result(self)
+```
 
 Verifica periódicamente el estado del escaneo y actualiza la interfaz gráfica accordingly.
 
@@ -116,7 +138,11 @@ Returns:
 Raises: 
     None
 
-#### `_render(self)`
+#### `_render()`
+
+```python
+_render(self)
+```
 
 Redibuja la lista con los dispositivos encontrados en la red local.
 
@@ -129,7 +155,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_device_row(self, device: dict)`
+#### `_create_device_row()`
+
+```python
+_create_device_row(self, device: dict)
+```
 
 Crea una fila que representa un dispositivo en la interfaz gráfica.
 
@@ -142,7 +172,11 @@ Returns:
 Raises:
     None
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Gestiona el cierre ordenado de la ventana.
 
@@ -154,5 +188,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

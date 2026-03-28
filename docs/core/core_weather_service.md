@@ -26,19 +26,29 @@ Arquitectura:
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_wmo_label()`](#_wmo_label) _(privada)_
+
 **Clase [`WeatherService`](#clase-weatherservice)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`set_city()`](#set_cityself-city-str-dict)
-  - [`get_stats()`](#get_statsself-dict)
-  - [`get_city()`](#get_cityself-str)
-  - [`fetch_now()`](#fetch_nowself-none)
-  - [`get_favorites()`](#get_favoritesself-liststr)
-  - [`get_max_favorites()`](#get_max_favoritesself-int)
-  - [`add_favorite()`](#add_favoriteself-city-str-dict)
-  - [`remove_favorite()`](#remove_favoriteself-city-str-none)
-  - [`set_max_favorites()`](#set_max_favoritesself-n-int-none)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`set_city()`](#set_city)
+  - [`get_stats()`](#get_stats)
+  - [`get_city()`](#get_city)
+  - [`fetch_now()`](#fetch_now)
+  - [`get_favorites()`](#get_favorites)
+  - [`get_max_favorites()`](#get_max_favorites)
+  - [`add_favorite()`](#add_favorite)
+  - [`remove_favorite()`](#remove_favorite)
+  - [`set_max_favorites()`](#set_max_favorites)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_geocode()`](#_geocode) _(privado)_
+  - [`_fetch_weather()`](#_fetch_weather) _(privado)_
+  - [`_persist_location()`](#_persist_location) _(privado)_
+  - [`_persist_favorites()`](#_persist_favorites) _(privado)_
+  - [`_load_persisted_location()`](#_load_persisted_location) _(privado)_
 
 ---
 
@@ -72,10 +82,13 @@ from utils.logger import get_logger
 | `AIR_QUALITY_URL` | `'https://air-quality-api.open-meteo.com/v1/air-quality'` |
 | `DEFAULT_MAX_FAVORITES` | `5` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_wmo_label(code: int) -> tuple`
+### `_wmo_label()`
+
+```python
+_wmo_label(code: int) -> tuple
+```
 
 Devuelve la descripción y emoji asociados a un código WMO.
 
@@ -88,8 +101,6 @@ Returns:
 
 Raises:
     None
-
-</details>
 
 ## Clase `WeatherService`
 
@@ -124,7 +135,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el servicio de actualización periódica del clima en un hilo daemon.
 
@@ -136,7 +151,11 @@ Raises: Ninguna excepción
 
 Nota: Operación idempotente. Si el servicio ya está iniciado, no se realiza ninguna acción adicional.
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de meteorología.
 
@@ -149,7 +168,11 @@ Returns:
 Raises: 
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio meteorológico se está ejecutando actualmente.
 
@@ -162,7 +185,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `set_city(self, city: str) -> dict`
+#### `set_city()`
+
+```python
+set_city(self, city: str) -> dict
+```
 
 Establece la ciudad activa realizando geocoding y disparando una actualización inmediata de los datos meteorológicos.
 
@@ -175,7 +202,11 @@ Returns:
 Raises:
     None
 
-#### `get_stats(self) -> dict`
+#### `get_stats()`
+
+```python
+get_stats(self) -> dict
+```
 
 Obtiene las estadísticas actuales de clima de forma no bloqueante.
 
@@ -185,14 +216,22 @@ Returns:
 Raises:
     None
 
-#### `get_city(self) -> str`
+#### `get_city()`
+
+```python
+get_city(self) -> str
+```
 
 Obtiene la ciudad activa actual.
 
 Returns:
     str: Nombre de la ciudad o cadena vacía.
 
-#### `fetch_now(self) -> None`
+#### `fetch_now()`
+
+```python
+fetch_now(self) -> None
+```
 
 Fuerza la actualización inmediata de la información meteorológica en un hilo en segundo plano.
 
@@ -204,7 +243,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `get_favorites(self) -> List[str]`
+#### `get_favorites()`
+
+```python
+get_favorites(self) -> List[str]
+```
 
 Devuelve una copia de la lista de ciudades favoritas.
 
@@ -217,7 +260,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_max_favorites(self) -> int`
+#### `get_max_favorites()`
+
+```python
+get_max_favorites(self) -> int
+```
 
 Devuelve el límite máximo de favoritos.
 
@@ -230,7 +277,11 @@ Returns:
 Raises:
     None
 
-#### `add_favorite(self, city: str) -> dict`
+#### `add_favorite()`
+
+```python
+add_favorite(self, city: str) -> dict
+```
 
 Añade una ciudad a la lista de favoritos si no existe ya y no se ha alcanzado el máximo permitido.
 
@@ -243,7 +294,11 @@ Returns:
 Raises:
     None
 
-#### `remove_favorite(self, city: str) -> None`
+#### `remove_favorite()`
+
+```python
+remove_favorite(self, city: str) -> None
+```
 
 Elimina una ciudad de la lista de favoritos y persiste el cambio.
 
@@ -256,7 +311,11 @@ Returns:
 Raises:
     None
 
-#### `set_max_favorites(self, n: int) -> None`
+#### `set_max_favorites()`
+
+```python
+set_max_favorites(self, n: int) -> None
+```
 
 Establece el límite máximo de favoritos permitidos.
 
@@ -269,10 +328,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el servicio meteorológico.
 
@@ -287,7 +349,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_loop(self) -> None`
+#### `_loop()`
+
+```python
+_loop(self) -> None
+```
 
 Inicia y mantiene el ciclo de actualización del servicio meteorológico.
 
@@ -300,7 +366,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_geocode(self, city: str) -> dict`
+#### `_geocode()`
+
+```python
+_geocode(self, city: str) -> dict
+```
 
 Busca coordenadas geográficas para una ciudad mediante la API de geocodificación de Open-Meteo.
 
@@ -313,7 +383,11 @@ Returns:
 Raises:
     Excepciones relacionadas con urllib.request.urlopen si la solicitud falla.
 
-#### `_fetch_weather(self) -> None`
+#### `_fetch_weather()`
+
+```python
+_fetch_weather(self) -> None
+```
 
 Consulta Open-Meteo forecast y air quality, actualizando caché de manera thread-safe.
 
@@ -326,7 +400,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_persist_location(self, city: str, lat: float, lon: float) -> None`
+#### `_persist_location()`
+
+```python
+_persist_location(self, city: str, lat: float, lon: float) -> None
+```
 
 Persiste la ciudad activa y sus coordenadas en la configuración local.
 
@@ -338,7 +416,11 @@ Args:
 Raises:
     Exception: Si ocurre un error al actualizar los parámetros.
 
-#### `_persist_favorites(self, favorites: List[str], max_fav: int) -> None`
+#### `_persist_favorites()`
+
+```python
+_persist_favorites(self, favorites: List[str], max_fav: int) -> None
+```
 
 Persiste la lista de favoritos y el máximo número de favoritos en la configuración local.
 
@@ -349,7 +431,11 @@ Args:
 Raises:
     Exception: Si ocurre un error al persistir la configuración.
 
-#### `_load_persisted_location(self) -> None`
+#### `_load_persisted_location()`
+
+```python
+_load_persisted_location(self) -> None
+```
 
 Carga la ubicación persistida desde la configuración local.
 
@@ -361,5 +447,3 @@ Returns:
 
 Raises:
     Excepción genérica en caso de error durante la carga de datos.
-
-</details>

@@ -18,7 +18,23 @@ Ubicación: ui/windows/log_config_window.py
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_level_name()`](#_level_name) _(privada)_
+
 **Clase [`LogConfigWindow`](#clase-logconfigwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_left()`](#_build_left) _(privado)_
+  - [`_build_handler_row()`](#_build_handler_row) _(privado)_
+  - [`_on_file_level_change()`](#_on_file_level_change) _(privado)_
+  - [`_on_console_level_change()`](#_on_console_level_change) _(privado)_
+  - [`_build_right()`](#_build_right) _(privado)_
+  - [`_reload_modules()`](#_reload_modules) _(privado)_
+  - [`_on_listbox_select()`](#_on_listbox_select) _(privado)_
+  - [`_apply_module_level()`](#_apply_module_level) _(privado)_
+  - [`_force_rollover()`](#_force_rollover) _(privado)_
+  - [`_reset_all_modules()`](#_reset_all_modules) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -47,10 +63,13 @@ from utils.logger import get_logger, get_dashboard_logger
 |--------|-------|
 | `logger` | `get_logger(__name__)` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_level_name(level: int) -> str`
+### `_level_name()`
+
+```python
+_level_name(level: int) -> str
+```
 
 Convierte un nivel numérico de logging en su nombre legible.
 
@@ -59,8 +78,6 @@ Args:
 
 Returns:
     str: Nombre del nivel o el nombre por defecto si no está mapeado.
-
-</details>
 
 ## Clase `LogConfigWindow(ctk.CTkToplevel)`
 
@@ -86,10 +103,13 @@ Raises:
 | `_console_active` | `status['console_active']` |
 | `_module_level_var` | `ctk.StringVar(master=self, value=_HEREDAR)` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana de configuración de logging.
 
@@ -101,7 +121,11 @@ Args:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la estructura principal de la UI para la configuración de logging.
 
@@ -114,7 +138,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_build_left(self, parent)`
+#### `_build_left()`
+
+```python
+_build_left(self, parent)
+```
 
 Construye la columna izquierda de la ventana de configuración de logs.
 
@@ -127,7 +155,11 @@ Returns:
 Raises:
     None
 
-#### `_build_handler_row(self, parent, label: str, var, active: bool, command)`
+#### `_build_handler_row()`
+
+```python
+_build_handler_row(self, parent, label: str, var, active: bool, command)
+```
 
 Crea una fila horizontal reusable para selector de nivel de handler.
 
@@ -144,7 +176,11 @@ Returns:
 Raises:
     None
 
-#### `_on_file_level_change(self, value: str)`
+#### `_on_file_level_change()`
+
+```python
+_on_file_level_change(self, value: str)
+```
 
 Actualiza el nivel de logging del handler de fichero según el valor seleccionado.
 
@@ -157,7 +193,11 @@ Returns:
 Raises:
     None
 
-#### `_on_console_level_change(self, value: str = None)`
+#### `_on_console_level_change()`
+
+```python
+_on_console_level_change(self, value: str = None)
+```
 
 Establece el nivel de precisión del registro en la consola según el valor seleccionado.
 
@@ -170,14 +210,22 @@ Returns:
 Raises:
     None
 
-#### `_build_right(self, parent)`
+#### `_build_right()`
+
+```python
+_build_right(self, parent)
+```
 
 Construye la columna derecha de la ventana de configuración de logs.
 
 Args:
     parent: El elemento padre donde se construirá la columna derecha.
 
-#### `_reload_modules(self)`
+#### `_reload_modules()`
+
+```python
+_reload_modules(self)
+```
 
 Recarga la lista de módulos activos desde dashboard_logger y actualiza la lista visualizada.
 
@@ -190,7 +238,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_listbox_select(self, _event)`
+#### `_on_listbox_select()`
+
+```python
+_on_listbox_select(self, _event)
+```
 
 Actualiza el selector y el estado del módulo según la selección realizada en el listbox.
 
@@ -203,7 +255,11 @@ Returns:
 Raises:
     None
 
-#### `_apply_module_level(self)`
+#### `_apply_module_level()`
+
+```python
+_apply_module_level(self)
+```
 
 Aplica el nivel de log seleccionado al módulo actualmente elegido y actualiza la lista y el estado.
 
@@ -216,7 +272,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_force_rollover(self)`
+#### `_force_rollover()`
+
+```python
+_force_rollover(self)
+```
 
 Fuerza la rotación manual del archivo de log y muestra una confirmación.
 
@@ -229,7 +289,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_reset_all_modules(self)`
+#### `_reset_all_modules()`
+
+```python
+_reset_all_modules(self)
+```
 
 Restablece todos los módulos a nivel HEREDAR y recarga listbox.
 
@@ -242,7 +306,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Maneja el evento de cierre de la ventana de configuración de registro.
 
@@ -254,5 +322,3 @@ Returns:
 
 Raises:
     None
-
-</details>

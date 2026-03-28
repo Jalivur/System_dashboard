@@ -23,6 +23,13 @@ Todo lo demas vive en modulos especializados:
 ## Tabla de contenidos
 
 **Clase [`MainWindow`](#clase-mainwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_register_windows()`](#_register_windows) _(privado)_
+  - [`_build_buttons_meta()`](#_build_buttons_meta) _(privado)_
+  - [`_switch_tab()`](#_switch_tab) _(privado)_
+  - [`_btn_active()`](#_btn_active) _(privado)_
+  - [`_btn_idle()`](#_btn_idle) _(privado)_
 
 ---
 
@@ -123,10 +130,13 @@ Returns:
 | `_active_tab` | `UICfg.MENU_TABS[0][0]` |
 | `_tab_buttons` | `{}` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, root, registry, update_interval = 2000)`
+#### `__init__()`
+
+```python
+__init__(self, root, registry, update_interval = 2000)
+```
 
 Inicializa la ventana principal del dashboard.
 
@@ -141,7 +151,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario completa, incluyendo el diseño de la ventana principal 
 con header, pestañas, área de botones y footer.
@@ -155,7 +169,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_register_windows(self)`
+#### `_register_windows()`
+
+```python
+_register_windows(self)
+```
 
 Registra ventanas hijas en el administrador de ciclo de vida de ventanas.
 
@@ -168,7 +186,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_buttons_meta(self)`
+#### `_build_buttons_meta()`
+
+```python
+_build_buttons_meta(self)
+```
 
 Crea un diccionario que mapeia etiquetas de botones a tuplas con funciones de apertura de ventanas y listas de claves de insignias.
 
@@ -177,7 +199,11 @@ Usado en _switch_tab para renderizar botones de pestañas dinámicamente.
 Returns:
     dict: label → (command, [badges]).
 
-#### `_switch_tab(self, key: str) -> None`
+#### `_switch_tab()`
+
+```python
+_switch_tab(self, key: str) -> None
+```
 
 Cambia la pestaña activa y actualiza la interfaz de usuario en consecuencia.
 
@@ -190,7 +216,11 @@ Returns:
 Raises:
     None
 
-#### `_btn_active(self, text_key: str) -> None`
+#### `_btn_active()`
+
+```python
+_btn_active(self, text_key: str) -> None
+```
 
 Resalta el botón activo en la ventana principal.
 
@@ -203,7 +233,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al configurar el botón.
 
-#### `_btn_idle(self, text_key: str) -> None`
+#### `_btn_idle()`
+
+```python
+_btn_idle(self, text_key: str) -> None
+```
 
 Restaura el estilo idle de un botón.
 
@@ -215,5 +249,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error al configurar el botón.
-
-</details>

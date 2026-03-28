@@ -11,6 +11,26 @@ Ventana Service Watchdog - monitor críticos + config inline
 ## Tabla de contenidos
 
 **Clase [`ServiceWatchdogWindow`](#clase-servicewatchdogwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_controls()`](#_create_controls) _(privado)_
+  - [`_create_column_headers()`](#_create_column_headers) _(privado)_
+  - [`_debounce_umbral_update()`](#_debounce_umbral_update) _(privado)_
+  - [`_on_umbral_change()`](#_on_umbral_change) _(privado)_
+  - [`_debounce_interval_update()`](#_debounce_interval_update) _(privado)_
+  - [`_on_interval_change()`](#_on_interval_change) _(privado)_
+  - [`_apply_config()`](#_apply_config) _(privado)_
+  - [`_debounced_search()`](#_debounced_search) _(privado)_
+  - [`_on_filter()`](#_on_filter) _(privado)_
+  - [`_resume_updates()`](#_resume_updates) _(privado)_
+  - [`_force_update()`](#_force_update) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_update_now()`](#_update_now) _(privado)_
+  - [`_do_restart()`](#_do_restart) _(privado)_
+  - [`_show_logs()`](#_show_logs) _(privado)_
+  - [`_add_critical()`](#_add_critical) _(privado)_
+  - [`_save_criticals()`](#_save_criticals) _(privado)_
+  - [`_update_critical_label()`](#_update_critical_label) _(privado)_
 
 ---
 
@@ -73,10 +93,13 @@ Raises:
 | `_umbral_var` | `ctk.StringVar(master=self, value=str(_stats['threshold']))` |
 | `_interval_var` | `ctk.StringVar(master=self, value=str(_stats['interval']))` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, service_monitor: ServiceMonitor, watchdog: ServiceWatchdog)`
+#### `__init__()`
+
+```python
+__init__(self, parent, service_monitor: ServiceMonitor, watchdog: ServiceWatchdog)
+```
 
 Inicializa la ventana de monitoreo Service Watchdog.
 
@@ -93,7 +116,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario principal de la ventana Service Watchdog.
 
@@ -106,14 +133,22 @@ Crea la interfaz de usuario principal de la ventana Service Watchdog.
     Raises:
         Ninguno
 
-#### `_create_controls(self, parent)`
+#### `_create_controls()`
+
+```python
+_create_controls(self, parent)
+```
 
 Crea los controles interactivos superiores para filtrado y gestión de servicios.
 
 Args:
     parent: Frame contenedor principal donde se crearán los controles.
 
-#### `_create_column_headers(self, parent)`
+#### `_create_column_headers()`
+
+```python
+_create_column_headers(self, parent)
+```
 
 Crea la fila de encabezados para la tabla scrollable de servicios.
 
@@ -126,7 +161,11 @@ Returns:
 Raises:
     None
 
-#### `_debounce_umbral_update(self)`
+#### `_debounce_umbral_update()`
+
+```python
+_debounce_umbral_update(self)
+```
 
 Maneja el debounce para cambios en el campo de umbral de fallos críticos.
 
@@ -139,7 +178,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_umbral_change(self, val)`
+#### `_on_umbral_change()`
+
+```python
+_on_umbral_change(self, val)
+```
 
 Aplica cambios al umbral de fallos consecutivos críticos a partir de un valor introducido.
 
@@ -149,7 +192,11 @@ Args:
 Raises:
     None
 
-#### `_debounce_interval_update(self)`
+#### `_debounce_interval_update()`
+
+```python
+_debounce_interval_update(self)
+```
 
 Establece un debounce para cambios en el intervalo de monitoreo, 
 programando una actualización diferida después de un período de inactividad.
@@ -163,7 +210,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_interval_change(self, val)`
+#### `_on_interval_change()`
+
+```python
+_on_interval_change(self, val)
+```
 
 Aplica cambios al intervalo de chequeo periódico del watchdog.
 
@@ -173,7 +224,11 @@ Aplica cambios al intervalo de chequeo periódico del watchdog.
     Raises:
         None
 
-#### `_apply_config(self)`
+#### `_apply_config()`
+
+```python
+_apply_config(self)
+```
 
 Aplica la configuración actual de umbral e intervalo al ServiceWatchdog.
 
@@ -188,7 +243,11 @@ Raises:
 
 Nota: Configura el umbral entre 1 y 10, e intervalo entre 30 y 300.
 
-#### `_debounced_search(self)`
+#### `_debounced_search()`
+
+```python
+_debounced_search(self)
+```
 
 Implementa búsqueda en tiempo real con debounce para nombres de servicios.
 
@@ -201,7 +260,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_filter(self)`
+#### `_on_filter()`
+
+```python
+_on_filter(self)
+```
 
 Responde a cambios en el filtro de servicios.
 
@@ -216,7 +279,11 @@ Returns:
 Raises:
     None
 
-#### `_resume_updates(self)`
+#### `_resume_updates()`
+
+```python
+_resume_updates(self)
+```
 
 Reanuda el ciclo de actualizaciones periódicas tras una pausa temporal.
 
@@ -226,7 +293,11 @@ Returns: None
 
 Raises: None
 
-#### `_force_update(self)`
+#### `_force_update()`
+
+```python
+_force_update(self)
+```
 
 Fuerza la actualización inmediata de datos y la interfaz de usuario.
 
@@ -239,7 +310,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza periódicamente la interfaz de usuario del ServiceWatchdogWindow.
 
@@ -252,7 +327,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_now(self)`
+#### `_update_now()`
+
+```python
+_update_now(self)
+```
 
 Actualiza inmediatamente estadísticas y tabla de servicios.
 
@@ -265,7 +344,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_do_restart(self, name)`
+#### `_do_restart()`
+
+```python
+_do_restart(self, name)
+```
 
 Inicia el reinicio seguro de un servicio con confirmación del usuario.
 
@@ -278,7 +361,11 @@ Raises:
 Returns:
     None
 
-#### `_show_logs(self, name)`
+#### `_show_logs()`
+
+```python
+_show_logs(self, name)
+```
 
 Muestra logs recientes del servicio en una ventana modal.
 
@@ -291,7 +378,11 @@ Returns:
 Raises:
     None
 
-#### `_add_critical(self)`
+#### `_add_critical()`
+
+```python
+_add_critical(self)
+```
 
 Añade un servicio a la lista de monitoreo crítico.
 
@@ -304,7 +395,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_save_criticals(self)`
+#### `_save_criticals()`
+
+```python
+_save_criticals(self)
+```
 
 Persiste la lista actual de servicios críticos en watchdog.
 
@@ -317,7 +412,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_critical_label(self)`
+#### `_update_critical_label()`
+
+```python
+_update_critical_label(self)
+```
 
 Actualiza la etiqueta textual con la lista actual de servicios críticos.
 
@@ -329,5 +428,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

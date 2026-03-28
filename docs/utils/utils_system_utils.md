@@ -11,17 +11,17 @@ Utilidades para obtener información del sistema
 ## Tabla de contenidos
 
 **Clase [`SystemUtils`](#clase-systemutils)**
-  - [`get_cpu_temp()`](#get_cpu_temp-float)
-  - [`get_hostname()`](#get_hostname-str)
-  - [`get_net_io()`](#get_net_iointerface-optionalstr-none-tuplestr-any)
-  - [`safe_net_speed()`](#safe_net_speedcurrent-any-previous-optionalany-tuplefloat-float)
-  - [`list_usb_storage_devices()`](#list_usb_storage_devices-list)
-  - [`list_usb_other_devices()`](#list_usb_other_devices-list)
-  - [`list_usb_devices()`](#list_usb_devices-list)
-  - [`eject_usb_device()`](#eject_usb_devicedevice-dict-tuplebool-str)
-  - [`run_script()`](#run_scriptscript_path-str-tuplebool-str)
-  - [`get_interfaces_ips()`](#get_interfaces_ips-dictstr-str)
-  - [`get_nvme_temp()`](#get_nvme_temp-float)
+  - [`get_cpu_temp()`](#get_cpu_temp)
+  - [`get_hostname()`](#get_hostname)
+  - [`get_net_io()`](#get_net_io)
+  - [`safe_net_speed()`](#safe_net_speed)
+  - [`list_usb_storage_devices()`](#list_usb_storage_devices)
+  - [`list_usb_other_devices()`](#list_usb_other_devices)
+  - [`list_usb_devices()`](#list_usb_devices)
+  - [`eject_usb_device()`](#eject_usb_device)
+  - [`run_script()`](#run_script)
+  - [`get_interfaces_ips()`](#get_interfaces_ips)
+  - [`get_nvme_temp()`](#get_nvme_temp)
 
 ---
 
@@ -63,7 +63,11 @@ Raises: Ninguno
 
 ### Métodos públicos
 
-#### `get_cpu_temp() -> float`
+#### `get_cpu_temp()`
+
+```python
+get_cpu_temp() -> float
+```
 
 Obtiene la temperatura actual de la CPU.
 
@@ -76,7 +80,11 @@ Returns:
 Raises:
     Ninguna excepción específica, aunque puede registrar un warning si el formato de salida de los comandos del sistema es inesperado.
 
-#### `get_hostname() -> str`
+#### `get_hostname()`
+
+```python
+get_hostname() -> str
+```
 
 Obtiene el nombre del host del sistema.
 
@@ -86,7 +94,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al obtener el nombre del host, se registra un warning.
 
-#### `get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]`
+#### `get_net_io()`
+
+```python
+get_net_io(interface: Optional[str] = None) -> Tuple[str, Any]
+```
 
 Obtiene estadísticas de red de una interfaz específica o la más activa si no se especifica.
 
@@ -99,7 +111,11 @@ Returns:
 Raises:
     No se documentan excepciones explícitas.
 
-#### `safe_net_speed(current: Any, previous: Optional[Any]) -> Tuple[float, float]`
+#### `safe_net_speed()`
+
+```python
+safe_net_speed(current: Any, previous: Optional[Any]) -> Tuple[float, float]
+```
 
 Calcula la velocidad de red de forma segura a partir de estadísticas actuales y anteriores.
 
@@ -113,7 +129,11 @@ Returns:
 Raises:
     Atrapa AttributeError y TypeError, registrando un mensaje de advertencia y retornando velocidades nulas.
 
-#### `list_usb_storage_devices() -> list`
+#### `list_usb_storage_devices()`
+
+```python
+list_usb_storage_devices() -> list
+```
 
 Recupera una lista de dispositivos de almacenamiento USB conectados al sistema.
 
@@ -121,7 +141,11 @@ Returns:
     list: Lista de diccionarios con información de los dispositivos de almacenamiento USB, 
           incluyendo nombre, tipo, punto de montaje, dispositivo, tamaño.
 
-#### `list_usb_other_devices() -> list`
+#### `list_usb_other_devices()`
+
+```python
+list_usb_other_devices() -> list
+```
 
 Recupera una lista de dispositivos USB del sistema, excluyendo dispositivos de almacenamiento.
 
@@ -132,7 +156,11 @@ Raises:
     subprocess.TimeoutExpired: Si el comando lsusb excede el tiempo límite.
     FileNotFoundError: Si el comando lsusb no se encuentra en el sistema.
 
-#### `list_usb_devices() -> list`
+#### `list_usb_devices()`
+
+```python
+list_usb_devices() -> list
+```
 
 Recupera una lista de dispositivos USB conectados al sistema.
 
@@ -142,7 +170,11 @@ Returns:
 Raises:
     None
 
-#### `eject_usb_device(device: dict) -> Tuple[bool, str]`
+#### `eject_usb_device()`
+
+```python
+eject_usb_device(device: dict) -> Tuple[bool, str]
+```
 
 Expulsa un dispositivo USB de forma segura.
 
@@ -155,7 +187,11 @@ Returns:
 Raises:
     No se especifican excepciones explícitas en la implementación.
 
-#### `run_script(script_path: str) -> Tuple[bool, str]`
+#### `run_script()`
+
+```python
+run_script(script_path: str) -> Tuple[bool, str]
+```
 
 Ejecuta un script de sistema mediante el comando bash.
 
@@ -169,7 +205,11 @@ Raises:
     subprocess.TimeoutExpired: Si el script tarda más de 30 segundos en ejecutarse.
     FileNotFoundError: Si el script no se encuentra en la ruta especificada.
 
-#### `get_interfaces_ips() -> Dict[str, str]`
+#### `get_interfaces_ips()`
+
+```python
+get_interfaces_ips() -> Dict[str, str]
+```
 
 Obtiene las direcciones IP de todas las interfaces de red disponibles.
 
@@ -179,7 +219,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al obtener las direcciones IP de las interfaces.
 
-#### `get_nvme_temp() -> float`
+#### `get_nvme_temp()`
+
+```python
+get_nvme_temp() -> float
+```
 
 Obtiene la temperatura del disco NVMe mediante el comando smartctl.
 

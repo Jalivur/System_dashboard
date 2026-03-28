@@ -14,7 +14,16 @@ Solo lectura. Refresco manual o automático cada 30s.
 ## Tabla de contenidos
 
 **Clase [`I2CWindow`](#clase-i2cwindow)**
-  - [`destroy()`](#destroyself-none)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_render()`](#_render) _(privado)_
+  - [`_render_bus()`](#_render_bus) _(privado)_
+  - [`_render_device()`](#_render_device) _(privado)_
+  - [`_show_placeholder()`](#_show_placeholder) _(privado)_
+  - [`_on_scan()`](#_on_scan) _(privado)_
+  - [`_on_scan_done()`](#_on_scan_done) _(privado)_
 
 ---
 
@@ -66,7 +75,11 @@ Returns:
 
 ### Métodos públicos
 
-#### `destroy(self) -> None`
+#### `destroy()`
+
+```python
+destroy(self) -> None
+```
 
 Destruye la ventana limpiando el temporizador de actualización.
 
@@ -79,10 +92,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, i2c_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, i2c_monitor)
+```
 
 Inicializa la ventana de escaneo I2C.
 
@@ -93,7 +109,11 @@ Args:
     parent: Ventana padre (CTkToplevel).
     i2c_monitor: Instancia del monitor I2C para obtener estadísticas.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los elementos de la interfaz de usuario de la ventana I2C.
 
@@ -106,7 +126,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update(self) -> None`
+#### `_update()`
+
+```python
+_update(self) -> None
+```
 
 Actualiza la interfaz de la ventana I2C periódicamente.
 
@@ -119,7 +143,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_render(self, stats: dict) -> None`
+#### `_render()`
+
+```python
+_render(self, stats: dict) -> None
+```
 
 Renderiza las estadísticas I2C en la interfaz.
 
@@ -135,7 +163,11 @@ Returns:
 Raises:
     None
 
-#### `_render_bus(self, bus_info: dict) -> None`
+#### `_render_bus()`
+
+```python
+_render_bus(self, bus_info: dict) -> None
+```
 
 Renderiza la card de un bus I2C específico.
 
@@ -151,7 +183,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_render_device(self, parent, dev: dict) -> None`
+#### `_render_device()`
+
+```python
+_render_device(self, parent, dev: dict) -> None
+```
 
 Renderiza una fila individual de dispositivo I2C con información proporcionada.
 
@@ -162,7 +198,11 @@ Args:
 Returns:
     None
 
-#### `_show_placeholder(self, text: str, color: str = None) -> None`
+#### `_show_placeholder()`
+
+```python
+_show_placeholder(self, text: str, color: str = None) -> None
+```
 
 Muestra un mensaje placeholder centrado en el área principal.
 
@@ -178,7 +218,11 @@ Returns:
 Raises:
     Ninguna excepción.
 
-#### `_on_scan(self) -> None`
+#### `_on_scan()`
+
+```python
+_on_scan(self) -> None
+```
 
 Inicia un escaneo manual I2C en un hilo separado.
 
@@ -191,7 +235,11 @@ Returns:
 Raises:
     None
 
-#### `_on_scan_done(self) -> None`
+#### `_on_scan_done()`
+
+```python
+_on_scan_done(self) -> None
+```
 
 Callback ejecutado tras completar el escaneo manual.
 
@@ -205,5 +253,3 @@ Returns:
 
 Raises:
     None
-
-</details>

@@ -11,6 +11,12 @@ Ventana de selección de temas
 ## Tabla de contenidos
 
 **Clase [`ThemeSelector`](#clase-themeselector)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_theme_cards()`](#_create_theme_cards) _(privado)_
+  - [`_create_bottom_buttons()`](#_create_bottom_buttons) _(privado)_
+  - [`_on_theme_change()`](#_on_theme_change) _(privado)_
+  - [`_apply_theme()`](#_apply_theme) _(privado)_
 
 ---
 
@@ -61,10 +67,13 @@ Returns:
 | `current_theme` | `load_selected_theme()` |
 | `selected_theme_var` | `ctk.StringVar(master=self, value=self.current_theme)` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana selector de temas del dashboard.
 
@@ -77,7 +86,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario del selector de temas.
 
@@ -90,7 +103,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_theme_cards(self, parent)`
+#### `_create_theme_cards()`
+
+```python
+_create_theme_cards(self, parent)
+```
 
 Crea las tarjetas de cada tema disponible en la aplicación.
 
@@ -103,7 +120,11 @@ Returns:
 Raises:
     None
 
-#### `_create_bottom_buttons(self, parent)`
+#### `_create_bottom_buttons()`
+
+```python
+_create_bottom_buttons(self, parent)
+```
 
 Crea los botones inferiores de la interfaz de selección de temas.
 
@@ -116,7 +137,11 @@ Returns:
 Raises:
     None
 
-#### `_on_theme_change(self)`
+#### `_on_theme_change()`
+
+```python
+_on_theme_change(self)
+```
 
 Actualiza la configuración del tema seleccionado.
 
@@ -129,7 +154,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_apply_theme(self)`
+#### `_apply_theme()`
+
+```python
+_apply_theme(self)
+```
 
 Aplica el tema seleccionado y reinicia la aplicación si es diferente al actual.
 
@@ -141,5 +170,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

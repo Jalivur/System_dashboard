@@ -13,7 +13,13 @@ usando los scripts del usuario.
 ## Tabla de contenidos
 
 **Clase [`VpnWindow`](#clase-vpnwindow)**
-  - [`destroy()`](#destroyself)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_connect()`](#_connect) _(privado)_
+  - [`_disconnect()`](#_disconnect) _(privado)_
+  - [`_on_action_done()`](#_on_action_done) _(privado)_
 
 ---
 
@@ -63,7 +69,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `destroy(self)`
+#### `destroy()`
+
+```python
+destroy(self)
+```
 
 Destruye la ventana de VPN de forma controlada.
 
@@ -76,10 +86,13 @@ Destruye la ventana de VPN de forma controlada.
     Raises:
         None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, vpn_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, vpn_monitor)
+```
 
 Inicializa la ventana principal de gestión de conexiones VPN.
 
@@ -92,7 +105,11 @@ Args:
 Raises:
     Exception: Si hay errores en la configuración inicial de la UI.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Construye la interfaz gráfica de usuario de la ventana VPN.
 
@@ -107,7 +124,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza el estado visual de la ventana según el estado del monitor de VPN.
 
@@ -120,7 +141,11 @@ Returns:
 Raises: 
     Ninguno.
 
-#### `_connect(self)`
+#### `_connect()`
+
+```python
+_connect(self)
+```
 
 Inicia la conexión VPN ejecutando el script conectar_vpn.sh en una terminal en vivo.
 
@@ -133,7 +158,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_disconnect(self)`
+#### `_disconnect()`
+
+```python
+_disconnect(self)
+```
 
 Desconecta la VPN ejecutando el script de desconexión en una terminal en vivo.
 
@@ -146,7 +175,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_action_done(self)`
+#### `_on_action_done()`
+
+```python
+_on_action_done(self)
+```
 
 Callback ejecutado al finalizar operaciones de conexión/desconexión.
 
@@ -160,5 +193,3 @@ Returns:
 
 Raises:
     None
-
-</details>

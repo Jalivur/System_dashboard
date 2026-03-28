@@ -33,22 +33,36 @@ Pines reservados por fase1.py — nunca tocar:
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_load_config()`](#_load_config) _(privada)_
+- [`_save_config()`](#_save_config) _(privada)_
+
 **Clase [`GPIOMonitor`](#clase-gpiomonitor)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_op_mode()`](#get_op_modeself-str)
-  - [`set_op_mode()`](#set_op_modeself-mode-str-none)
-  - [`get_state()`](#get_stateself-dictint-dict)
-  - [`is_gpio_available()`](#is_gpio_availableself-bool)
-  - [`get_pins()`](#get_pinsself-listint)
-  - [`reserved_pins()`](#reserved_pins-setint)
-  - [`set_output()`](#set_outputself-pin-int-high-bool-bool)
-  - [`set_pwm()`](#set_pwmself-pin-int-duty-float-bool)
-  - [`set_label()`](#set_labelself-pin-int-label-str-bool)
-  - [`set_mode()`](#set_modeself-pin-int-mode-str-bool)
-  - [`add_pin()`](#add_pinself-pin-int-mode-str-mode_input-label-str-bool)
-  - [`remove_pin()`](#remove_pinself-pin-int-bool)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_op_mode()`](#get_op_mode)
+  - [`set_op_mode()`](#set_op_mode)
+  - [`get_state()`](#get_state)
+  - [`is_gpio_available()`](#is_gpio_available)
+  - [`get_pins()`](#get_pins)
+  - [`reserved_pins()`](#reserved_pins)
+  - [`set_output()`](#set_output)
+  - [`set_pwm()`](#set_pwm)
+  - [`set_label()`](#set_label)
+  - [`set_mode()`](#set_mode)
+  - [`add_pin()`](#add_pin)
+  - [`remove_pin()`](#remove_pin)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_init_state()`](#_init_state) _(privado)_
+  - [`_run()`](#_run) _(privado)_
+  - [`_import_gpiozero()`](#_import_gpiozero) _(privado)_
+  - [`_setup_devices()`](#_setup_devices) _(privado)_
+  - [`_open_device()`](#_open_device) _(privado)_
+  - [`_close_device()`](#_close_device) _(privado)_
+  - [`_release_devices()`](#_release_devices) _(privado)_
+  - [`_poll_inputs()`](#_poll_inputs) _(privado)_
+  - [`_persist()`](#_persist) _(privado)_
 
 ---
 
@@ -80,10 +94,13 @@ from utils.logger import get_logger
 | `OP_CONTROLANDO` | `'CONTROLANDO'` |
 | `OP_LIBRE` | `'LIBRE'` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_load_config() -> dict[int, dict]`
+### `_load_config()`
+
+```python
+_load_config() -> dict[int, dict]
+```
 
 Carga la configuración de pines desde local_settings_io y devuelve un diccionario con pines como claves enteras y configuraciones como valores.
 
@@ -96,7 +113,11 @@ Returns:
 Raises:
     Ninguna excepción específica, aunque se registran warnings en caso de errores.
 
-### `_save_config(pins_cfg: dict[int, dict]) -> None`
+### `_save_config()`
+
+```python
+_save_config(pins_cfg: dict[int, dict]) -> None
+```
 
 Persiste la configuración de pines en local_settings.py de manera segura.
 
@@ -108,8 +129,6 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error al guardar la configuración.
-
-</details>
 
 ## Clase `GPIOMonitor`
 
@@ -141,7 +160,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el hilo daemon de monitoreo de GPIO con un intervalo de polling de 1 segundo.
 
@@ -154,7 +177,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el monitor de GPIO, liberando recursos y deteniendo el hilo de ejecución.
 
@@ -164,7 +191,11 @@ Returns: None
 
 Raises: None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor de GPIO está actualmente en ejecución.
 
@@ -177,7 +208,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `get_op_mode(self) -> str`
+#### `get_op_mode()`
+
+```python
+get_op_mode(self) -> str
+```
 
 Retorna el modo de operación actual del monitor GPIO.
 
@@ -190,7 +225,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `set_op_mode(self, mode: str) -> None`
+#### `set_op_mode()`
+
+```python
+set_op_mode(self, mode: str) -> None
+```
 
 Establece el modo de operación del monitor GPIO.
 
@@ -203,7 +242,11 @@ Raises:
 Returns:
     None
 
-#### `get_state(self) -> dict[int, dict]`
+#### `get_state()`
+
+```python
+get_state(self) -> dict[int, dict]
+```
 
 Obtiene un snapshot thread-safe del estado actual de todos los pines GPIO configurados.
 
@@ -213,7 +256,11 @@ Returns:
 Raises:
     None
 
-#### `is_gpio_available(self) -> bool`
+#### `is_gpio_available()`
+
+```python
+is_gpio_available(self) -> bool
+```
 
 Indica si gpiozero está disponible e importado.
 
@@ -223,7 +270,11 @@ Returns:
 Raises:
     None
 
-#### `get_pins(self) -> list[int]`
+#### `get_pins()`
+
+```python
+get_pins(self) -> list[int]
+```
 
 Obtiene una lista de todos los pines BCM configurados, excluyendo los reservados.
 
@@ -236,14 +287,22 @@ Returns:
 Raises:
     Ninguno
 
-#### `reserved_pins() -> set[int]`
+#### `reserved_pins()`
+
+```python
+reserved_pins() -> set[int]
+```
 
 Devuelve el conjunto de pines BCM reservados para uso de I2C, PWM y UART.
 
 Returns:
     set[int]: Conjunto de pines BCM reservados.
 
-#### `set_output(self, pin: int, high: bool) -> bool`
+#### `set_output()`
+
+```python
+set_output(self, pin: int, high: bool) -> bool
+```
 
 Establece el estado de salida de un pin GPIO en modo OUTPUT.
 
@@ -257,7 +316,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al cambiar el estado del pin.
 
-#### `set_pwm(self, pin: int, duty: float) -> bool`
+#### `set_pwm()`
+
+```python
+set_pwm(self, pin: int, duty: float) -> bool
+```
 
 Establece el ciclo de trabajo PWM en un pin específico.
 
@@ -271,7 +334,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al establecer el valor PWM.
 
-#### `set_label(self, pin: int, label: str) -> bool`
+#### `set_label()`
+
+```python
+set_label(self, pin: int, label: str) -> bool
+```
 
 Establece una etiqueta descriptiva para un pin GPIO específico y persiste el cambio.
 
@@ -285,7 +352,11 @@ Returns:
 Raises:
     None
 
-#### `set_mode(self, pin: int, mode: str) -> bool`
+#### `set_mode()`
+
+```python
+set_mode(self, pin: int, mode: str) -> bool
+```
 
 Establece el modo de un pin GPIO específico.
 
@@ -299,7 +370,11 @@ Returns:
 Raises:
     None
 
-#### `add_pin(self, pin: int, mode: str = MODE_INPUT, label: str = '') -> bool`
+#### `add_pin()`
+
+```python
+add_pin(self, pin: int, mode: str = MODE_INPUT, label: str = '') -> bool
+```
 
 Añade un nuevo pin BCM a la configuración y estado persistente.
 
@@ -314,7 +389,11 @@ Returns:
 Raises:
     None
 
-#### `remove_pin(self, pin: int) -> bool`
+#### `remove_pin()`
+
+```python
+remove_pin(self, pin: int) -> bool
+```
 
 Elimina un pin de la configuración del monitor GPIO.
 
@@ -327,10 +406,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, config: dict | None = None, op_mode: str = OP_LIBRE)`
+#### `__init__()`
+
+```python
+__init__(self, config: dict | None = None, op_mode: str = OP_LIBRE)
+```
 
 Inicializa el monitor de GPIO con la configuración proporcionada.
 
@@ -344,7 +426,11 @@ Returns:
 Raises:
     None
 
-#### `_init_state(self)`
+#### `_init_state()`
+
+```python
+_init_state(self)
+```
 
 Inicializa el estado de los pines GPIO de manera thread-safe.
 
@@ -357,7 +443,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_run(self)`
+#### `_run()`
+
+```python
+_run(self)
+```
 
 Ejecuta el bucle principal del thread daemon.
 
@@ -372,7 +462,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_import_gpiozero(self) -> bool`
+#### `_import_gpiozero()`
+
+```python
+_import_gpiozero(self) -> bool
+```
 
 Intenta importar el módulo gpiozero y configura el estado de disponibilidad de GPIO.
 
@@ -385,7 +479,11 @@ Returns:
 Raises:
     Ninguna excepción explícita, pero se registra un warning si gpiozero no está disponible.
 
-#### `_setup_devices(self)`
+#### `_setup_devices()`
+
+```python
+_setup_devices(self)
+```
 
 Configura los dispositivos gpiozero (Button/LED/PWMLED) para todos los pines en el estado actual.
 
@@ -398,7 +496,11 @@ Returns:
 Raises: 
     Excepciones durante la recreación de LGPIOFactory.
 
-#### `_open_device(self, pin: int, mode: str, duty: float = 0.0)`
+#### `_open_device()`
+
+```python
+_open_device(self, pin: int, mode: str, duty: float = 0.0)
+```
 
 Abre un dispositivo GPIO según el modo especificado y lo registra para su uso posterior.
 
@@ -413,7 +515,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al abrir el dispositivo, se registra en el estado de error.
 
-#### `_close_device(self, pin: int)`
+#### `_close_device()`
+
+```python
+_close_device(self, pin: int)
+```
 
 Cierra el dispositivo GPIO asociado a un pin específico.
 
@@ -426,7 +532,11 @@ Returns:
 Raises:
     None
 
-#### `_release_devices(self)`
+#### `_release_devices()`
+
+```python
+_release_devices(self)
+```
 
 Cierra todos los dispositivos gpiozero y el factory lgpio.
 
@@ -439,7 +549,11 @@ Returns:
 Raises:
     Excepción genérica si falla el cierre del factory lgpio.
 
-#### `_poll_inputs(self)`
+#### `_poll_inputs()`
+
+```python
+_poll_inputs(self)
+```
 
 Actualiza de forma segura el estado de los pines de entrada de la GPIO.
 
@@ -452,7 +566,11 @@ Returns:
 Raises: 
     Excepciones relacionadas con la lectura de los dispositivos GPIO.
 
-#### `_persist(self) -> None`
+#### `_persist()`
+
+```python
+_persist(self) -> None
+```
 
 Persiste una captura de la configuración actual de los pines en local_settings de manera segura para hilos concurrentes.
 
@@ -464,5 +582,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

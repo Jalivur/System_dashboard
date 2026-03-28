@@ -13,6 +13,20 @@ para el usuario actual (jalivur) o root.
 ## Tabla de contenidos
 
 **Clase [`CrontabWindow`](#clase-crontabwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_edit_panel()`](#_build_edit_panel) _(privado)_
+  - [`_update_preview()`](#_update_preview) _(privado)_
+  - [`_apply_quick()`](#_apply_quick) _(privado)_
+  - [`_open_new_form()`](#_open_new_form) _(privado)_
+  - [`_open_edit_form()`](#_open_edit_form) _(privado)_
+  - [`_close_form()`](#_close_form) _(privado)_
+  - [`_save_entry()`](#_save_entry) _(privado)_
+  - [`_delete_entry()`](#_delete_entry) _(privado)_
+  - [`_load()`](#_load) _(privado)_
+  - [`_render_list()`](#_render_list) _(privado)_
+  - [`_create_entry_row()`](#_create_entry_row) _(privado)_
+  - [`_on_user_change()`](#_on_user_change) _(privado)_
 
 ---
 
@@ -64,10 +78,13 @@ Args:
 | `_f_weekday` | `ctk.StringVar(master=self, value='*')` |
 | `_f_command` | `ctk.StringVar(master=self, value='')` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana principal de gestión de crontab.
 
@@ -76,7 +93,11 @@ Configura la ventana toplevel, variables de estado, UI y carga las entradas inic
 Args:
     parent: Widget padre (ventana principal).
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los elementos de la interfaz de usuario de la ventana.
 
@@ -89,7 +110,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_edit_panel(self, parent)`
+#### `_build_edit_panel()`
+
+```python
+_build_edit_panel(self, parent)
+```
 
 Construye el panel deslizable de formulario para nueva/edición de entradas.
 
@@ -102,7 +127,11 @@ Returns:
 Raises:
     None
 
-#### `_update_preview(self)`
+#### `_update_preview()`
+
+```python
+_update_preview(self)
+```
 
 Actualiza la etiqueta de previsualización de la programación cron en lenguaje natural.
 
@@ -115,7 +144,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_apply_quick(self, m, h, d, mo, wd)`
+#### `_apply_quick()`
+
+```python
+_apply_quick(self, m, h, d, mo, wd)
+```
 
 Aplica una programación cron de acceso rápido a los campos del formulario.
 
@@ -132,7 +165,11 @@ Returns:
 Raises:
     None
 
-#### `_open_new_form(self)`
+#### `_open_new_form()`
+
+```python
+_open_new_form(self)
+```
 
 Abre el panel para crear una nueva entrada en la Crontab.
 
@@ -145,7 +182,11 @@ Returns:
 Raises:
     None
 
-#### `_open_edit_form(self, index: int)`
+#### `_open_edit_form()`
+
+```python
+_open_edit_form(self, index: int)
+```
 
 Abre el panel para editar una entrada existente en la Crontab.
 
@@ -157,7 +198,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_close_form(self)`
+#### `_close_form()`
+
+```python
+_close_form(self)
+```
 
 Cierra el panel de formulario y resetea el estado de edición.
 
@@ -170,7 +215,11 @@ Returns:
 Raises:
     None
 
-#### `_save_entry(self)`
+#### `_save_entry()`
+
+```python
+_save_entry(self)
+```
 
 Guarda la entrada de un formulario de Crontab después de validación.
 
@@ -183,7 +232,11 @@ Guarda la entrada de un formulario de Crontab después de validación.
     Raises:
         Ninguno
 
-#### `_delete_entry(self, index: int)`
+#### `_delete_entry()`
+
+```python
+_delete_entry(self, index: int)
+```
 
 Inicia proceso de eliminación de entrada con confirmación de diálogo.
 
@@ -193,7 +246,11 @@ Inicia proceso de eliminación de entrada con confirmación de diálogo.
     Raises:
         None
 
-#### `_load(self)`
+#### `_load()`
+
+```python
+_load(self)
+```
 
 Carga las entradas del crontab del usuario actual en la ventana.
 
@@ -206,7 +263,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_render_list(self)`
+#### `_render_list()`
+
+```python
+_render_list(self)
+```
 
 Limpia el frame de lista y renderiza todas las entradas parseadas del crontab.
 
@@ -219,7 +280,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_create_entry_row(self, index: int, entry: dict)`
+#### `_create_entry_row()`
+
+```python
+_create_entry_row(self, index: int, entry: dict)
+```
 
 Crea y configura una fila de entrada en la lista para mostrar información de una tarea programada.
 
@@ -233,7 +298,11 @@ Returns:
 Raises:
     None
 
-#### `_on_user_change(self)`
+#### `_on_user_change()`
+
+```python
+_on_user_change(self)
+```
 
 Callback invocado al cambiar el usuario seleccionado.
 
@@ -247,5 +316,3 @@ Returns:
 
 Raises:
     None
-
-</details>

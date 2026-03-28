@@ -11,12 +11,14 @@ Sistema de logging de datos históricos
 ## Tabla de contenidos
 
 **Clase [`DataLogger`](#clase-datalogger)**
-  - [`log_metrics()`](#log_metricsself-metrics-dict)
-  - [`log_event()`](#log_eventself-event_type-str-severity-str-message-str-data-dict-none)
-  - [`get_metrics_count()`](#get_metrics_countself-int)
-  - [`get_db_size_mb()`](#get_db_size_mbself-float)
-  - [`clean_old_data()`](#clean_old_dataself-days-int-30)
-  - [`check_and_rotate_db()`](#check_and_rotate_dbself-max_mb-float-50)
+  - [`log_metrics()`](#log_metrics)
+  - [`log_event()`](#log_event)
+  - [`get_metrics_count()`](#get_metrics_count)
+  - [`get_db_size_mb()`](#get_db_size_mb)
+  - [`clean_old_data()`](#clean_old_data)
+  - [`check_and_rotate_db()`](#check_and_rotate_db)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_init_database()`](#_init_database) _(privado)_
 
 ---
 
@@ -57,7 +59,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `log_metrics(self, metrics: Dict)`
+#### `log_metrics()`
+
+```python
+log_metrics(self, metrics: Dict)
+```
 
 Guarda un conjunto de métricas en la base de datos.
 
@@ -70,7 +76,11 @@ Returns:
 Raises:
     sqlite3.Error: Si ocurre un error al conectar o ejecutar la consulta en la base de datos.
 
-#### `log_event(self, event_type: str, severity: str, message: str, data: Dict = None)`
+#### `log_event()`
+
+```python
+log_event(self, event_type: str, severity: str, message: str, data: Dict = None)
+```
 
 Registra un evento en la tabla de eventos.
 
@@ -86,7 +96,11 @@ Returns:
 Raises:
     None
 
-#### `get_metrics_count(self) -> int`
+#### `get_metrics_count()`
+
+```python
+get_metrics_count(self) -> int
+```
 
 Obtiene el número total de registros en la tabla de métricas.
 
@@ -99,7 +113,11 @@ Returns:
 Raises:
     No aplica.
 
-#### `get_db_size_mb(self) -> float`
+#### `get_db_size_mb()`
+
+```python
+get_db_size_mb(self) -> float
+```
 
 Retorna el tamaño del archivo de base de datos en megabytes.
 
@@ -109,7 +127,11 @@ Args:
 Returns:
     float: Tamaño en megabytes o 0 si el archivo no existe.
 
-#### `clean_old_data(self, days: int = 30)`
+#### `clean_old_data()`
+
+```python
+clean_old_data(self, days: int = 30)
+```
 
 Elimina datos antiguos y optimiza la base de datos.
 
@@ -122,7 +144,11 @@ Returns:
 Raises:
     sqlite3.Error: Si ocurre un error en la conexión a la base de datos.
 
-#### `check_and_rotate_db(self, max_mb: float = 5.0)`
+#### `check_and_rotate_db()`
+
+```python
+check_and_rotate_db(self, max_mb: float = 5.0)
+```
 
 Verifica si el tamaño de la base de datos supera el límite establecido y la limpia automáticamente si es necesario.
 
@@ -135,10 +161,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, db_path: str = 'data/history.db')`
+#### `__init__()`
+
+```python
+__init__(self, db_path: str = 'data/history.db')
+```
 
 Inicializa el registrador de datos con una base de datos SQLite.
 
@@ -151,7 +180,11 @@ Returns:
 Raises:
     None
 
-#### `_init_database(self)`
+#### `_init_database()`
+
+```python
+_init_database(self)
+```
 
 Inicializa la base de datos creando las tablas necesarias si no existen.
 
@@ -163,5 +196,3 @@ Returns:
 
 Raises:
     None
-
-</details>

@@ -12,12 +12,15 @@ El dashboard escribe led_state.json que fase1.py lee y aplica via I2C.
 ## Tabla de contenidos
 
 **Clase [`LedService`](#clase-ledservice)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_state()`](#get_stateself-dict)
-  - [`set_mode()`](#set_modeself-mode-str-r-int-0-g-int-255-b-int-0-bool)
-  - [`set_color()`](#set_colorself-r-int-g-int-b-int-bool)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_state()`](#get_state)
+  - [`set_mode()`](#set_mode)
+  - [`set_color()`](#set_color)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_save()`](#_save) _(privado)_
+  - [`_load()`](#_load) _(privado)_
 
 ---
 
@@ -63,7 +66,11 @@ Raises: Ninguno
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el servicio de LED, habilitando el modo y el color.
 
@@ -76,7 +83,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de LEDs, apagándolos y desactivando su funcionamiento.
 
@@ -89,14 +100,22 @@ Returns:
 Raises: 
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de LED está actualmente en ejecución.
 
 Returns:
     bool: True si el servicio está activo, False en caso contrario.
 
-#### `get_state(self) -> dict`
+#### `get_state()`
+
+```python
+get_state(self) -> dict
+```
 
 Obtiene el estado actual del LED de manera segura para hilos.
 
@@ -109,7 +128,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `set_mode(self, mode: str, r: int = 0, g: int = 255, b: int = 0) -> bool`
+#### `set_mode()`
+
+```python
+set_mode(self, mode: str, r: int = 0, g: int = 255, b: int = 0) -> bool
+```
 
 Cambia el modo del LED y los valores RGB, validándolos y guardando el estado en led_state.json de manera atómica.
 
@@ -125,7 +148,11 @@ Returns:
 Raises:
     None
 
-#### `set_color(self, r: int, g: int, b: int) -> bool`
+#### `set_color()`
+
+```python
+set_color(self, r: int, g: int, b: int) -> bool
+```
 
 Establece el color del LED actualizando solo los componentes RGB.
 
@@ -137,10 +164,13 @@ Args:
 Returns:
     bool: True si el color se guardó correctamente.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el servicio de LED, cargando el estado desde el archivo led_state.json y configurando el bloqueo de ejecución.
 
@@ -153,7 +183,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_save(self, state: dict) -> bool`
+#### `_save()`
+
+```python
+_save(self, state: dict) -> bool
+```
 
 Guarda el estado del LED de manera atómica en un archivo JSON.
 
@@ -166,7 +200,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante el proceso de guardado.
 
-#### `_load(self) -> dict`
+#### `_load()`
+
+```python
+_load(self) -> dict
+```
 
 Carga el estado de la configuración de LED desde un archivo o retorna un estado por defecto.
 
@@ -178,5 +216,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

@@ -14,14 +14,17 @@ Los servicios publican eventos, la UI se suscribe y actualiza widgets en el thre
 ## Tabla de contenidos
 
 **Funciones**
-- [`get_event_bus()`](#funcion-get_event_bus)
+- [`get_event_bus()`](#get_event_bus)
 
 **Clase [`EventBus`](#clase-eventbus)**
-  - [`subscribe()`](#subscribeself-event_name-str-callback-callable-none)
-  - [`unsubscribe()`](#unsubscribeself-event_name-str-callback-callable-none)
-  - [`publish()`](#publishself-event_name-str-data-any-none-none)
-  - [`process_events()`](#process_eventsself-none)
-  - [`clear()`](#clearself-none)
+  - [`subscribe()`](#subscribe)
+  - [`unsubscribe()`](#unsubscribe)
+  - [`publish()`](#publish)
+  - [`process_events()`](#process_events)
+  - [`clear()`](#clear)
+  - [`__new__()`](#__new__) _(privado)_
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_dispatch_event()`](#_dispatch_event) _(privado)_
 
 ---
 
@@ -46,7 +49,11 @@ from utils.logger import get_logger
 
 ## Funciones
 
-### `get_event_bus() -> EventBus`
+### `get_event_bus()`
+
+```python
+get_event_bus() -> EventBus
+```
 
 Obtiene la instancia global del event bus.
 
@@ -76,7 +83,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `subscribe(self, event_name: str, callback: Callable) -> None`
+#### `subscribe()`
+
+```python
+subscribe(self, event_name: str, callback: Callable) -> None
+```
 
 Suscribirse a un evento para recibir notificaciones cuando ocurra.
 
@@ -90,7 +101,11 @@ Returns:
 Raises:
     None
 
-#### `unsubscribe(self, event_name: str, callback: Callable) -> None`
+#### `unsubscribe()`
+
+```python
+unsubscribe(self, event_name: str, callback: Callable) -> None
+```
 
 Elimina una función de callback previamente registrada para un evento específico.
 
@@ -104,7 +119,11 @@ Returns:
 Raises:
     None
 
-#### `publish(self, event_name: str, data: Any = None) -> None`
+#### `publish()`
+
+```python
+publish(self, event_name: str, data: Any = None) -> None
+```
 
 Publica un evento de forma segura entre threads.
 
@@ -118,7 +137,11 @@ Returns:
 Raises:
     None
 
-#### `process_events(self) -> None`
+#### `process_events()`
+
+```python
+process_events(self) -> None
+```
 
 Procesa eventos pendientes en la cola de eventos.
 
@@ -131,7 +154,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante el procesamiento de eventos.
 
-#### `clear(self) -> None`
+#### `clear()`
+
+```python
+clear(self) -> None
+```
 
 Elimina todos los suscriptores y eventos pendientes de procesamiento.
 
@@ -144,10 +171,13 @@ Returns:
 Raises:
     Ninguna excepción.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__new__(cls)`
+#### `__new__()`
+
+```python
+__new__(cls)
+```
 
 Crea y devuelve la instancia única de la clase EventBus.
 
@@ -160,7 +190,11 @@ Returns:
 Raises:
     None
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el EventBus singleton la primera vez que se instancia.
 
@@ -173,7 +207,11 @@ Returns:
 Raises:
     None
 
-#### `_dispatch_event(self, event_name: str, data: Any) -> None`
+#### `_dispatch_event()`
+
+```python
+_dispatch_event(self, event_name: str, data: Any) -> None
+```
 
 Ejecuta callbacks registrados para un evento específico con los datos proporcionados.
 
@@ -186,5 +224,3 @@ Returns:
 
 Raises:
     Exception: Si un callback lanza una excepción durante su ejecución.
-
-</details>

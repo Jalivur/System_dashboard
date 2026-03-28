@@ -12,6 +12,12 @@ Lee data/alert_history.json y muestra las entradas con colores por nivel.
 ## Tabla de contenidos
 
 **Clase [`AlertHistoryWindow`](#clase-alerthistorywindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_load()`](#_load) _(privado)_
+  - [`_create_entry_card()`](#_create_entry_card) _(privado)_
+  - [`_confirm_clear()`](#_confirm_clear) _(privado)_
+  - [`_clear()`](#_clear) _(privado)_
 
 ---
 
@@ -61,10 +67,13 @@ Returns:
 |----------|---------------|
 | `_alert_service` | `alert_service` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, alert_service)`
+#### `__init__()`
+
+```python
+__init__(self, parent, alert_service)
+```
 
 Inicializa la ventana de historial de alertas.
 
@@ -78,7 +87,11 @@ Raises:
 Returns:
     Ninguno
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea todos los elementos de la interfaz de usuario de la ventana de historial de alertas.
 
@@ -91,7 +104,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_load(self)`
+#### `_load()`
+
+```python
+_load(self)
+```
 
 Carga el historial de alertas y actualiza la lista de alertas en la ventana.
 
@@ -104,7 +121,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_entry_card(self, entry: dict)`
+#### `_create_entry_card()`
+
+```python
+_create_entry_card(self, entry: dict)
+```
 
 Crea una tarjeta para una entrada del historial de alertas.
 
@@ -117,7 +138,11 @@ Returns:
 Raises:
     None
 
-#### `_confirm_clear(self)`
+#### `_confirm_clear()`
+
+```python
+_confirm_clear(self)
+```
 
 Muestra un diálogo de confirmación para borrar todo el historial de alertas.
 
@@ -130,7 +155,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_clear(self)`
+#### `_clear()`
+
+```python
+_clear(self)
+```
 
 Borra el historial de alertas y recarga la vista.
 
@@ -142,5 +171,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

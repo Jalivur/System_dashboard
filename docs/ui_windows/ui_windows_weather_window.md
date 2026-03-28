@@ -24,7 +24,34 @@ Arquitectura:
 ## Tabla de contenidos
 
 **Clase [`WeatherWindow`](#clase-weatherwindow)**
-  - [`destroy()`](#destroyself)
+  - [`destroy()`](#destroy)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_on_forecast_inner_configure()`](#_on_forecast_inner_configure) _(privado)_
+  - [`_on_detail_configure()`](#_on_detail_configure) _(privado)_
+  - [`_aqi_color()`](#_aqi_color) _(privado)_
+  - [`_wmo_bg_color()`](#_wmo_bg_color) _(privado)_
+  - [`_temp_color()`](#_temp_color) _(privado)_
+  - [`_redraw_day_progress()`](#_redraw_day_progress) _(privado)_
+  - [`_make_detail()`](#_make_detail) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_update_forecast()`](#_update_forecast) _(privado)_
+  - [`_set_view_mode()`](#_set_view_mode) _(privado)_
+  - [`_on_search()`](#_on_search) _(privado)_
+  - [`_on_search_done()`](#_on_search_done) _(privado)_
+  - [`_on_refresh()`](#_on_refresh) _(privado)_
+  - [`_on_refresh_done()`](#_on_refresh_done) _(privado)_
+  - [`_update_forecast_daily()`](#_update_forecast_daily) _(privado)_
+  - [`_iter_all_children()`](#_iter_all_children) _(privado)_
+  - [`_drilldown_day()`](#_drilldown_day) _(privado)_
+  - [`_drilldown_back()`](#_drilldown_back) _(privado)_
+  - [`_on_save_favorite()`](#_on_save_favorite) _(privado)_
+  - [`_on_delete_favorite()`](#_on_delete_favorite) _(privado)_
+  - [`_on_favorite_selected()`](#_on_favorite_selected) _(privado)_
+  - [`_on_max_changed()`](#_on_max_changed) _(privado)_
+  - [`_refresh_favorites_dropdown()`](#_refresh_favorites_dropdown) _(privado)_
+  - [`_set_fav_status()`](#_set_fav_status) _(privado)_
+  - [`_wind_dir_arrow()`](#_wind_dir_arrow) _(privado)_
 
 ---
 
@@ -81,7 +108,11 @@ Returns:
 
 ### Métodos públicos
 
-#### `destroy(self)`
+#### `destroy()`
+
+```python
+destroy(self)
+```
 
 Cierra la ventana de manera segura, limpiando temporizadores y recursos.
 
@@ -94,10 +125,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, weather_service)`
+#### `__init__()`
+
+```python
+__init__(self, parent, weather_service)
+```
 
 Inicializa la ventana de clima configurando geometría, variables de estado y construyendo la UI completa.
 
@@ -111,7 +145,11 @@ Raises:
 Returns:
     Ninguno.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario completa para la ventana de clima.
 
@@ -124,7 +162,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_forecast_inner_configure(self, event) -> None`
+#### `_on_forecast_inner_configure()`
+
+```python
+_on_forecast_inner_configure(self, event) -> None
+```
 
 Ajusta automáticamente el canvas de previsión a la altura real del contenido interno.
 
@@ -137,7 +179,11 @@ Returns:
 Raises:
     None
 
-#### `_on_detail_configure(self, event) -> None`
+#### `_on_detail_configure()`
+
+```python
+_on_detail_configure(self, event) -> None
+```
 
 Ajusta automáticamente el canvas de detalles meteorológicos a la altura real del contenido.
 
@@ -150,7 +196,11 @@ Returns:
 Raises:
     None
 
-#### `_aqi_color(aqi) -> str`
+#### `_aqi_color()`
+
+```python
+_aqi_color(aqi) -> str
+```
 
 Obtiene el color según el índice AQI europeo (0–500+).
 
@@ -163,7 +213,11 @@ Returns:
 Raises:
     None
 
-#### `_wmo_bg_color(code) -> str`
+#### `_wmo_bg_color()`
+
+```python
+_wmo_bg_color(code) -> str
+```
 
 Determina el color de fondo según el código WMO proporcionado.
 
@@ -176,7 +230,11 @@ Returns:
 Raises:
     None
 
-#### `_temp_color(temp) -> str`
+#### `_temp_color()`
+
+```python
+_temp_color(temp) -> str
+```
 
 Devuelve un color hex interpolado según la temperatura.
 
@@ -189,7 +247,11 @@ Returns:
 Raises:
     None
 
-#### `_redraw_day_progress(self) -> None`
+#### `_redraw_day_progress()`
+
+```python
+_redraw_day_progress(self) -> None
+```
 
 Redibuja la barra de progreso del día, mostrando el avance desde la salida hasta la puesta de sol.
 
@@ -202,7 +264,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_make_detail(self, parent, emoji, label, value)`
+#### `_make_detail()`
+
+```python
+_make_detail(self, parent, emoji, label, value)
+```
 
 Crea un widget compacto de detalle meteorológico que incluye un emoji, una etiqueta y un valor destacado.
 
@@ -218,7 +284,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza la interfaz de la ventana meteorológica con datos frescos del servicio.
 
@@ -231,7 +301,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_update_forecast(self, forecast, max_items: int = 12)`
+#### `_update_forecast()`
+
+```python
+_update_forecast(self, forecast, max_items: int = 12)
+```
 
 Actualiza la previsión meteorológica en el área de scroll horizontal.
 
@@ -245,7 +319,11 @@ Returns:
 Raises:
     None
 
-#### `_set_view_mode(self, mode: str) -> None`
+#### `_set_view_mode()`
+
+```python
+_set_view_mode(self, mode: str) -> None
+```
 
 Establece el modo de vista de la previsión del tiempo.
 
@@ -258,7 +336,11 @@ Returns:
 Raises:
     None
 
-#### `_on_search(self)`
+#### `_on_search()`
+
+```python
+_on_search(self)
+```
 
 Gestiona el evento de búsqueda de ciudad, validando la entrada, 
 iniciando una búsqueda asíncrona y actualizando la interfaz de usuario.
@@ -269,7 +351,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_on_search_done(self, result)`
+#### `_on_search_done()`
+
+```python
+_on_search_done(self, result)
+```
 
 Reactiva la interfaz de usuario y maneja el resultado de una búsqueda asíncrona.
 
@@ -282,7 +368,11 @@ Returns:
 Raises:
     None
 
-#### `_on_refresh(self)`
+#### `_on_refresh()`
+
+```python
+_on_refresh(self)
+```
 
 Inicia la actualización asíncrona de los datos meteorológicos actuales.
 
@@ -295,7 +385,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_on_refresh_done(self)`
+#### `_on_refresh_done()`
+
+```python
+_on_refresh_done(self)
+```
 
 Finaliza el proceso de refresco de la ventana de clima.
 
@@ -308,7 +402,11 @@ Returns:
 Raises:
     None
 
-#### `_update_forecast_daily(self, forecast: list) -> None`
+#### `_update_forecast_daily()`
+
+```python
+_update_forecast_daily(self, forecast: list) -> None
+```
 
 Actualiza la previsión meteorológica diaria con los datos proporcionados.
 
@@ -323,7 +421,11 @@ Raises:
 
 Nota: Destruye y vuelve a crear los elementos de la interfaz gráfica de usuario.
 
-#### `_iter_all_children(widget)`
+#### `_iter_all_children()`
+
+```python
+_iter_all_children(widget)
+```
 
 Itera recursivamente todos los widgets hijos de un widget dado para binding de eventos drill-down.
 
@@ -336,7 +438,11 @@ Yields:
 Raises:
     Ninguna excepción específica.
 
-#### `_drilldown_day(self, date_key: str, label: str) -> None`
+#### `_drilldown_day()`
+
+```python
+_drilldown_day(self, date_key: str, label: str) -> None
+```
 
 Activa el modo drill-down para mostrar la previsión horaria específica de un día seleccionado.
 
@@ -350,7 +456,11 @@ Returns:
 Raises:
     None
 
-#### `_drilldown_back(self) -> None`
+#### `_drilldown_back()`
+
+```python
+_drilldown_back(self) -> None
+```
 
 Regresa del drill-down de horas a la vista general de 14 días.
 
@@ -363,7 +473,11 @@ Returns:
 Raises:
     None
 
-#### `_on_save_favorite(self)`
+#### `_on_save_favorite()`
+
+```python
+_on_save_favorite(self)
+```
 
 Guarda la ciudad actualmente activa en la lista de favoritos del servicio.
 
@@ -373,7 +487,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_on_delete_favorite(self)`
+#### `_on_delete_favorite()`
+
+```python
+_on_delete_favorite(self)
+```
 
 Elimina el favorito seleccionado del dropdown de la lista del servicio y refresca la UI.
 
@@ -386,7 +504,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_on_favorite_selected(self, city)`
+#### `_on_favorite_selected()`
+
+```python
+_on_favorite_selected(self, city)
+```
 
 Carga automáticamente la ciudad seleccionada desde favoritos y ejecuta búsqueda.
 
@@ -399,7 +521,11 @@ Returns:
 Raises:
     None
 
-#### `_on_max_changed(self)`
+#### `_on_max_changed()`
+
+```python
+_on_max_changed(self)
+```
 
 Actualiza el máximo de favoritos al cambiar el valor correspondiente.
 
@@ -412,7 +538,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh_favorites_dropdown(self)`
+#### `_refresh_favorites_dropdown()`
+
+```python
+_refresh_favorites_dropdown(self)
+```
 
 Recarga dinámicamente la lista de favoritos en el OptionMenu desde el servicio.
 
@@ -425,7 +555,11 @@ Returns:
 Raises:
     None
 
-#### `_set_fav_status(self, msg, ok = True)`
+#### `_set_fav_status()`
+
+```python
+_set_fav_status(self, msg, ok = True)
+```
 
 Establece el estado de favoritos en la UI con un mensaje temporal.
 
@@ -439,7 +573,11 @@ Returns:
 Raises:
     None
 
-#### `_wind_dir_arrow(degrees)`
+#### `_wind_dir_arrow()`
+
+```python
+_wind_dir_arrow(degrees)
+```
 
 Convierte la dirección del viento en grados a símbolo de flecha unicode.
 
@@ -451,5 +589,3 @@ Returns:
 
 Raises:
     None
-
-</details>

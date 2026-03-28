@@ -15,13 +15,24 @@ hasta que baje del umbral y vuelva a subir (edge-trigger).
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_load_telegram_config()`](#_load_telegram_config) _(privada)_
+
 **Clase [`AlertService`](#clase-alertservice)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_history()`](#get_historyself-list)
-  - [`clear_history()`](#clear_historyself-none)
-  - [`send_test()`](#send_testself-bool)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_history()`](#get_history)
+  - [`clear_history()`](#clear_history)
+  - [`send_test()`](#send_test)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_check_metrics()`](#_check_metrics) _(privado)_
+  - [`_check_services()`](#_check_services) _(privado)_
+  - [`_trigger()`](#_trigger) _(privado)_
+  - [`_reset()`](#_reset) _(privado)_
+  - [`_save_to_history()`](#_save_to_history) _(privado)_
+  - [`_send()`](#_send) _(privado)_
 
 ---
 
@@ -54,10 +65,13 @@ from utils.logger import get_logger
 | `THRESHOLDS` | `{'temp': {'warn': 60, 'crit': 70}, 'cpu': {'warn': 85, 'crit': 95}, 'ram': {'war...` |
 | `MAX_HISTORY_ENTRIES` | `100` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_load_telegram_config() -> tuple`
+### `_load_telegram_config()`
+
+```python
+_load_telegram_config() -> tuple
+```
 
 Carga la configuración de Telegram desde el archivo .env o las variables de entorno.
 
@@ -69,8 +83,6 @@ Returns:
 
 Raises: 
     None
-
-</details>
 
 ## Clase `AlertService`
 
@@ -97,7 +109,11 @@ Nota: Si no se configuran token y chat_id de Telegram, las alertas se desactivan
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el servicio de monitoreo de alertas en segundo plano.
 
@@ -110,7 +126,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el servicio de alertas de manera segura.
 
@@ -123,7 +143,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de alertas está actualmente en ejecución.
 
@@ -136,7 +160,11 @@ Returns:
 Raises:
     None
 
-#### `get_history(self) -> list`
+#### `get_history()`
+
+```python
+get_history(self) -> list
+```
 
 Obtiene el historial de alertas enviadas desde el archivo de datos.
 
@@ -149,7 +177,11 @@ Returns:
 Raises:
     None
 
-#### `clear_history(self) -> None`
+#### `clear_history()`
+
+```python
+clear_history(self) -> None
+```
 
 Borra el historial de alertas.
 
@@ -162,7 +194,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al borrar el historial.
 
-#### `send_test(self) -> bool`
+#### `send_test()`
+
+```python
+send_test(self) -> bool
+```
 
 Envía un mensaje de prueba para verificar la configuración.
 
@@ -175,10 +211,13 @@ Returns:
 Raises:
     No lanza excepciones explícitas.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, system_monitor, service_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, system_monitor, service_monitor)
+```
 
 Inicializa el servicio de alertas con los monitores del sistema y de servicios.
 
@@ -192,7 +231,11 @@ Returns:
 Raises:
     None
 
-#### `_loop(self) -> None`
+#### `_loop()`
+
+```python
+_loop(self) -> None
+```
 
 Ejecuta el bucle principal del servicio de alertas.
 
@@ -205,7 +248,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la ejecución del bucle.
 
-#### `_check_metrics(self) -> None`
+#### `_check_metrics()`
+
+```python
+_check_metrics(self) -> None
+```
 
 Verifica los valores actuales de temperatura, CPU, RAM y disco contra los umbrales configurados.
 
@@ -218,7 +265,11 @@ Returns:
 Raises:
     No se lanzan excepciones explícitas.
 
-#### `_check_services(self) -> None`
+#### `_check_services()`
+
+```python
+_check_services(self) -> None
+```
 
 Verifica el estado de los servicios y dispara una alerta si hay servicios con estado FAILED.
 
@@ -231,7 +282,11 @@ Returns:
 Raises: 
     None
 
-#### `_trigger(self, key: str, message: str, value: float = 0.0, unit: str = '', level: str = '') -> None`
+#### `_trigger()`
+
+```python
+_trigger(self, key: str, message: str, value: float = 0.0, unit: str = '', level: str = '') -> None
+```
 
 Activa una alerta con retardo anti-spam.
 
@@ -248,7 +303,11 @@ Returns:
 Raises:
     None
 
-#### `_reset(self, key: str) -> None`
+#### `_reset()`
+
+```python
+_reset(self, key: str) -> None
+```
 
 Resetea el estado de una alerta marcándola como condición resuelta.
 
@@ -261,7 +320,11 @@ Returns:
 Raises:
     None
 
-#### `_save_to_history(self, key: str, message: str, value: float, unit: str, level: str) -> None`
+#### `_save_to_history()`
+
+```python
+_save_to_history(self, key: str, message: str, value: float, unit: str, level: str) -> None
+```
 
 Guarda una alerta disparada en el historial de registros.
 
@@ -278,7 +341,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante el guardado del historial.
 
-#### `_send(self, text: str) -> bool`
+#### `_send()`
+
+```python
+_send(self, text: str) -> bool
+```
 
 Envía un mensaje Markdown a Telegram.
 
@@ -290,5 +357,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante el envío del mensaje.
-
-</details>

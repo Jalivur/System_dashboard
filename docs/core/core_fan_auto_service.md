@@ -11,11 +11,15 @@ Servicio en segundo plano para modo AUTO de ventiladores
 ## Tabla de contenidos
 
 **Clase [`FanAutoService`](#clase-fanautoservice)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`set_update_interval()`](#set_update_intervalself-seconds-float)
-  - [`get_status()`](#get_statusself-dict)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`set_update_interval()`](#set_update_interval)
+  - [`get_status()`](#get_status)
+  - [`__new__()`](#__new__) _(privado)_
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_run()`](#_run) _(privado)_
+  - [`_update_auto_mode()`](#_update_auto_mode) _(privado)_
 
 ---
 
@@ -72,7 +76,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el servicio en segundo plano.
 
@@ -85,7 +93,11 @@ Returns:
 Raises:
     Ninguno.
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de ajuste automático del ventilador.
 
@@ -98,7 +110,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de ventilador automático está en ejecución.
 
@@ -111,7 +127,11 @@ Returns:
 Raises:
     None
 
-#### `set_update_interval(self, seconds: float)`
+#### `set_update_interval()`
+
+```python
+set_update_interval(self, seconds: float)
+```
 
 Establece el intervalo de tiempo entre actualizaciones de polling auto-PWM.
 
@@ -124,7 +144,11 @@ Returns:
 Raises:
     None
 
-#### `get_status(self) -> dict`
+#### `get_status()`
+
+```python
+get_status(self) -> dict
+```
 
 Retorna el estado actual del servicio de ventilador.
 
@@ -138,10 +162,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__new__(cls, *args, **kwargs)`
+#### `__new__()`
+
+```python
+__new__(cls, *args, **kwargs)
+```
 
 Crea una instancia única del servicio de forma thread-safe.
 
@@ -152,7 +179,11 @@ Args:
 Returns:
     La instancia única del servicio.
 
-#### `__init__(self, fan_controller: FanController, system_monitor: SystemMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, fan_controller: FanController, system_monitor: SystemMonitor)
+```
 
 Inicializa el servicio de control de ventilador de forma automática.
 
@@ -160,7 +191,11 @@ Args:
     fan_controller (FanController): Controlador para calcular PWM.
     system_monitor (SystemMonitor): Monitor del sistema para obtener temperatura CPU.
 
-#### `_run(self)`
+#### `_run()`
+
+```python
+_run(self)
+```
 
 Ejecuta el bucle principal del servicio de ventilador automático.
 
@@ -173,7 +208,11 @@ Returns:
 Raises:
     Exception
 
-#### `_update_auto_mode(self)`
+#### `_update_auto_mode()`
+
+```python
+_update_auto_mode(self)
+```
 
 Actualiza el modo automático del ventilador si está activado.
 
@@ -185,5 +224,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error al cargar o guardar el estado o al obtener estadísticas del sistema.
-
-</details>

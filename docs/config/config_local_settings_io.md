@@ -22,13 +22,13 @@ Nunca escribir directamente el fichero desde fuera de este módulo.
 ## Tabla de contenidos
 
 **Funciones**
-- [`read()`](#funcion-read)
-- [`write()`](#funcion-write)
-- [`update_params()`](#funcion-update_params)
-- [`write_params()`](#funcion-write_params)
-- [`write_icons()`](#funcion-write_icons)
-- [`update_icons()`](#funcion-update_icons)
-- [`get_param()`](#funcion-get_param)
+- [`read()`](#read)
+- [`write()`](#write)
+- [`update_params()`](#update_params)
+- [`write_params()`](#write_params)
+- [`write_icons()`](#write_icons)
+- [`update_icons()`](#update_icons)
+- [`get_param()`](#get_param)
 
 ---
 
@@ -48,7 +48,11 @@ import logging
 
 ## Funciones
 
-### `read() -> tuple`
+### `read()`
+
+```python
+read() -> tuple
+```
 
 Lee el contenido de local_settings.py y devuelve los parámetros y overrides de iconos.
 
@@ -61,7 +65,11 @@ Returns:
 Raises:
     Ninguno
 
-### `write(param_overrides: dict, icon_overrides: dict) -> None`
+### `write()`
+
+```python
+write(param_overrides: dict, icon_overrides: dict) -> None
+```
 
 Escribe el contenido completo de local_settings.py con parámetros e iconos sobrescritos.
 
@@ -75,7 +83,11 @@ Returns:
 Raises:
     Ninguna excepción específica.
 
-### `update_params(new_params: dict) -> None`
+### `update_params()`
+
+```python
+update_params(new_params: dict) -> None
+```
 
 Actualiza los parámetros existentes con nuevos valores de manera segura.
 
@@ -88,7 +100,11 @@ Returns:
 Raises:
     None
 
-### `write_params(param_overrides: dict) -> None`
+### `write_params()`
+
+```python
+write_params(param_overrides: dict) -> None
+```
 
 Sobreescribe parámetros en un archivo preservando los iconos existentes.
 
@@ -101,7 +117,11 @@ Returns:
 Raises:
     None
 
-### `write_icons(icon_overrides: dict) -> None`
+### `write_icons()`
+
+```python
+write_icons(icon_overrides: dict) -> None
+```
 
 Sobreescribe los iconos de los parámetros existentes con los valores proporcionados.
 
@@ -114,7 +134,11 @@ Returns:
 Raises:
     None
 
-### `update_icons(new_icons: dict) -> None`
+### `update_icons()`
+
+```python
+update_icons(new_icons: dict) -> None
+```
 
 Actualiza los iconos existentes con nuevos iconos proporcionados.
 
@@ -127,7 +151,11 @@ Returns:
 Raises:
     None
 
-### `get_param(key: str, default = None)`
+### `get_param()`
+
+```python
+get_param(key: str, default = None)
+```
 
 Recuperar el valor de un parámetro específico desde la configuración de local_settings.py.
 

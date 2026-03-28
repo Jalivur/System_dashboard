@@ -13,6 +13,18 @@ Los widgets se crean una sola vez — solo se actualizan los valores.
 ## Tabla de contenidos
 
 **Clase [`WiFiWindow`](#clase-wifiwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_build_iface_selector()`](#_build_iface_selector) _(privado)_
+  - [`_on_iface_change()`](#_on_iface_change) _(privado)_
+  - [`_build_connection_card()`](#_build_connection_card) _(privado)_
+  - [`_build_traffic_card()`](#_build_traffic_card) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_refresh_connection()`](#_refresh_connection) _(privado)_
+  - [`_refresh_traffic()`](#_refresh_traffic) _(privado)_
+  - [`_signal_bars()`](#_signal_bars) _(privado)_
+  - [`_force_refresh()`](#_force_refresh) _(privado)_
+  - [`_on_close()`](#_on_close) _(privado)_
 
 ---
 
@@ -62,10 +74,13 @@ Returns:
 | `_wifi_monitor` | `wifi_monitor` |
 | `_refresh_job` | `None` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, wifi_monitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, wifi_monitor)
+```
 
 Inicializa la ventana de monitor WiFi.
 
@@ -79,7 +94,11 @@ Raises:
 Returns:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario de la ventana WiFi de forma estática.
 
@@ -92,7 +111,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_build_iface_selector(self, parent)`
+#### `_build_iface_selector()`
+
+```python
+_build_iface_selector(self, parent)
+```
 
 Construye el selector de interfaz WiFi en el header de la ventana.
 
@@ -105,7 +128,11 @@ Returns:
 Raises:
     None
 
-#### `_on_iface_change(self, iface: str)`
+#### `_on_iface_change()`
+
+```python
+_on_iface_change(self, iface: str)
+```
 
 Callback ejecutado al seleccionar nueva interfaz WiFi desde el dropdown.
 
@@ -118,7 +145,11 @@ Returns:
 Raises:
     None
 
-#### `_build_connection_card(self)`
+#### `_build_connection_card()`
+
+```python
+_build_connection_card(self)
+```
 
 Construye la tarjeta superior de estado de conexión WiFi.
 
@@ -131,7 +162,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_build_traffic_card(self)`
+#### `_build_traffic_card()`
+
+```python
+_build_traffic_card(self)
+```
 
 Construye la tarjeta inferior de tráfico de red (RX/TX).
 
@@ -149,7 +184,11 @@ Returns:
 Raises: 
 - None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza los valores de los widgets de la ventana de WiFi cada _REFRESH_MS.
 
@@ -162,7 +201,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_refresh_connection(self, info: dict)`
+#### `_refresh_connection()`
+
+```python
+_refresh_connection(self, info: dict)
+```
 
 Actualiza los valores de la tarjeta de conexión WiFi.
 
@@ -175,7 +218,11 @@ Returns:
 Raises:
     None
 
-#### `_refresh_traffic(self, stats: dict)`
+#### `_refresh_traffic()`
+
+```python
+_refresh_traffic(self, stats: dict)
+```
 
 Actualiza valores de tráfico de red (RX/TX) y gráficas históricas.
 
@@ -189,7 +236,11 @@ Returns:
 Raises:
     None
 
-#### `_signal_bars(pct: int) -> str`
+#### `_signal_bars()`
+
+```python
+_signal_bars(pct: int) -> str
+```
 
 Genera representación visual Unicode de barras de intensidad de señal WiFi.
 
@@ -209,7 +260,11 @@ Nota: Los valores de retorno son:
     - ▂░░░ (≥20%)
     - ░░░░ (<20%)
 
-#### `_force_refresh(self)`
+#### `_force_refresh()`
+
+```python
+_force_refresh(self)
+```
 
 Refresca inmediatamente todos los datos cancelando el trabajo pendiente.
 
@@ -222,7 +277,11 @@ Returns:
 Raises:
     None
 
-#### `_on_close(self)`
+#### `_on_close()`
+
+```python
+_on_close(self)
+```
 
 Maneja el cierre de la ventana limpiando recursos.
 
@@ -234,5 +293,3 @@ Returns:
 
 Raises:
     None
-
-</details>

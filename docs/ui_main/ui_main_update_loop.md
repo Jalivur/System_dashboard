@@ -32,8 +32,16 @@ Uso en MainWindow:
 ## Tabla de contenidos
 
 **Clase [`UpdateLoop`](#clase-updateloop)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_tick_clock()`](#_tick_clock) _(privado)_
+  - [`_update_badges()`](#_update_badges) _(privado)_
+  - [`_update_misc_badges()`](#_update_misc_badges) _(privado)_
+  - [`_update_service_badge()`](#_update_service_badge) _(privado)_
+  - [`_update_weather_badge()`](#_update_weather_badge) _(privado)_
+  - [`_update_watchdog_badge()`](#_update_watchdog_badge) _(privado)_
+  - [`_update_system_badges()`](#_update_system_badges) _(privado)_
 
 ---
 
@@ -89,7 +97,11 @@ Args:
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el ciclo de actualización. 
 
@@ -102,7 +114,11 @@ Returns:
 Raises: 
     None
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el bucle de actualización cancelando los callbacks pendientes.
 
@@ -115,10 +131,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, root, badge_mgr, monitors: dict, update_interval: int, clock_label, uptime_label, weather_service = None)`
+#### `__init__()`
+
+```python
+__init__(self, root, badge_mgr, monitors: dict, update_interval: int, clock_label, uptime_label, weather_service = None)
+```
 
 Inicializa el bucle de actualización de la aplicación.
 
@@ -131,7 +150,11 @@ Args:
     uptime_label:    etiqueta CTkLabel del tiempo de actividad en el encabezado.
     weather_service: servicio WeatherService opcional para la insignita de lluvia.
 
-#### `_tick_clock(self) -> None`
+#### `_tick_clock()`
+
+```python
+_tick_clock(self) -> None
+```
 
 Actualiza el reloj y el tiempo de actividad del sistema.
 
@@ -144,7 +167,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_update_badges(self) -> None`
+#### `_update_badges()`
+
+```python
+_update_badges(self) -> None
+```
 
 Actualiza todos los badges del menú.
 
@@ -157,7 +184,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_update_misc_badges(self) -> None`
+#### `_update_misc_badges()`
+
+```python
+_update_misc_badges(self) -> None
+```
 
 Actualiza los badges misceláneos de actualizaciones, Homebridge, Pi-hole y VPN.
 
@@ -170,7 +201,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al actualizar algún badge.
 
-#### `_update_service_badge(self) -> None`
+#### `_update_service_badge()`
+
+```python
+_update_service_badge(self) -> None
+```
 
 Actualiza el distintivo de servicios fallidos desde el monitor de servicios.
 
@@ -183,7 +218,11 @@ Returns:
 Raises: 
     Excepción genérica en caso de error durante la actualización del distintivo.
 
-#### `_update_weather_badge(self) -> None`
+#### `_update_weather_badge()`
+
+```python
+_update_weather_badge(self) -> None
+```
 
 Actualiza el distintivo del botón de clima para indicar probabilidad de lluvia en las próximas 3 horas.
 
@@ -196,7 +235,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al actualizar el distintivo, se registra un mensaje de advertencia.
 
-#### `_update_watchdog_badge(self) -> None`
+#### `_update_watchdog_badge()`
+
+```python
+_update_watchdog_badge(self) -> None
+```
 
 Actualiza el badge de reinicios del service watchdog con el contador de reinicios del día.
 
@@ -209,7 +252,11 @@ Returns:
 Raises: 
     Excepción genérica en caso de error durante la actualización del badge.
 
-#### `_update_system_badges(self) -> None`
+#### `_update_system_badges()`
+
+```python
+_update_system_badges(self) -> None
+```
 
 Actualiza los badges de sistema relacionados con temperatura, CPU, RAM y disco duro.
 
@@ -221,5 +268,3 @@ Returns:
 
 Raises: 
     Ninguno
-
-</details>

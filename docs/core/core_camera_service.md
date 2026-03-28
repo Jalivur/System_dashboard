@@ -13,20 +13,22 @@ La UI solo llama a capture(), scan() y los métodos de gestión de ficheros.
 ## Tabla de contenidos
 
 **Funciones**
-- [`capture()`](#funcion-capture)
-- [`scan()`](#funcion-scan)
-- [`preprocess_image()`](#funcion-preprocess_image)
-- [`run_ocr()`](#funcion-run_ocr)
-- [`save_txt()`](#funcion-save_txt)
-- [`save_md()`](#funcion-save_md)
-- [`list_photos()`](#funcion-list_photos)
-- [`list_scans()`](#funcion-list_scans)
-- [`load_scan_text()`](#funcion-load_scan_text)
-- [`delete_photo()`](#funcion-delete_photo)
-- [`delete_scan()`](#funcion-delete_scan)
-- [`delete_all_photos()`](#funcion-delete_all_photos)
-- [`delete_all_scans()`](#funcion-delete_all_scans)
-- [`cleanup_old_photos()`](#funcion-cleanup_old_photos)
+- [`capture()`](#capture)
+- [`scan()`](#scan)
+- [`preprocess_image()`](#preprocess_image)
+- [`run_ocr()`](#run_ocr)
+- [`save_txt()`](#save_txt)
+- [`save_md()`](#save_md)
+- [`list_photos()`](#list_photos)
+- [`list_scans()`](#list_scans)
+- [`load_scan_text()`](#load_scan_text)
+- [`delete_photo()`](#delete_photo)
+- [`delete_scan()`](#delete_scan)
+- [`delete_all_photos()`](#delete_all_photos)
+- [`delete_all_scans()`](#delete_all_scans)
+- [`cleanup_old_photos()`](#cleanup_old_photos)
+- [`_ensure_dirs()`](#_ensure_dirs) _(privada)_
+- [`_rpicam_capture()`](#_rpicam_capture) _(privada)_
 
 ---
 
@@ -58,7 +60,11 @@ import shutil
 
 ## Funciones
 
-### `capture(width: str, height: str) -> tuple[bool, str, Path | None]`
+### `capture()`
+
+```python
+capture(width: str, height: str) -> tuple[bool, str, Path | None]
+```
 
 Captura una foto con el comando rpicam-still y devuelve el resultado.
 
@@ -72,7 +78,11 @@ Returns:
 Raises:
     No se lanzan excepciones explícitas.
 
-### `scan(lang: str = 'spa') -> tuple[str | None, str]`
+### `scan()`
+
+```python
+scan(lang: str = 'spa') -> tuple[str | None, str]
+```
 
 Captura a máxima resolución, preprocesa y ejecuta OCR para extraer texto de una imagen.
 
@@ -85,7 +95,11 @@ Returns:
 Raises:
     Exception: si falla la eliminación de archivos temporales.
 
-### `preprocess_image(src: Path, dst: Path)`
+### `preprocess_image()`
+
+```python
+preprocess_image(src: Path, dst: Path)
+```
 
 Aplica filtros de escala de grises, contraste y nitidez a una imagen para mejorar el reconocimiento óptico de caracteres.
 
@@ -99,7 +113,11 @@ Returns:
 Raises:
     Exception: Si el preprocesamiento de la imagen falla, se guarda la imagen original en la ruta de destino.
 
-### `run_ocr(img_path: Path, lang: str) -> tuple[str | None, str]`
+### `run_ocr()`
+
+```python
+run_ocr(img_path: Path, lang: str) -> tuple[str | None, str]
+```
 
 Ejecuta Tesseract sobre la imagen dada para extraer texto.
 
@@ -114,7 +132,11 @@ Raises:
     ImportError: Si pytesseract no está instalado.
     Exception: Si ocurre un error durante el proceso de OCR.
 
-### `save_txt(path: Path, text: str, ts: str)`
+### `save_txt()`
+
+```python
+save_txt(path: Path, text: str, ts: str)
+```
 
 Guarda el texto extraído como archivo .txt con cabecera que incluye el momento del escaneo.
 
@@ -129,7 +151,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al guardar el archivo .txt.
 
-### `save_md(path: Path, text: str, ts: str, lang: str = 'spa')`
+### `save_md()`
+
+```python
+save_md(path: Path, text: str, ts: str, lang: str = 'spa')
+```
 
 Guarda el texto extraído como archivo markdown con metadatos.
 
@@ -145,7 +171,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error al guardar el archivo.
 
-### `list_photos() -> list[Path]`
+### `list_photos()`
+
+```python
+list_photos() -> list[Path]
+```
 
 Devuelve una lista de fotos ordenadas de más reciente a más antigua.
 
@@ -158,7 +188,11 @@ Returns:
 Raises:
     None
 
-### `list_scans() -> list[tuple[Path, Path]]`
+### `list_scans()`
+
+```python
+list_scans() -> list[tuple[Path, Path]]
+```
 
 Devuelve pares de archivos de escaneo en formato txt y md, ordenados del más reciente al más antiguo.
 
@@ -171,7 +205,11 @@ Returns:
 Raises:
     None
 
-### `load_scan_text(txt_path: Path) -> str | None`
+### `load_scan_text()`
+
+```python
+load_scan_text(txt_path: Path) -> str | None
+```
 
 Lee el contenido de un archivo de texto de escaneo.
 
@@ -184,7 +222,11 @@ Returns:
 Raises:
     Excepciones al leer el archivo, registradas en el log.
 
-### `delete_photo(path: Path)`
+### `delete_photo()`
+
+```python
+delete_photo(path: Path)
+```
 
 Elimina una foto del sistema de archivos.
 
@@ -194,7 +236,11 @@ Args:
 Raises:
     Exception: Si ocurre un error al eliminar la foto.
 
-### `delete_scan(txt: Path, md: Path)`
+### `delete_scan()`
+
+```python
+delete_scan(txt: Path, md: Path)
+```
 
 Elimina un par de ficheros de escaneo (.txt y .md).
 
@@ -210,6 +256,10 @@ Raises:
 
 ### `delete_all_photos()`
 
+```python
+delete_all_photos()
+```
+
 Elimina todas las fotos del directorio de fotos.
 
 Args:
@@ -222,6 +272,10 @@ Raises:
     None
 
 ### `delete_all_scans()`
+
+```python
+delete_all_scans()
+```
 
 Elimina todos los ficheros de escaneo.
 
@@ -236,6 +290,10 @@ Raises:
 
 ### `cleanup_old_photos()`
 
+```python
+cleanup_old_photos()
+```
+
 Elimina las fotos más antiguas si se supera el límite de fotos permitidas.
 
 Args:
@@ -247,10 +305,13 @@ Returns:
 Raises:
     Ninguno
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
 ### `_ensure_dirs()`
+
+```python
+_ensure_dirs()
+```
 
 Crea los directorios necesarios si no existen.
 
@@ -260,7 +321,11 @@ Returns: None
 
 Raises: None
 
-### `_rpicam_capture(filename: Path, w: str, h: str) -> tuple[bool, str]`
+### `_rpicam_capture()`
+
+```python
+_rpicam_capture(filename: Path, w: str, h: str) -> tuple[bool, str]
+```
 
 Captura una imagen utilizando rpicam-still y devuelve el resultado de la operación.
 
@@ -274,5 +339,3 @@ Returns:
 
 Raises:
     Exception: Si ocurre un error durante la captura de la imagen.
-
-</details>

@@ -11,6 +11,16 @@ Ventana de monitoreo de dispositivos USB
 ## Tabla de contenidos
 
 **Clase [`USBWindow`](#clase-usbwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_refresh_devices()`](#_refresh_devices) _(privado)_
+  - [`_create_storage_section()`](#_create_storage_section) _(privado)_
+  - [`_create_storage_device_widget()`](#_create_storage_device_widget) _(privado)_
+  - [`_create_partition_widget()`](#_create_partition_widget) _(privado)_
+  - [`_create_other_devices_section()`](#_create_other_devices_section) _(privado)_
+  - [`_create_other_device_widget()`](#_create_other_device_widget) _(privado)_
+  - [`_parse_lsusb_line()`](#_parse_lsusb_line) _(privado)_
+  - [`_eject_device()`](#_eject_device) _(privado)_
 
 ---
 
@@ -59,10 +69,13 @@ Returns:
 | `_system_utils` | `SystemUtils()` |
 | `_device_widgets` | `[]` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana de monitoreo de dispositivos USB.
 
@@ -75,7 +88,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario para la ventana de dispositivos USB.
 
@@ -88,7 +105,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh_devices(self)`
+#### `_refresh_devices()`
+
+```python
+_refresh_devices(self)
+```
 
 Refresca la lista de dispositivos USB conectados y actualiza la interfaz gráfica.
 
@@ -101,14 +122,22 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_create_storage_section(self, storage_devices: list)`
+#### `_create_storage_section()`
+
+```python
+_create_storage_section(self, storage_devices: list)
+```
 
 Crea la sección de almacenamiento USB en la ventana.
 
 Args:
     storage_devices (list): Lista de dispositivos de almacenamiento USB.
 
-#### `_create_storage_device_widget(self, device: dict, index: int)`
+#### `_create_storage_device_widget()`
+
+```python
+_create_storage_device_widget(self, device: dict, index: int)
+```
 
 Crea un widget para representar un dispositivo de almacenamiento en la interfaz gráfica.
 
@@ -122,7 +151,11 @@ Returns:
 Raises:
     None
 
-#### `_create_partition_widget(self, parent, partition: dict)`
+#### `_create_partition_widget()`
+
+```python
+_create_partition_widget(self, parent, partition: dict)
+```
 
 Crea un widget para representar una partición en la interfaz gráfica.
 
@@ -136,7 +169,11 @@ Returns:
 Raises:
     None
 
-#### `_create_other_devices_section(self, other_devices: list)`
+#### `_create_other_devices_section()`
+
+```python
+_create_other_devices_section(self, other_devices: list)
+```
 
 Crea la sección de otros dispositivos USB en la ventana.
 
@@ -149,7 +186,11 @@ Returns:
 Raises:
     None
 
-#### `_create_other_device_widget(self, device_line: str, index: int)`
+#### `_create_other_device_widget()`
+
+```python
+_create_other_device_widget(self, device_line: str, index: int)
+```
 
 Crea un widget para representar un dispositivo USB adicional en la interfaz.
 
@@ -163,7 +204,11 @@ Returns:
 Raises:
     None
 
-#### `_parse_lsusb_line(self, line: str) -> dict`
+#### `_parse_lsusb_line()`
+
+```python
+_parse_lsusb_line(self, line: str) -> dict
+```
 
 Extrae información de un dispositivo USB a partir de una línea de salida de lsusb.
 
@@ -176,7 +221,11 @@ Returns:
 Raises:
     None
 
-#### `_eject_device(self, device: dict)`
+#### `_eject_device()`
+
+```python
+_eject_device(self, device: dict)
+```
 
 Expulsa un dispositivo USB de manera segura.
 
@@ -188,5 +237,3 @@ Returns:
 
 Raises:
     None
-
-</details>

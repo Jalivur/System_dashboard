@@ -11,6 +11,18 @@ Ventana de monitoreo de disco
 ## Tabla de contenidos
 
 **Clase [`DiskWindow`](#clase-diskwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_cell()`](#_create_cell) _(privado)_
+  - [`_create_smart_col()`](#_create_smart_col) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_refresh_smart()`](#_refresh_smart) _(privado)_
+  - [`_set_smart()`](#_set_smart) _(privado)_
+  - [`_fmt_hours()`](#_fmt_hours) _(privado)_
+  - [`_fmt_int()`](#_fmt_int) _(privado)_
+  - [`_fmt_tb()`](#_fmt_tb) _(privado)_
+  - [`_update_metric()`](#_update_metric) _(privado)_
+  - [`_update_io()`](#_update_io) _(privado)_
 
 ---
 
@@ -63,10 +75,13 @@ Returns:
 | `_smart_tick` | `0` |
 | `_smart_cache` | `{}` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, disk_monitor: DiskMonitor)`
+#### `__init__()`
+
+```python
+__init__(self, parent, disk_monitor: DiskMonitor)
+```
 
 Inicializa la ventana de monitoreo de disco con el monitor de disco proporcionado.
 
@@ -76,7 +91,11 @@ Args:
     parent: Widget padre (ctk.CTkToplevel).
     disk_monitor: Instancia de DiskMonitor para obtener estadísticas de disco.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz gráfica completa de la ventana del disco.
 
@@ -89,7 +108,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_cell(self, parent, row, col, title, key, unit, graph_h)`
+#### `_create_cell()`
+
+```python
+_create_cell(self, parent, row, col, title, key, unit, graph_h)
+```
 
 Crea una celda con gráfica en la ventana de disco.
 
@@ -108,7 +131,11 @@ Returns:
 Raises:
     None
 
-#### `_create_smart_col(self, parent, col_idx: int, key: str, title: str)`
+#### `_create_smart_col()`
+
+```python
+_create_smart_col(self, parent, col_idx: int, key: str, title: str)
+```
 
 Crea una columna para mostrar información de un campo SMART sin gráfica.
 
@@ -124,7 +151,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza la interfaz de DiskWindow con datos actuales e históricos del DiskMonitor.
 
@@ -137,7 +168,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_refresh_smart(self)`
+#### `_refresh_smart()`
+
+```python
+_refresh_smart(self)
+```
 
 Actualiza las etiquetas SMART del disco duro mediante la información obtenida de get_nvme_smart().
 
@@ -150,7 +185,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `_set_smart(self, key: str, text: str, warn)`
+#### `_set_smart()`
+
+```python
+_set_smart(self, key: str, text: str, warn)
+```
 
 Actualiza una etiqueta SMART con color según warn.
 
@@ -165,7 +204,11 @@ Returns:
 Raises:
     None
 
-#### `_fmt_hours(hours) -> str`
+#### `_fmt_hours()`
+
+```python
+_fmt_hours(hours) -> str
+```
 
 Convierte horas totales de uso en formato legible 'Dd Hh'.
 
@@ -175,7 +218,11 @@ Args:
 Returns:
     str: Formato 'Dd Hh' o '--' si hours es None.
 
-#### `_fmt_int(val) -> str`
+#### `_fmt_int()`
+
+```python
+_fmt_int(val) -> str
+```
 
 Formatea un valor entero o None como cadena.
 
@@ -185,7 +232,11 @@ Args:
 Returns:
     str: Representación en cadena del valor o '--' si es None.
 
-#### `_fmt_tb(val) -> str`
+#### `_fmt_tb()`
+
+```python
+_fmt_tb(val) -> str
+```
 
 Formatea terabytes en TB o GB según magnitud.
 
@@ -195,7 +246,11 @@ Args:
 Returns:
     str: Representación formateada del valor en TB o GB, o '--' si el valor es None.
 
-#### `_update_metric(self, key, value, history, unit, warn, crit)`
+#### `_update_metric()`
+
+```python
+_update_metric(self, key, value, history, unit, warn, crit)
+```
 
 Actualiza la etiqueta, el color y el gráfico de una métrica con umbrales.
 
@@ -213,7 +268,11 @@ Returns:
 Raises:
     None
 
-#### `_update_io(self, key, value, history)`
+#### `_update_io()`
+
+```python
+_update_io(self, key, value, history)
+```
 
 Actualiza label, color y gráfico para métricas de I/O (lectura/escritura).
 
@@ -229,5 +288,3 @@ Returns:
 
 Raises:
     None
-
-</details>

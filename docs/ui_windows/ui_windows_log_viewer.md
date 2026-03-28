@@ -13,6 +13,24 @@ y exportar el resultado filtrado a un archivo .log
 ## Tabla de contenidos
 
 **Clase [`LogViewerWindow`](#clase-logviewerwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_entry_focus_in()`](#_entry_focus_in) _(privado)_
+  - [`_entry_focus_out()`](#_entry_focus_out) _(privado)_
+  - [`_entry_value()`](#_entry_value) _(privado)_
+  - [`_make_entry()`](#_make_entry) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_filters()`](#_create_filters) _(privado)_
+  - [`_create_results()`](#_create_results) _(privado)_
+  - [`_create_bottom_bar()`](#_create_bottom_bar) _(privado)_
+  - [`_load_log()`](#_load_log) _(privado)_
+  - [`_read_log_thread()`](#_read_log_thread) _(privado)_
+  - [`_parse_line()`](#_parse_line) _(privado)_
+  - [`_update_modules()`](#_update_modules) _(privado)_
+  - [`_on_quick_interval()`](#_on_quick_interval) _(privado)_
+  - [`_apply_filters()`](#_apply_filters) _(privado)_
+  - [`_parse_datetime()`](#_parse_datetime) _(privado)_
+  - [`_set_text()`](#_set_text) _(privado)_
+  - [`_export()`](#_export) _(privado)_
 
 ---
 
@@ -77,10 +95,13 @@ Returns:
 | `_date_to` | `ctk.StringVar(master=self, value=_PH_DATE)` |
 | `_time_to` | `ctk.StringVar(master=self, value=_PH_TIME)` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana del visor de logs.
 
@@ -95,7 +116,11 @@ Raises:
 Returns:
     Ninguno
 
-#### `_entry_focus_in(self, entry, var, placeholder)`
+#### `_entry_focus_in()`
+
+```python
+_entry_focus_in(self, entry, var, placeholder)
+```
 
 Limpia el texto placeholder de un campo de texto cuando recibe el foco.
 
@@ -107,7 +132,11 @@ Limpia el texto placeholder de un campo de texto cuando recibe el foco.
     Returns:
         None
 
-#### `_entry_focus_out(self, entry, var, placeholder)`
+#### `_entry_focus_out()`
+
+```python
+_entry_focus_out(self, entry, var, placeholder)
+```
 
 Restaura el texto placeholder en un campo de texto cuando pierde el foco.
 
@@ -122,7 +151,11 @@ Returns:
 Raises:
     None
 
-#### `_entry_value(self, var, placeholder)`
+#### `_entry_value()`
+
+```python
+_entry_value(self, var, placeholder)
+```
 
 Obtiene el valor real del campo de entrada, ignorando placeholder.
 
@@ -133,7 +166,11 @@ Args:
 Returns:
     str: Valor limpio o cadena vacía si solo tenía placeholder.
 
-#### `_make_entry(self, parent, var, placeholder, width)`
+#### `_make_entry()`
+
+```python
+_make_entry(self, parent, var, placeholder, width)
+```
 
 Crea un CTkEntry con manejo automático de placeholders y bindings.
 
@@ -146,7 +183,11 @@ Args:
 Returns:
     CTkEntry: Instancia configurada con eventos de foco.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Construye la interfaz de usuario completa del visor de logs.
 
@@ -162,14 +203,22 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_filters(self, parent)`
+#### `_create_filters()`
+
+```python
+_create_filters(self, parent)
+```
 
 Crea el panel de filtros avanzados para la ventana de visualización de registros.
 
 Args:
     parent: Frame contenedor donde se ubicará el panel de filtros.
 
-#### `_create_results(self, parent)`
+#### `_create_results()`
+
+```python
+_create_results(self, parent)
+```
 
 Crea el área de visualización de resultados con textbox coloreado.
 
@@ -181,7 +230,11 @@ Args:
 Raises:
     None
 
-#### `_create_bottom_bar(self, parent)`
+#### `_create_bottom_bar()`
+
+```python
+_create_bottom_bar(self, parent)
+```
 
 Crea la barra inferior con controles de contador, exportar y recargar.
 
@@ -194,7 +247,11 @@ Returns:
 Raises:
     None
 
-#### `_load_log(self)`
+#### `_load_log()`
+
+```python
+_load_log(self)
+```
 
 Inicia la carga asíncrona de logs desde archivo.
 
@@ -207,7 +264,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_read_log_thread(self)`
+#### `_read_log_thread()`
+
+```python
+_read_log_thread(self)
+```
 
 Hilo secundario para lectura y parseo de logs.
 
@@ -223,7 +284,11 @@ Returns:
 Raises: 
     Exception: Si ocurre un error al leer o parsear el log.
 
-#### `_parse_line(self, raw)`
+#### `_parse_line()`
+
+```python
+_parse_line(self, raw)
+```
 
 Parsea una línea de log cruda usando regex, extrayendo timestamp, nivel, módulo y mensaje, y validando la fecha.
 
@@ -236,7 +301,11 @@ Returns:
 Raises:
     None
 
-#### `_update_modules(self, modules)`
+#### `_update_modules()`
+
+```python
+_update_modules(self, modules)
+```
 
 Actualiza la lista de módulos únicos detectados en logs.
 
@@ -249,7 +318,11 @@ Returns:
 Raises:
     None
 
-#### `_on_quick_interval(self, value)`
+#### `_on_quick_interval()`
+
+```python
+_on_quick_interval(self, value)
+```
 
 Configura intervalos de tiempo rápidos automáticamente.
 
@@ -261,7 +334,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_apply_filters(self)`
+#### `_apply_filters()`
+
+```python
+_apply_filters(self)
+```
 
 Aplica todos los filtros activos y actualiza la visualización.
 
@@ -274,7 +351,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_parse_datetime(self, date_str, time_str, is_end)`
+#### `_parse_datetime()`
+
+```python
+_parse_datetime(self, date_str, time_str, is_end)
+```
 
 Convierte strings de fecha/hora a objeto datetime.
 
@@ -288,7 +369,11 @@ Args:
 Returns:
     datetime o None: Objeto parseado o None si inválido.
 
-#### `_set_text(self, loading_msg, lines)`
+#### `_set_text()`
+
+```python
+_set_text(self, loading_msg, lines)
+```
 
 Renderiza logs filtrados o mensaje de carga en textbox.
 
@@ -304,7 +389,11 @@ Returns:
 Raises:
     Ninguna excepción.
 
-#### `_export(self)`
+#### `_export()`
+
+```python
+_export(self)
+```
 
 Exporta logs filtrados a archivo .log con timestamp único.
 
@@ -316,5 +405,3 @@ Returns:
 
 Raises:
     Ninguno
-
-</details>

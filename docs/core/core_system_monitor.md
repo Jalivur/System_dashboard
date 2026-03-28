@@ -13,13 +13,16 @@ Thread background no-bloqueante, thread-safe con lock.
 ## Tabla de contenidos
 
 **Clase [`SystemMonitor`](#clase-systemmonitor)**
-  - [`start()`](#startself-none)
-  - [`stop()`](#stopself-none)
-  - [`is_running()`](#is_runningself-bool)
-  - [`get_current_stats()`](#get_current_statsself-dict)
-  - [`update_history()`](#update_historyself-stats-dict-none)
-  - [`get_history()`](#get_historyself-dict)
-  - [`level_color()`](#level_colorvalue-float-warn-float-crit-float-str)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`get_current_stats()`](#get_current_stats)
+  - [`update_history()`](#update_history)
+  - [`get_history()`](#get_history)
+  - [`level_color()`](#level_color)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_poll_loop()`](#_poll_loop) _(privado)_
+  - [`_do_poll()`](#_do_poll) _(privado)_
 
 ---
 
@@ -72,7 +75,11 @@ de actualización en segundo plano.
 
 ### Métodos públicos
 
-#### `start(self) -> None`
+#### `start()`
+
+```python
+start(self) -> None
+```
 
 Inicia el hilo de sondeo en segundo plano para monitorear el sistema.
 
@@ -85,7 +92,11 @@ Returns:
 Raises: 
     Ninguno
 
-#### `stop(self) -> None`
+#### `stop()`
+
+```python
+stop(self) -> None
+```
 
 Detiene el monitor del sistema de manera limpia.
 
@@ -98,14 +109,22 @@ Returns:
 Raises: 
     Ninguno
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el monitor del sistema está actualmente en ejecución.
 
 Returns:
     bool: True si el monitor está activo, False en caso contrario.
 
-#### `get_current_stats(self) -> Dict`
+#### `get_current_stats()`
+
+```python
+get_current_stats(self) -> Dict
+```
 
 Obtiene las estadísticas actuales del sistema.
 
@@ -119,7 +138,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `update_history(self, stats: Dict) -> None`
+#### `update_history()`
+
+```python
+update_history(self, stats: Dict) -> None
+```
 
 Actualiza los registros históricos de estadísticas del sistema para su representación gráfica.
 
@@ -132,7 +155,11 @@ Returns:
 Raises:
     None
 
-#### `get_history(self) -> Dict`
+#### `get_history()`
+
+```python
+get_history(self) -> Dict
+```
 
 Retorna un diccionario con listas históricas de uso de recursos del sistema.
 
@@ -145,7 +172,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `level_color(value: float, warn: float, crit: float) -> str`
+#### `level_color()`
+
+```python
+level_color(value: float, warn: float, crit: float) -> str
+```
 
 Determina el color semáforo según umbrales de warning y crítico.
 
@@ -160,10 +191,13 @@ Returns:
 Raises:
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el monitor del sistema.
 
@@ -173,7 +207,11 @@ Returns: Ninguno
 
 Raises: Ninguno
 
-#### `_poll_loop(self) -> None`
+#### `_poll_loop()`
+
+```python
+_poll_loop(self) -> None
+```
 
 Ejecuta el bucle principal del hilo de sondeo en segundo plano.
 
@@ -186,7 +224,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_do_poll(self) -> None`
+#### `_do_poll()`
+
+```python
+_do_poll(self) -> None
+```
 
 Captura rápida de métricas del sistema y actualiza la caché.
 
@@ -198,5 +240,3 @@ Returns:
 
 Raises: 
     Ninguno, las excepciones se manejan silenciosamente.
-
-</details>

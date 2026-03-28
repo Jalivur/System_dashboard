@@ -21,6 +21,10 @@ Dependencias:
 ## Tabla de contenidos
 
 **Clase [`LaunchersWindow`](#clase-launcherswindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_launcher_buttons()`](#_create_launcher_buttons) _(privado)_
+  - [`_run_script()`](#_run_script) _(privado)_
 
 ---
 
@@ -64,10 +68,13 @@ Configura la geometría, colores y título de la ventana, y crea la interfaz de 
 |----------|---------------|
 | `system_utils` | `SystemUtils()` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent)`
+#### `__init__()`
+
+```python
+__init__(self, parent)
+```
 
 Inicializa la ventana de lanzadores.
 
@@ -80,7 +87,11 @@ Returns:
 Raises:
     None
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario para la ventana de lanzadores.
 
@@ -93,7 +104,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_launcher_buttons(self, parent)`
+#### `_create_launcher_buttons()`
+
+```python
+_create_launcher_buttons(self, parent)
+```
 
 Crea los botones de lanzadores en un diseño de rejilla dentro de la ventana.
 
@@ -106,7 +121,11 @@ Returns:
 Raises:
     None
 
-#### `_run_script(self, script_path: str, label: str)`
+#### `_run_script()`
+
+```python
+_run_script(self, script_path: str, label: str)
+```
 
 Ejecuta un script tras confirmar su ejecución.
 
@@ -116,5 +135,3 @@ Args:
 
 Raises:
     Ninguna excepción específica.
-
-</details>

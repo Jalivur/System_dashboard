@@ -13,6 +13,13 @@ Los cambios son inmediatos en la UI y se persisten con "Guardar predeterminado".
 ## Tabla de contenidos
 
 **Clase [`ButtonManagerWindow`](#clase-buttonmanagerwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_row()`](#_create_row) _(privado)_
+  - [`_on_toggle()`](#_on_toggle) _(privado)_
+  - [`_enable_all()`](#_enable_all) _(privado)_
+  - [`_disable_all()`](#_disable_all) _(privado)_
+  - [`_save()`](#_save) _(privado)_
 
 ---
 
@@ -63,10 +70,13 @@ Returns:
 | `_registry` | `registry` |
 | `_window_manager` | `window_manager` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, registry, window_manager)`
+#### `__init__()`
+
+```python
+__init__(self, parent, registry, window_manager)
+```
 
 Inicializa la ventana de gestión de botones.
 
@@ -78,7 +88,11 @@ Args:
 Raises:
     Ninguna excepción específica.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz completa de la ventana del gestor de botones.
 
@@ -91,7 +105,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_create_row(self, parent, key: str, label: str, enabled: bool)`
+#### `_create_row()`
+
+```python
+_create_row(self, parent, key: str, label: str, enabled: bool)
+```
 
 Crea una fila con el nombre del botón y su switch ON/OFF.
 
@@ -107,7 +125,11 @@ Returns:
 Raises:
     None
 
-#### `_on_toggle(self, key: str)`
+#### `_on_toggle()`
+
+```python
+_on_toggle(self, key: str)
+```
 
 Aplica el cambio de visibilidad inmediatamente en la UI del menú principal.
 
@@ -119,7 +141,11 @@ Raises:
 Returns:
     None
 
-#### `_enable_all(self)`
+#### `_enable_all()`
+
+```python
+_enable_all(self)
+```
 
 Activa todos los switches y aplica los cambios.
 
@@ -132,7 +158,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_disable_all(self)`
+#### `_disable_all()`
+
+```python
+_disable_all(self)
+```
 
 Desactiva todos los switches y oculta los elementos asociados en la ventana.
 
@@ -145,7 +175,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_save(self)`
+#### `_save()`
+
+```python
+_save(self)
+```
 
 Guarda el estado actual de la configuración de botones en un archivo JSON.
 
@@ -157,5 +191,3 @@ Returns:
 
 Raises:
     None
-
-</details>

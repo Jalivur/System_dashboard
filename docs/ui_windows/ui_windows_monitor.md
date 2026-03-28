@@ -11,6 +11,11 @@ Ventana de monitoreo del sistema
 ## Tabla de contenidos
 
 **Clase [`MonitorWindow`](#clase-monitorwindow)**
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_create_ui()`](#_create_ui) _(privado)_
+  - [`_create_cell()`](#_create_cell) _(privado)_
+  - [`_update()`](#_update) _(privado)_
+  - [`_update_metric()`](#_update_metric) _(privado)_
 
 ---
 
@@ -63,10 +68,13 @@ Raises:
 | `_widgets` | `{}` |
 | `_graphs` | `{}` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, parent, system_monitor: SystemMonitor, hardware_monitor = None)`
+#### `__init__()`
+
+```python
+__init__(self, parent, system_monitor: SystemMonitor, hardware_monitor = None)
+```
 
 Inicializa la ventana de monitoreo del sistema.
 
@@ -78,7 +86,11 @@ Args:
     system_monitor: Instancia de SystemMonitor para métricas CPU/RAM/TEMP.
     hardware_monitor: Instancia opcional de monitor hardware.
 
-#### `_create_ui(self)`
+#### `_create_ui()`
+
+```python
+_create_ui(self)
+```
 
 Crea la interfaz de usuario completa de la ventana de monitoreo.
 
@@ -91,7 +103,11 @@ Crea la interfaz de usuario completa de la ventana de monitoreo.
     Raises: 
         Ninguno
 
-#### `_create_cell(self, parent, row, col, title, key, unit, graph_h)`
+#### `_create_cell()`
+
+```python
+_create_cell(self, parent, row, col, title, key, unit, graph_h)
+```
 
 Crea una celda individual para mostrar y graficar una métrica del sistema.
 
@@ -109,7 +125,11 @@ Returns:
 Raises:
     None
 
-#### `_update(self)`
+#### `_update()`
+
+```python
+_update(self)
+```
 
 Actualiza todas las métricas del monitoreo en ciclo recursivo.
 
@@ -122,7 +142,11 @@ Returns:
 Raises:
     Ninguno
 
-#### `_update_metric(self, key, value, history, unit, warn, crit)`
+#### `_update_metric()`
+
+```python
+_update_metric(self, key, value, history, unit, warn, crit)
+```
 
 Actualiza visualmente una métrica específica según su valor actual.
 
@@ -142,5 +166,3 @@ Returns:
 
 Raises:
     None
-
-</details>

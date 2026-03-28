@@ -11,10 +11,14 @@ Servicio de recolección automática de datos
 ## Tabla de contenidos
 
 **Clase [`DataCollectionService`](#clase-datacollectionservice)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`force_collection()`](#force_collectionself)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`force_collection()`](#force_collection)
+  - [`__new__()`](#__new__) _(privado)_
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_collection_loop()`](#_collection_loop) _(privado)_
+  - [`_collect_and_save()`](#_collect_and_save) _(privado)_
 
 ---
 
@@ -77,7 +81,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el servicio de recolección de datos en segundo plano.
 
@@ -90,7 +98,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de recolección de datos de manera segura.
 
@@ -103,7 +115,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de recolección de datos está en ejecución.
 
@@ -116,7 +132,11 @@ Returns:
 Raises:
     None
 
-#### `force_collection(self)`
+#### `force_collection()`
+
+```python
+force_collection(self)
+```
 
 Fuerza una recolección inmediata de datos.
 
@@ -129,10 +149,13 @@ Returns:
 Raises:
     Ninguna excepción explícita.
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__new__(cls, *args, **kwargs)`
+#### `__new__()`
+
+```python
+__new__(cls, *args, **kwargs)
+```
 
 Crea una instancia única de la clase utilizando el patrón singleton thread-safe.
 
@@ -146,7 +169,11 @@ Returns:
 Raises:
     None
 
-#### `__init__(self, system_monitor, fan_controller, network_monitor, disk_monitor, update_monitor, interval_minutes: int = 5)`
+#### `__init__()`
+
+```python
+__init__(self, system_monitor, fan_controller, network_monitor, disk_monitor, update_monitor, interval_minutes: int = 5)
+```
 
 Inicializa el servicio de recolección de datos con fuentes métricas y un intervalo de actualización.
 
@@ -163,7 +190,11 @@ Raises:
 Returns: 
     None
 
-#### `_collection_loop(self)`
+#### `_collection_loop()`
+
+```python
+_collection_loop(self)
+```
 
 Ejecuta el bucle principal de recolección de datos en intervalos definidos.
 
@@ -176,7 +207,11 @@ Returns:
 Raises:
     Exception: Si ocurre un error durante la recolección de datos.
 
-#### `_collect_and_save(self)`
+#### `_collect_and_save()`
+
+```python
+_collect_and_save(self)
+```
 
 Recolecta y guarda métricas del sistema, red, disco y ventilador.
 
@@ -185,5 +220,3 @@ Args: None
 Returns: None
 
 Raises: None
-
-</details>

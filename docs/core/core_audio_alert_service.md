@@ -17,15 +17,23 @@ Archivos generados por: scripts/generate_sounds.py
 
 ## Tabla de contenidos
 
+**Funciones**
+- [`_sound()`](#_sound) _(privada)_
+
 **Clase [`_MetricState`](#clase-_metricstate)**
+  - [`__init__()`](#__init__) _(privado)_
 
 **Clase [`AudioAlertService`](#clase-audioalertservice)**
-  - [`start()`](#startself)
-  - [`stop()`](#stopself)
-  - [`is_running()`](#is_runningself-bool)
-  - [`set_enabled()`](#set_enabledself-enabled-bool)
-  - [`is_enabled()`](#is_enabledself-bool)
-  - [`play_test()`](#play_testself)
+  - [`start()`](#start)
+  - [`stop()`](#stop)
+  - [`is_running()`](#is_running)
+  - [`set_enabled()`](#set_enabled)
+  - [`is_enabled()`](#is_enabled)
+  - [`play_test()`](#play_test)
+  - [`__init__()`](#__init__) _(privado)_
+  - [`_loop()`](#_loop) _(privado)_
+  - [`_check()`](#_check) _(privado)_
+  - [`_play()`](#_play) _(privado)_
 
 ---
 
@@ -52,10 +60,13 @@ from utils.logger import get_logger
 | `WARN_REPEAT_S` | `45` |
 | `CRIT_REPEAT_S` | `30` |
 
-<details>
-<summary>Funciones privadas</summary>
+## Funciones privadas
 
-### `_sound(metric: str, level: str) -> str`
+### `_sound()`
+
+```python
+_sound(metric: str, level: str) -> str
+```
 
 Devuelve la ruta del audio para una métrica y nivel dados.
 
@@ -65,8 +76,6 @@ Args:
 
 Returns:
     str: La ruta del archivo de audio correspondiente.
-
-</details>
 
 ## Clase `_MetricState`
 
@@ -88,10 +97,13 @@ Raises:
 | `zone` | `'ok'` |
 | `last_played` | `0.0` |
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self)`
+#### `__init__()`
+
+```python
+__init__(self)
+```
 
 Inicializa el estado de la métrica con valores predeterminados.
 
@@ -103,8 +115,6 @@ Returns:
 
 Raises:
     None
-
-</details>
 
 ## Clase `AudioAlertService`
 
@@ -135,7 +145,11 @@ Raises:
 
 ### Métodos públicos
 
-#### `start(self)`
+#### `start()`
+
+```python
+start(self)
+```
 
 Inicia el servicio de alertas sonoras en segundo plano.
 
@@ -148,7 +162,11 @@ Returns:
 Raises:
     None
 
-#### `stop(self)`
+#### `stop()`
+
+```python
+stop(self)
+```
 
 Detiene el servicio de alertas de audio de manera limpia.
 
@@ -161,7 +179,11 @@ Returns:
 Raises:
     None
 
-#### `is_running(self) -> bool`
+#### `is_running()`
+
+```python
+is_running(self) -> bool
+```
 
 Indica si el servicio de alertas de audio está activo.
 
@@ -171,7 +193,11 @@ Args:
 Returns:
     bool: True si el servicio está en ejecución, False de lo contrario.
 
-#### `set_enabled(self, enabled: bool)`
+#### `set_enabled()`
+
+```python
+set_enabled(self, enabled: bool)
+```
 
 Activa o desactiva las alertas sonoras de forma segura.
 
@@ -184,7 +210,11 @@ Returns:
 Raises:
     None
 
-#### `is_enabled(self) -> bool`
+#### `is_enabled()`
+
+```python
+is_enabled(self) -> bool
+```
 
 Indica si el servicio de alertas de audio está habilitado.
 
@@ -197,7 +227,11 @@ Returns:
 Raises:
     None
 
-#### `play_test(self)`
+#### `play_test()`
+
+```python
+play_test(self)
+```
 
 Reproduce un archivo de audio de prueba de forma asíncrona.
 
@@ -210,10 +244,13 @@ Returns:
 Raises: 
     None
 
-<details>
-<summary>Métodos privados</summary>
+### Métodos privados
 
-#### `__init__(self, system_monitor, service_monitor = None)`
+#### `__init__()`
+
+```python
+__init__(self, system_monitor, service_monitor = None)
+```
 
 Inicializa el servicio de alertas de audio con monitores del sistema y servicios.
 
@@ -227,7 +264,11 @@ Returns:
 Raises:
     None
 
-#### `_loop(self)`
+#### `_loop()`
+
+```python
+_loop(self)
+```
 
 Ejecuta un bucle de polling en segundo plano para verificar alertas de audio.
 
@@ -237,7 +278,11 @@ Returns: None
 
 Raises: Exception en caso de error durante la verificación de alertas.
 
-#### `_check(self)`
+#### `_check()`
+
+```python
+_check(self)
+```
 
 Evalúa las métricas del sistema y servicios contra los umbrales definidos.
 
@@ -250,7 +295,11 @@ Returns:
 Raises: 
     Exception
 
-#### `_play(self, sound_file: str)`
+#### `_play()`
+
+```python
+_play(self, sound_file: str)
+```
 
 Reproduce un archivo de sonido utilizando aplay o paplay con un timeout de 15 segundos.
 
@@ -260,5 +309,3 @@ Args:
 Raises:
     FileNotFoundError: Si el archivo de sonido no existe.
     subprocess.TimeoutExpired: Si la reproducción del sonido supera el timeout.
-
-</details>
