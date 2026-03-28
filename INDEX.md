@@ -8,6 +8,8 @@
 
 **[QUICKSTART.md](QUICKSTART.md)** ⚡ — Instalación y ejecución en 5 minutos.
 
+**[docs/INDEX.md](docs/INDEX.md)** 🔬 — Documentación de código autogenerada — módulos, clases, métodos, cobertura de docstrings.
+
 ---
 
 ## 📖 Guías por tema
@@ -97,8 +99,21 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 ├── INTEGRATION_GUIDE.md              🤝 Integración fase1
 ├── IDEAS_EXPANSION.md                💡 Roadmap v4.3+
 ├── COMPATIBILIDAD.md                 🌐 Compatibilidad
-└── TODO_compliance.md                🏗️ Cumplimiento reglas
+├── TODO_compliance.md                🏗️ Cumplimiento reglas
+└── docs/                             🔬 Documentación de código (autogenerada)
+    ├── INDEX.md                          Índice general — módulos, clases, cobertura
+    ├── core/                             Servicios y monitores
+    ├── ui_main/                          Módulos principales UI
+    ├── ui_windows/                       Ventanas (32)
+    ├── config/                           Módulos de configuración
+    └── utils/                            Utilidades
 ```
+
+> La carpeta `docs/` se genera automáticamente con:
+> ```bash
+> rm -rf docs/ && python3 generate_docs.py .
+> ```
+> No editar manualmente — cualquier cambio se sobreescribe en la siguiente generación.
 
 ---
 
@@ -124,7 +139,8 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 4. `ui/styles.py` → `make_window_header()` para nuevas ventanas
 5. `core/service_registry.py` → registrar nuevos servicios
 6. `config/local_settings_io.py` → persistir config de nuevos módulos
-7. IDEAS_EXPANSION.md → ver qué se puede añadir en v4.3
+7. **[docs/INDEX.md](docs/INDEX.md)** → referencia completa de clases y métodos
+8. IDEAS_EXPANSION.md → ver qué se puede añadir en v4.3
 
 ---
 
@@ -155,6 +171,7 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 | Uptime incorrecto al arrancar | Normal sin RTC — se corrige al conectar red (NTP) |
 | Log lleno de DEBUG | Abrir Config Logging → subir nivel Fichero a INFO o WARNING |
 | Ver errores | `grep ERROR data/logs/dashboard.log` |
+| Buscar clase o método concreto | [docs/INDEX.md](docs/INDEX.md) |
 
 ---
 
@@ -162,13 +179,14 @@ Añadir una pestaña nueva es añadir una línea a `MENU_TABS`.
 
 | Métrica | v4.0 | v4.2 |
 |---------|------|------|
-| Archivos Python | 73 | **81** |
-| Ventanas | 27 | **32** |
+| Archivos Python | 73 | **84** |
+| Ventanas | 27 | **34** |
 | Temas | 15 | 15 |
 | Badges en menú | 12 | **13** |
-| Servicios background | 16 | **20** |
-| Módulos ui/main_* | 5 | 5 |
-| Documentos | 9 | 10 |
+| Servicios background | 16 | **26** |
+| Módulos ui/main_* | 5 | **4** |
+| Documentos | 9 | **11** |
+| Módulos documentados (docs/) | — | **89** |
 
 ### Nuevos módulos en v4.2
 - `core/audio_service.py` — `AudioService`

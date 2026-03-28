@@ -228,6 +228,13 @@ system_dashboard/
 ├── utils/
 │   ├── file_manager.py, system_utils.py
 │   └── logger.py                   # Niveles persistidos en local_settings.py
+├── docs/                           # Documentación de código autogenerada
+│   ├── INDEX.md                    # Índice — módulos, clases, cobertura
+│   ├── core/
+│   ├── ui_main/
+│   ├── ui_windows/
+│   ├── config/
+│   └── utils/
 ├── data/
 ├── scripts/
 ├── .env, .env.example
@@ -326,17 +333,51 @@ TELEGRAM_CHAT_ID=987654321
 
 ---
 
+## 📚 Documentación de Código
+
+La carpeta `docs/` contiene documentación autogenerada de todos los módulos Python del proyecto — clases, métodos, firmas, docstrings y cobertura de documentación.
+
+**Ver documentación:** [docs/INDEX.md](docs/INDEX.md)
+
+### Regenerar
+
+```bash
+# Regenerar toda la documentación
+rm -rf docs/ && python3 generate_docs.py .
+
+# Solo una capa
+python3 generate_docs.py . --out docs  # ya existente, sobreescribe
+```
+
+### Estructura
+
+```
+docs/
+├── INDEX.md          ← Índice general con stats y cobertura por módulo
+├── core/             ← Servicios y monitores
+├── ui_main/          ← Módulos principales UI
+├── ui_windows/       ← 32 ventanas
+├── config/           ← Módulos de configuración
+└── utils/            ← Utilidades
+```
+
+> Generado con `generate_docs.py` — parseo estático via `ast`, sin ejecutar el código.
+> No editar manualmente — se sobreescribe en cada regeneración.
+
+---
+
 ## 📊 Estadísticas del Proyecto
 
 | Métrica | v4.0 | v4.2 |
 |---------|------|------|
-| Archivos Python | 73 | **81** |
-| Ventanas | 27 | **32** |
+| Archivos Python | 73 | **84** |
+| Ventanas | 27 | **34** |
 | Temas | 15 | 15 |
 | Badges en menú | 12 | **13** |
-| Servicios background | 16 | **20** |
-| Módulos ui/main_* | 5 | 5 |
-| Documentos | 9 | 10 |
+| Servicios background | 16 | **26** |
+| Módulos ui/main_* | 5 | **4** |
+| Documentos | 9 | **11** |
+| Módulos documentados (docs/) | — | **89** |
 
 ---
 
