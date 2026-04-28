@@ -1,6 +1,7 @@
 """
-Monitor de estado de VPN.
-Detecta si la interfaz VPN está activa leyendo /proc/net/if_inet6 o ip link.
+Monitor de estado de VPN dual (OpenVPN + WireGuard).
+
+Monitoriza simultáneamente las interfaces tun0 (OpenVPN) y pi5aeq (WireGuard).
 Sin dependencias nuevas — usa subprocess con comandos estándar.
 """
 import subprocess
@@ -11,9 +12,11 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Nombre de la interfaz VPN — ajusta según tu configuración
-# WireGuard → "wg0"   |   OpenVPN → "tun0"
-VPN_INTERFACE = "tun0"
+# ── Interfaces monitorizadas ──────────────────────────────────────────────────
+VPN_INTERFACES = {
+    "openvpn":   "tun0",
+    "wireguard": "pi5aeq",
+}
 
 # Intervalo de sondeo (segundos)
 CHECK_INTERVAL = 10
@@ -21,58 +24,37 @@ CHECK_INTERVAL = 10
 
 class VpnMonitor:
     """
-    Servicio background que monitoriza el estado de la VPN.
+    Servicio background que monitoriza el estado de ambas VPNs simultáneamente.
 
-    Args:
-        interface (str): Nombre de interfaz VPN (default "tun0").
-
-    Características:
-    * Configura lock para acceso thread-safe.
-    * Estado inicial: desconectado.
-
-    Atributos:
-    * _interface: Nombre de interfaz VPN.
-    * _lock: Lock para acceso thread-safe.
-    * _running: Estado de ejecución.
-    * _stop_evt: Evento de parada.
-    * _thread: Hilo de ejecución.
-    * _connected: Estado de conexión.
-    * _vpn_ip: Dirección IP asignada.
+    Expone estado independiente para OpenVPN (tun0) y WireGuard (pi5aeq).
+    Sigue el patrón daemon estándar del proyecto.
     """
 
-    def __init__(self, interface: str = VPN_INTERFACE):
+    def __init__(self):
         """
-        Inicializa el monitor VPN.
+        Inicializa el monitor VPN dual.
 
-        Args:
-            interface (str): Nombre de interfaz VPN (por defecto "tun0").
-
-        Configura el bloqueo, el estado inicial desconectado y el evento de parada.
+        Configura el lock, el estado inicial desconectado para ambas VPNs
+        y el evento de parada.
         """
-        self._interface = interface
-        self._lock      = threading.Lock()
-        self._running   = False
-        self._stop_evt  = threading.Event()
+        self._lock     = threading.Lock()
+        self._running  = False
+        self._stop_evt = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
-        # Caché de estado
-        self._connected = False
-        self._vpn_ip    = ""
-        self._iface     = interface
+        # Caché de estado — una entrada por VPN
+        self._state: dict[str, dict] = {
+            key: {"connected": False, "ip": "", "interface": iface}
+            for key, iface in VPN_INTERFACES.items()
+        }
 
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def start(self) -> None:
         """
-        Inicia el sondeo de VPN en segundo plano.
+        Inicia el sondeo de ambas VPNs en segundo plano.
 
-        Args: 
-            None
-
-        Returns: 
-            None
-
-        Raises: 
+        Returns:
             None
         """
         if self._running:
@@ -83,43 +65,32 @@ class VpnMonitor:
             target=self._loop, daemon=True, name="VpnMonitor"
         )
         self._thread.start()
-        logger.info("[VpnMonitor] Sondeo iniciado (cada %ds) — interfaz: %s",
-                    CHECK_INTERVAL, self._interface)
+        logger.info("[VpnMonitor] Sondeo iniciado (cada %ds) — interfaces: %s",
+                    CHECK_INTERVAL, list(VPN_INTERFACES.values()))
 
     def stop(self) -> None:
         """
-        Detiene el servicio de monitoreo de VPN de manera limpia.
+        Detiene el servicio de monitoreo de forma limpia.
 
-        Args: 
-            Ninguno
-
-        Returns: 
-            Ninguno
-
-        Raises: 
-            Ninguno
+        Returns:
+            None
         """
         self._running = False
         self._stop_evt.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         with self._lock:
-            self._connected = False
-            self._vpn_ip    = ""
+            for key in self._state:
+                self._state[key]["connected"] = False
+                self._state[key]["ip"]        = ""
         logger.info("[VpnMonitor] Servicio detenido")
-        
+
     def is_running(self) -> bool:
         """
-        Indica si el servicio de monitoreo de VPN está actualmente en ejecución.
-
-        Args:
-            None
+        Indica si el servicio está activo.
 
         Returns:
-            bool: True si el servicio está corriendo, False en caso contrario.
-
-        Raises:
-            None
+            bool: True si el servicio está corriendo.
         """
         return self._running
 
@@ -127,20 +98,12 @@ class VpnMonitor:
 
     def _loop(self) -> None:
         """
-        Ejecuta el bucle principal del thread de sondeo.
+        Bucle principal del thread de sondeo.
 
-        Args:
-            Ninguno
+        Sondea ambas interfaces en cada iteración.
 
         Returns:
-            Ninguno
-
-        Raises:
-            Ninguno
-
-        Nota: 
-            Llama a _poll() y wait(CHECK_INTERVAL) en un ciclo, manejando excepciones.
-            Se detiene cuando self._running es False o self._stop_evt está seteado.
+            None
         """
         while self._running:
             try:
@@ -153,36 +116,31 @@ class VpnMonitor:
 
     def _poll(self) -> None:
         """
-        Actualiza el estado de la conexión VPN.
-
-        Actualiza la caché protegida por bloqueo, llamando previamente a `_check_interface()`.
-
-        Args:
-            Ninguno
+        Actualiza el estado de ambas VPNs en la caché.
 
         Returns:
-            Ninguno
-
-        Raises:
-            Ninguno
+            None
         """
-        connected, ip = self._check_interface(self._interface)
+        new_state = {}
+        for key, iface in VPN_INTERFACES.items():
+            connected, ip = self._check_interface(iface)
+            new_state[key] = {
+                "connected": connected,
+                "ip":        ip,
+                "interface": iface,
+            }
         with self._lock:
-            self._connected = connected
-            self._vpn_ip    = ip
+            self._state = new_state
 
-    def _check_interface(self, iface: str):
+    def _check_interface(self, iface: str) -> tuple[bool, str]:
         """
-        Comprueba si una interfaz de red está activa y obtiene su dirección IP.
+        Comprueba si una interfaz de red está activa y obtiene su IPv4.
 
         Args:
             iface (str): Nombre de la interfaz de red a comprobar.
 
         Returns:
-            tuple: Un tupla con dos valores, el primero indica si la interfaz está conectada (bool) y el segundo la dirección IP de la interfaz (str).
-
-        Raises:
-            Exception: Si ocurre un error durante la comprobación de la interfaz, se registra el error y se devuelve False junto con una cadena vacía.
+            tuple[bool, str]: (conectada, ip). ip vacío si no hay IP asignada.
         """
         try:
             result = subprocess.run(
@@ -191,35 +149,27 @@ class VpnMonitor:
             )
             if result.returncode != 0:
                 return False, ""
-
-            output = result.stdout
-            # Buscar inet (IPv4)
-            for line in output.splitlines():
+            for line in result.stdout.splitlines():
                 line = line.strip()
                 if line.startswith("inet ") and "inet6" not in line:
                     ip = line.split()[1].split("/")[0]
                     return True, ip
-            # Interfaz existe pero sin IP asignada aún
             return False, ""
         except FileNotFoundError:
-            # 'ip' no disponible — intentar con ifconfig
             return self._check_interface_ifconfig(iface)
         except Exception as e:
             logger.debug("[VpnMonitor] Error comprobando interfaz %s: %s", iface, e)
             return False, ""
 
-    def _check_interface_ifconfig(self, iface: str):
+    def _check_interface_ifconfig(self, iface: str) -> tuple[bool, str]:
         """
-        Verifica el estado de una interfaz de red y su dirección IP mediante ifconfig.
+        Fallback: comprueba la interfaz usando ifconfig.
 
         Args:
             iface (str): Nombre de la interfaz de red a verificar.
 
         Returns:
-            tuple[bool, str]: Tupla con un booleano que indica si la interfaz está conectada y la dirección IP asignada.
-
-        Raises:
-            Exception: Si ocurre un error durante la ejecución de ifconfig.
+            tuple[bool, str]: (conectada, ip).
         """
         try:
             result = subprocess.run(
@@ -232,9 +182,8 @@ class VpnMonitor:
                 line = line.strip()
                 if "inet " in line:
                     parts = line.split()
-                    idx = parts.index("inet")
-                    ip = parts[idx + 1]
-                    return True, ip
+                    idx   = parts.index("inet")
+                    return True, parts[idx + 1]
             return False, ""
         except Exception:
             return False, ""
@@ -243,75 +192,54 @@ class VpnMonitor:
 
     def get_status(self) -> dict:
         """
-        Obtiene el estado actual de la VPN desde caché de manera segura para hilos.
-
-        Args:
-            None
+        Devuelve el estado actual de ambas VPNs desde caché.
 
         Returns:
-            dict: Diccionario con el estado de la VPN. 
-                  {"connected": bool, "ip": str, "interface": str}
-
-        Raises:
-            None
+            dict: {"openvpn": {"connected", "ip", "interface"},
+                   "wireguard": {"connected", "ip", "interface"}}
         """
         if not self._running:
-            return {'connected': False, 'interface': '', 'ip': ''}
-        with self._lock:
             return {
-                "connected": self._connected,
-                "ip":        self._vpn_ip,
-                "interface": self._interface,
+                key: {"connected": False, "ip": "", "interface": iface}
+                for key, iface in VPN_INTERFACES.items()
             }
+        with self._lock:
+            return {k: dict(v) for k, v in self._state.items()}
 
     def is_connected(self) -> bool:
         """
-        Indica si la conexión VPN está actualmente activa.
-
-        Args:
-            None
+        Indica si alguna de las VPNs está activa.
 
         Returns:
-            bool: True si la interfaz VPN tiene una IP IPv4 asignada.
-
-        Raises:
-            None
+            bool: True si al menos una interfaz VPN tiene IP asignada.
         """
         with self._lock:
-            return self._connected
+            return any(v["connected"] for v in self._state.values())
 
     def get_offline_count(self) -> int:
         """
-        Obtiene el estado de conexión de la VPN para mostrar en la interfaz de usuario.
+        Devuelve el número de VPNs desconectadas.
 
-        Args:
-            Ninguno
+        Usado por el sistema de badges del dashboard.
 
         Returns:
-            int: 1 si la VPN está desconectada, 0 si está conectada.
-
-        Raises:
-            Ninguno
+            int: 0 si alguna VPN está conectada, 1 si ninguna lo está.
         """
         with self._lock:
-            return 0 if self._connected else 1
+            any_connected = any(v["connected"] for v in self._state.values())
+            return 0 if any_connected else 1
 
     def force_poll(self) -> None:
         """
-        Fuerza una comprobación inmediata del estado de la VPN en un hilo separado.
+        Fuerza una comprobación inmediata del estado en un hilo separado.
 
         Útil después de eventos de conexión o desconexión manual.
 
-        Args:
-            Ninguno
-
         Returns:
-            Ninguno
-
-        Raises:
-            Ninguno
+            None
         """
         if not self._running:
             return
-        threading.Thread(target=self._poll, daemon=True, name="VpnMonitor-ForcePoll").start()
-
+        threading.Thread(
+            target=self._poll, daemon=True, name="VpnMonitor-ForcePoll"
+        ).start()

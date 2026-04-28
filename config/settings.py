@@ -354,12 +354,20 @@ LAUNCHERS = [
         "script": str(SCRIPTS_DIR / "update.sh")
     },
     {
-        "label": f"{Icons.MONTAR}  Conectar VPN",
-        "script": str(SCRIPTS_DIR / "conectar_vpn.sh")
+        "label": f"{Icons.VPN}  Conectar OpenVPN",
+        "script": str(SCRIPTS_DIR / "conectar_openvpn.sh")
     },
     {
-        "label": f"{Icons.DESMONTAR}  Desconectar VPN",
-        "script": str(SCRIPTS_DIR / "desconectar_vpn.sh")
+        "label": f"{Icons.VPN}  Desconectar OpenVPN",
+        "script": str(SCRIPTS_DIR / "desconectar_openvpn.sh")
+    },
+    {
+        "label": f"{Icons.VPN}  Conectar WireGuard",
+        "script": str(SCRIPTS_DIR / "conectar_wireguard.sh")
+    },
+    {
+        "label": f"{Icons.VPN}  Desconectar WireGuard",
+        "script": str(SCRIPTS_DIR / "desconectar_wireguard.sh")
     },
     {
         "label": f"{Icons.LANZADORES}  Iniciar fase1",
